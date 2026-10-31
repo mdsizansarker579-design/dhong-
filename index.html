@@ -872,6 +872,9 @@ try{cart=JSON.parse(localStorage.getItem(KEY)||'[]');if(!Array.isArray(cart))car
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(cart));}catch(e){}};
 const prod=id=>products.find(p=>String(p.id)===String(id));
 const unit=p=>(isTimerExpired&&p.oldPrice)?p.oldPrice:p.price;
+const designs=p=>{const a=[];if(p.img)a.push(p.img);const c=p.colors?(Array.isArray(p.colors)?p.colors:Object.values(p.colors)):[];c.forEach(x=>{if(x&&!a.includes(x))a.push(x);});return a;};
+const designPicker=(c,p,i)=>{const L=designs(p);if(L.length<2)return '';
+  return `<div class="dz">${L.map((s,k)=>`<img src="${E(s)}" class="dz-i ${(c.dz||0)===k?'on':''}" onclick="cartPick(${i},${k})" alt="">`).join('')}</div>`;};
 const F={name:'',phone:'',division:'Dhaka',address:''};
 const COLORS=[['Standard','স্ট্যান্ডার্ড'],['Black','কালো'],['White','সাদা'],['Red','লাল'],['Blue','নীল']];
 const SIZES=['Free Size','M','L','XL','XXL'];
@@ -882,6 +885,9 @@ st.textContent=`.cart-row{display:flex;gap:10px;align-items:center;padding:10px 
 .cart-sel{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .cart-sel select{padding:5px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px}
 .cart-x{background:#fff5f5;color:#c53030;padding:6px 8px}
+.dz{display:flex;gap:5px;overflow-x:auto;margin-top:6px;padding-bottom:2px}
+.dz-i{width:44px;height:44px;object-fit:cover;border-radius:6px;border:2px solid #e2e8f0;flex-shrink:0;cursor:pointer}
+.dz-i.on{border-color:var(--primary-color)}
 .cart-sum{background:#f7fafc;padding:10px;border-radius:8px;border:1px solid #edf2f7;margin:10px 0;font-size:13px;line-height:1.6}`;
 document.head.appendChild(st);
 
@@ -919,7 +925,7 @@ window.addToCart=async function(pid,useSel){
   const max=Math.min(5,Number(p.stock)||0);
   const ex=cart.find(c=>String(c.pid)===String(p.id)&&c.img===img);
   if(ex){if(ex.qty>=max)return flash('সর্বোচ্চ পরিমাণ যোগ করা হয়েছে');ex.qty++;}
-  else cart.push({pid:p.id,qty:1,color:'Standard',size:'Free Size',img});
+  else{const L=designs(p);let k=useSel?L.indexOf(currentSelectedImg):0;if(k<0)k=0;cart.push({pid:p.id,qty:1,color:L.length>1?'ডিজাইন '+(k+1):'Standard',dz:k,size:'Free Size',img});}
   save();updateBadge();flash('🛒 কার্টে যোগ হয়েছে');
 };
 
@@ -935,6 +941,7 @@ function sumUpdate(){
   el.innerHTML=`মূল্য: ${bd(t.sub)}${t.disc?` | ডিসকাউন্ট (১০%): -${bd(t.disc)}`:''} | ডেলিভারি: ${t.fee?bd(t.fee):'ফ্রি'}<br><b>মোট: ${bd(t.total)}</b>`;
 }
 window.cartSet=function(i,k,v){if(!cart[i])return;cart[i][k]=k==='qty'?Number(v):v;save();updateBadge();sumUpdate();};
+window.cartPick=async function(i,k){const c=cart[i],p=c&&prod(c.pid);if(!p)return;const L=designs(p);if(!L[k])return;c.img=await makeThumb(L[k]);c.dz=k;c.color='ডিজাইন '+(k+1);save();renderCart();};
 window.cartDel=function(i){cart.splice(i,1);save();renderCart();};
 window.cartF=function(k,v){F[k]=v;if(k==='division')sumUpdate();};
 
@@ -948,8 +955,7 @@ function renderCart(){
     const max=Math.max(1,Math.min(5,Number(p.stock)||0));if(c.qty>max)c.qty=max;
     return `<div class="cart-row">${c.img?`<img src="${E(c.img)}" alt="">`:''}
       <div style="flex:1;min-width:0"><b>${E(p.name)}</b><div style="color:var(--primary-color);font-weight:bold">${bd(unit(p))}</div>
-      <div class="cart-sel">
-        <select onchange="cartSet(${i},'color',this.value)">${COLORS.map(([v,l])=>`<option value="${v}" ${c.color===v?'selected':''}>${l}</option>`).join('')}</select>
+      ${designPicker(c,p,i)}<div class="cart-sel">
         <select onchange="cartSet(${i},'size',this.value)">${SIZES.map(v=>`<option ${c.size===v?'selected':''}>${v}</option>`).join('')}</select>
         <select onchange="cartSet(${i},'qty',this.value)">${Array.from({length:max},(_,k)=>`<option value="${k+1}" ${c.qty===k+1?'selected':''}>${k+1}টি</option>`).join('')}</select>
       </div></div><button class="cart-x" onclick="cartDel(${i})">🗑</button></div>`;
