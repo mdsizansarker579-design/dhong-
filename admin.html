@@ -6,6 +6,7 @@
 <title>DHONG Admin Panel</title>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <style>
 :root{--bg:#f4f6fb;--card:#fff;--text:#182230;--muted:#667085;--dark:#151b2b;--accent:#6558e8;--line:#e7eaf0;--green:#12805c;--red:#e53e3e}
 *{box-sizing:border-box}
@@ -68,7 +69,8 @@ th{color:var(--muted);font-weight:600}
 <div id="loginModal">
   <div class="login-box">
     <h2 style="margin-top:0">DHONG Super Admin</h2>
-    <p class="muted" style="margin-bottom:20px">প্যানেলে প্রবেশ করতে পাসওয়ার্ড দিন</p>
+    <p class="muted" style="margin-bottom:20px">প্যানেলে প্রবেশ করতে ইমেইল ও পাসওয়ার্ড দিন</p>
+    <input type="email" id="adminEmailInput" placeholder="অ্যাডমিন ইমেইল" autocomplete="username" style="margin-bottom:8px">
     <input type="password" id="adminPassInput" placeholder="পাসওয়ার্ড লিখুন..." autocomplete="current-password">
     <button class="btn primary" id="loginBtn" style="width:100%;margin-top:12px">লগইন করুন</button>
     <div id="loginError" style="color:red;font-size:12px;margin-top:10px"></div>
@@ -94,7 +96,7 @@ th{color:var(--muted);font-weight:600}
 <main class="main">
 <header class="top">
   <div><h1 id="pageTitle">Dashboard</h1><div class="muted">DHONG স্টোরের লাইভ এডমিন প্যানেল</div></div>
-  <div class="live">● Super Admin Live</div>
+  <div style="display:flex;gap:8px;align-items:center"><div class="live">● Super Admin Live</div><button class="btn sm gray" id="logoutBtn">লগআউট</button></div>
 </header>
 
 <section class="page active" id="dashboard">
@@ -118,6 +120,7 @@ th{color:var(--muted);font-weight:600}
       <input type="search" id="orderSearch" placeholder="🔍 নাম, ফোন বা অর্ডার নম্বর...">
       <select id="statusFilter"></select>
       <button class="btn gray" id="exportCsv">CSV এক্সপোর্ট</button>
+      <button class="btn gray" id="syncTrackBtn">ট্র্যাকিং সিঙ্ক</button>
     </div>
     <div class="table-wrap"><table><thead><tr><th>ID</th><th>কাস্টমার</th><th>ফোন</th><th>ঠিকানা</th><th>পণ্য</th><th>রেফ</th><th>মোট</th><th>স্ট্যাটাস</th><th>তারিখ</th><th></th></tr></thead>
     <tbody id="orderRows"></tbody></table></div>
@@ -173,14 +176,9 @@ th{color:var(--muted);font-weight:600}
 <section class="page" id="moderators">
   <div class="card">
     <h3 class="section-title">🛡️ সিকিউরিটি ও মডারেটর</h3>
-    <div class="field-group">অ্যাডমিন পাসওয়ার্ড পরিবর্তন
-      <input type="password" id="newAdminPass" placeholder="নতুন পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)" autocomplete="new-password">
-      <button class="btn primary" id="updatePassBtn" style="margin-top:8px">পাসওয়ার্ড আপডেট করুন</button>
-    </div>
-    <hr style="margin:20px 0;border:0;border-top:1px solid #eee">
+    <div class="muted" style="margin-bottom:14px">অ্যাডমিন পাসওয়ার্ড বদলাতে Firebase Console → Authentication → Users থেকে করুন।</div>
     <h4 style="margin:0 0 10px">নতুন মডারেটর</h4>
     <div class="field-group">ইউজারনেম <input id="modUser"></div>
-    <div class="field-group">পাসওয়ার্ড <input type="password" id="modPass" autocomplete="new-password"></div>
     <button class="btn primary" id="addModBtn">মডারেটর যুক্ত করুন</button>
     <h4 style="margin:20px 0 10px">মডারেটর তালিকা</h4>
     <div id="moderatorList"></div>
@@ -270,33 +268,27 @@ function toast(msg, isErr) {
 }
 const fail = e => toast('❌ ' + (e && e.message || e), true);
 
-/* ---------- Login (Firebase Auth আসার আগ পর্যন্ত অস্থায়ী) ---------- */
-function checkAdminLogin() {
-  const val = $('adminPassInput').value;
-  db.ref('dhong_admin_pass').once('value').then(snap => {
-    if (val === (snap.val() || 'admin123')) {
-      $('loginModal').style.display = 'none';
-      sessionStorage.setItem('dhong_admin_logged', 'true');
-    } else $('loginError').textContent = '❌ ভুল পাসওয়ার্ড!';
-  }).catch(fail);
+/* ---------- Login (Firebase Auth) ---------- */
+const auth = firebase.auth();
+let started = false;
+function doLogin() {
+  auth.signInWithEmailAndPassword($('adminEmailInput').value.trim(), $('adminPassInput').value)
+    .catch(() => { $('loginError').textContent = '❌ ইমেইল বা পাসওয়ার্ড ভুল!'; });
 }
-$('loginBtn').onclick = checkAdminLogin;
-$('adminPassInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkAdminLogin(); });
-if (sessionStorage.getItem('dhong_admin_logged') === 'true') $('loginModal').style.display = 'none';
-
-$('updatePassBtn').onclick = () => {
-  const p = $('newAdminPass').value.trim();
-  if (p.length < 6) return toast('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের দিন।', true);
-  db.ref('dhong_admin_pass').set(p).then(() => { toast('✅ পাসওয়ার্ড আপডেট হয়েছে'); $('newAdminPass').value = ''; }).catch(fail);
-};
+$('loginBtn').onclick = doLogin;
+['adminEmailInput', 'adminPassInput'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
+$('logoutBtn').onclick = () => auth.signOut();
+auth.onAuthStateChanged(u => {
+  if (u) { $('loginModal').style.display = 'none'; $('loginError').textContent = ''; if (!started) { started = true; startListeners(); } }
+  else { $('loginModal').style.display = 'flex'; if (started) location.reload(); }
+});
 
 /* ---------- Moderators ---------- */
 $('addModBtn').onclick = () => {
-  const u = $('modUser').value.trim(), p = $('modPass').value.trim();
+  const u = $('modUser').value.trim();
   if (!/^[A-Za-z0-9_]{3,20}$/.test(u)) return toast('ইউজারনেম ৩-২০ অক্ষর, শুধু ইংরেজি অক্ষর/সংখ্যা/_ দিন।', true);
-  if (p.length < 6) return toast('পাসওয়ার্ড কমপক্ষে ৬ অক্ষর দিন।', true);
-  db.ref('dhong_moderators/' + u).set({ password: p, status: 'Active' })
-    .then(() => { toast('✅ মডারেটর যুক্ত হয়েছে'); $('modUser').value = $('modPass').value = ''; loadModerators(); }).catch(fail);
+  db.ref('dhong_moderators/' + u).set({ status: 'Active', created_at: new Date().toISOString() })
+    .then(() => { toast('✅ মডারেটর যুক্ত হয়েছে'); $('modUser').value = ''; loadModerators(); }).catch(fail);
 };
 function loadModerators() {
   db.ref('dhong_moderators').once('value').then(snap => {
@@ -314,13 +306,15 @@ function loadModerators() {
 
 /* ---------- Realtime data ---------- */
 function listFrom(snap) { const out = []; snap.forEach(ch => { const v = ch.val(); if (v && typeof v === 'object') { v._key = ch.key; out.push(v); } }); return out; }
-const listen = (path, fn) => db.ref(path).on('value', fn, e => console.error(path, e));
+const listen = (path, fn) => db.ref(path).on('value', fn, e => { console.error(path, e); toast('❌ ডাটা পড়ার অনুমতি নেই (' + path + ')। অ্যাডমিন ইমেইল দিয়ে লগইন করেছেন?', true); });
+function startListeners() {
 listen('dhong_products', s => { products = listFrom(s); render(); });
 listen('dhong_orders', s => { orders = listFrom(s).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)); render(); });
 listen('dhong_affiliates', s => { affiliates = listFrom(s); render(); });
 listen('dhong_withdrawals', s => { withdrawals = listFrom(s); render(); });
 listen('dhong_courier', s => { courier = s.val() || {}; fillCourierForm(); });
 listen('dhong_settings', s => { settings = s.val() || {}; fillSettingsForm(); });
+}
 
 /* ---------- Rendering ---------- */
 function parseItems(o) {
@@ -395,11 +389,32 @@ $('exportCsv').onclick = () => {
   a.click(); URL.revokeObjectURL(a.href);
 };
 
+/* ---------- Tracking sync (কাস্টমারের ট্র্যাকিংয়ের জন্য নিরাপদ কপি) ---------- */
+async function trackHash(id, p4) {
+  const t = 'dhong-track:' + id + ':' + p4;
+  if (!(window.crypto && crypto.subtle)) return p4;
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+  return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function syncTrack(key, extra = {}) {
+  const o = Object.assign({}, orders.find(x => x._key === key) || {}, extra);
+  if (!o.id) return;
+  const p4 = String(o.phone || '').replace(/\D/g, '').slice(-4);
+  const data = { status: o.status || 'Pending', items_json: o.items_json || '[]', total: Number(o.total) || 0,
+    discount: Number(o.discount) || 0, delivery_fee: Number(o.delivery_fee) || 0, created_at: o.created_at || '',
+    tracking_code: o.tracking_code || null, courier_status: o.courier_status || null };
+  if (p4.length === 4) data.ph = await trackHash(o.id, p4);
+  await db.ref('dhong_track/' + o.id).update(data);
+}
+$('syncTrackBtn').onclick = async () => {
+  try { for (const o of orders) await syncTrack(o._key); toast('✅ ' + orders.length + ' টি অর্ডারের ট্র্যাকিং সিঙ্ক হয়েছে'); } catch (e) { fail(e); }
+};
+
 /* ---------- Actions (event delegation) ---------- */
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'SELECT') return;
   const { act, key } = b.dataset;
-  if (act === 'delOrder' && confirm('এই অর্ডার ডিলিট করবেন?')) db.ref('dhong_orders/' + key).remove().then(() => toast('✅ অর্ডার মুছে গেছে')).catch(fail);
+  if (act === 'delOrder' && confirm('এই অর্ডার ডিলিট করবেন?')) { const o = orders.find(x => x._key === key); Promise.all([db.ref('dhong_orders/' + key).remove(), o && o.id ? db.ref('dhong_track/' + o.id).remove() : null]).then(() => toast('✅ অর্ডার মুছে গেছে')).catch(fail); }
   if (act === 'pay') approveWithdrawal(key);
   if (act === 'rejectW') rejectWithdrawal(key);
   if (act === 'sendCourier') sendCourier(key, b);
@@ -414,20 +429,29 @@ document.addEventListener('change', e => {
   const s = e.target.closest('select[data-act="status"]');
   if (s) db.ref('dhong_orders/' + s.dataset.key + '/status').set(s.value)
     .then(() => settleCommission(s.dataset.key, s.value))
+    .then(() => syncTrack(s.dataset.key, { status: s.value }))
     .then(() => toast('✅ স্ট্যাটাস আপডেট হয়েছে')).catch(fail);
 });
 
-function approveWithdrawal(key) {
+async function approveWithdrawal(key) {
   const w = withdrawals.find(v => v._key === key); if (!w) return;
   if (!confirm(`${w.affiliate} কে ৳${w.amount} পেমেন্ট করেছেন?`)) return;
-  db.ref('dhong_withdrawals/' + key).transaction(cur => {
-    if (!cur || cur.status === 'Paid' || cur.status === 'Rejected') return;
-    cur.status = 'Paid'; return cur;
-  }).then(res => {
-    if (!res.committed) return toast('এটি আগেই প্রসেস করা হয়েছে।', true);
-    // নতুন রিকোয়েস্টে ব্যালেন্স আগেই কাটা (reserved); পুরনো রিকোয়েস্টে এখন কাটা হবে
-    if (!w.reserved) return db.ref('dhong_affiliates/' + w.affiliate + '/commission').transaction(v => Math.max(0, (v || 0) - Number(w.amount)));
-  }).then(() => toast('✅ পেমেন্ট সম্পন্ন হয়েছে')).catch(fail);
+  const amt = Number(w.amount), cref = db.ref('dhong_affiliates/' + w.affiliate + '/commission');
+  try {
+    if (!w.reserved) {
+      const r = await cref.transaction(v => { v = Number(v) || 0; return v < amt ? undefined : v - amt; });
+      if (!r.committed) return toast('ব্যালেন্স অপর্যাপ্ত, কমিশন কম আছে।', true);
+    }
+    const res = await db.ref('dhong_withdrawals/' + key).transaction(cur => {
+      if (!cur || cur.status === 'Paid' || cur.status === 'Rejected') return;
+      cur.status = 'Paid'; return cur;
+    });
+    if (!res.committed) {
+      if (!w.reserved) await cref.transaction(v => (Number(v) || 0) + amt);
+      return toast('এটি আগেই প্রসেস করা হয়েছে।', true);
+    }
+    toast('✅ পেমেন্ট সম্পন্ন হয়েছে');
+  } catch (e) { fail(e); }
 }
 function rejectWithdrawal(key) {
   const w = withdrawals.find(v => v._key === key); if (!w) return;
@@ -593,6 +617,7 @@ async function sendCourier(key, btn) {
       courier: 'Steadfast', consignment_id: String(c.consignment_id), tracking_code: c.tracking_code || '',
       courier_status: c.status || 'in_review', status: 'Processing'
     });
+    await syncTrack(key, { status: 'Processing', courier_status: c.status || 'in_review', tracking_code: c.tracking_code || '' });
     toast('✅ কুরিয়ারে পাঠানো হয়েছে। CID: ' + c.consignment_id);
   } catch (err) { fail(err); btn.disabled = false; }
 }
@@ -603,6 +628,7 @@ async function trackCourier(key, btn) {
     const j = await courierCall('/status_by_cid/' + encodeURIComponent(o.consignment_id), 'GET');
     const st = j.delivery_status || 'unknown';
     await db.ref('dhong_orders/' + key + '/courier_status').set(st);
+    await syncTrack(key, { courier_status: st });
     toast('📦 কুরিয়ার স্ট্যাটাস: ' + st);
   } catch (err) { fail(err); }
   btn.disabled = false;
