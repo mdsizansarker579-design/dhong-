@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://www.gstatic.com">
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <style>
 :root {
   --primary-color: #e85d75;
@@ -301,11 +302,30 @@ footer button{background:rgba(255,255,255,0.15);color:white;border:1px solid rgb
     const me = localStorage.getItem('dhong_logged_aff');
     return (!r || r === me) ? 'None' : r;
   }
-  async function hashPw(u, p) {
-    if (!(window.crypto && crypto.subtle)) return p;
-    const d = new TextEncoder().encode('dhong:' + u + ':' + p);
-    const h = await crypto.subtle.digest('SHA-256', d);
-    return 'h1$' + Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const auth = firebase.auth();
+  const AFF_DOMAIN = '@aff.dhong.local';
+  async function trackHash(id, p4) {
+    const t = 'dhong-track:' + id + ':' + p4;
+    if (!(window.crypto && crypto.subtle)) return p4;
+    const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+    return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  // অর্ডার সেভ: আগে ট্র্যাকিং নোড (ইউনিক আইডি নিশ্চিত), তারপর অর্ডার
+  async function saveOrder(order) {
+    const p4 = String(order.phone || '').replace(/\D/g, '').slice(-4);
+    for (let i = 0; ; i++) {
+      try {
+        const t = { status: order.status, items_json: order.items_json, total: order.total, discount: order.discount || 0,
+          delivery_fee: order.delivery_fee || 0, created_at: order.created_at };
+        if (p4.length === 4) t.ph = await trackHash(order.id, p4);
+        await db.ref('dhong_track/' + order.id).set(t);
+        break;
+      } catch (e) {
+        if (i >= 3) throw e;
+        order.id = String(Math.floor(100000 + Math.random() * 900000));
+      }
+    }
+    await db.ref('dhong_orders').push(order);
   }
 
   let products = [];
@@ -595,8 +615,8 @@ footer button{background:rgba(255,255,255,0.15);color:white;border:1px solid rgb
           <b>💬 কাস্টমার রিভিউ ও কমেন্ট</b>
           <div id="commentBox" style="margin-top:6px">${commentsList}</div>
           <form onsubmit="addComment(event, '${E(p.id)}')" style="margin-top:10px">
-            <input id="cName" placeholder="আপনার নাম" required style="font-size:12px;padding:8px;margin-bottom:6px">
-            <textarea id="cText" placeholder="আপনার মতামত লিখুন..." required rows="2" style="font-size:12px;padding:8px"></textarea>
+            <input id="cName" placeholder="আপনার নাম" required maxlength="60" style="font-size:12px;padding:8px;margin-bottom:6px">
+            <textarea id="cText" placeholder="আপনার মতামত লিখুন..." required maxlength="500" rows="2" style="font-size:12px;padding:8px"></textarea>
             <button class="primary" type="submit" style="font-size:12px;padding:6px 12px;margin-top:6px">মতামত দিন</button>
           </form>
         </div>
@@ -669,10 +689,10 @@ footer button{background:rgba(255,255,255,0.15);color:white;border:1px solid rgb
       items_json: JSON.stringify([{ name: p.name, price: price, quantity: 1, color: "", size: "", img: thumb, deliveryFee: 0 }]),
       total: price, commission_amount: affiliateRef !== "None" ? Math.round(price * 0.05) : 0, commission_paid: false, status: "WhatsApp Pending", created_at: new Date().toISOString()
     };
-    db.ref('dhong_orders').push(newOrder);
+    try { await saveOrder(newOrder); } catch(e) { console.error(e); alert('❌ অর্ডার সেভ হয়নি, আবার চেষ্টা করুন।'); return; }
 
 
-    const text = `আসসালামু আলাইকুম, আমি এই পণ্যটি অর্ডার করতে চাই:\nঅর্ডার নম্বর: #DH-${orderId}\nপণ্য: ${p.name}\nপণ্য আইডি: ${p.id}\nমূল্য: ${money(price)}\nলিংক: ${link}`;
+    const text = `আসসালামু আলাইকুম, আমি এই পণ্যটি অর্ডার করতে চাই:\nঅর্ডার নম্বর: #DH-${newOrder.id}\nপণ্য: ${p.name}\nপণ্য আইডি: ${p.id}\nমূল্য: ${money(price)}\nলিংক: ${link}`;
     const url = `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(text)}`;
     if (w) w.location.href = url; else window.location.href = url;
   }
@@ -719,49 +739,45 @@ footer button{background:rgba(255,255,255,0.15);color:white;border:1px solid rgb
     checkAffiliateLogin();
   }
 
-  function affiliateRegister() {
-    const u = document.getElementById("affUser").value.trim().replace(/[^a-zA-Z0-9_]/g, '');
-    const p = document.getElementById("affPass").value.trim();
-    const msg = document.getElementById("affAuthMsg");
-    if(!u || !p) { msg.textContent = "❌ ইউজারনেম এবং পাসওয়ার্ড দিন!"; return; }
-    db.ref('dhong_affiliates/' + u).once('value').then(async snap => {
-      if(snap.exists() && snap.val().password) {
-        msg.textContent = "❌ এই ইউজারনেম আগে থেকেই রেজিস্টার করা!";
-      } else {
-        db.ref('dhong_affiliates/' + u).set({ password: await hashPw(u, p), sales: 0, commission: 0, created_at: new Date().toISOString() }).then(() => {
-          alert("✅ আপনার এফিলিয়েট একাউন্ট সফলভাবে তৈরি হয়েছে!");
-          currentAffUser = u;
-          localStorage.setItem("dhong_logged_aff", u);
-          checkAffiliateLogin();
-        });
-      }
-    });
+  function affCreds() {
+    return { u: document.getElementById("affUser").value.trim().replace(/[^a-zA-Z0-9_]/g, '').toLowerCase(),
+             p: document.getElementById("affPass").value };
   }
-
-  function affiliateLogin() {
-    const u = document.getElementById("affUser").value.trim().replace(/[^a-zA-Z0-9_]/g, '');
-    const p = document.getElementById("affPass").value.trim();
+  async function affiliateRegister() {
+    const { u, p } = affCreds();
+    const msg = document.getElementById("affAuthMsg");
+    if(u.length < 3 || p.length < 6) { msg.textContent = "❌ ইউজারনেম কমপক্ষে ৩ অক্ষর (ইংরেজি/সংখ্যা/_) ও পাসওয়ার্ড কমপক্ষে ৬ অক্ষর দিন!"; return; }
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(u + AFF_DOMAIN, p);
+      await db.ref('dhong_affiliates/' + u).set({ uid: cred.user.uid, sales: 0, commission: 0, created_at: new Date().toISOString() });
+      alert("✅ আপনার এফিলিয়েট একাউন্ট সফলভাবে তৈরি হয়েছে!");
+    } catch(e) {
+      console.error(e);
+      msg.textContent = e.code === 'auth/email-already-in-use' ? "❌ এই ইউজারনেম আগে থেকেই রেজিস্টার করা!" : "❌ একাউন্ট তৈরি হয়নি, আবার চেষ্টা করুন।";
+    }
+  }
+  async function affiliateLogin() {
+    const { u, p } = affCreds();
     const msg = document.getElementById("affAuthMsg");
     if(!u || !p) { msg.textContent = "❌ ইউজারনেম ও পাসওয়ার্ড দিন!"; return; }
-    db.ref('dhong_affiliates/' + u).once('value').then(async snap => {
-      const v = snap.val() || {};
-      const ph = await hashPw(u, p);
-      if(snap.exists() && v.password && (v.password === ph || v.password === p)) {
-        if(v.password === p && ph !== p) db.ref('dhong_affiliates/' + u + '/password').set(ph);
-        currentAffUser = u;
-        localStorage.setItem("dhong_logged_aff", u);
-        checkAffiliateLogin();
-      } else {
-        msg.textContent = "❌ ভুল ইউজারনেম বা পাসওয়ার্ড!";
-      }
-    });
+    try { await auth.signInWithEmailAndPassword(u + AFF_DOMAIN, p); msg.textContent = ""; }
+    catch(e) { msg.textContent = "❌ ভুল ইউজারনেম বা পাসওয়ার্ড!"; }
   }
+  auth.onAuthStateChanged(user => {
+    if(user && user.email && user.email.endsWith(AFF_DOMAIN)) {
+      currentAffUser = user.email.slice(0, -AFF_DOMAIN.length);
+      localStorage.setItem("dhong_logged_aff", currentAffUser);
+    } else {
+      currentAffUser = null;
+      localStorage.removeItem("dhong_logged_aff");
+    }
+    checkAffiliateLogin();
+  });
 
   let affListenerRef = null;
   function checkAffiliateLogin() {
-    const logged = localStorage.getItem("dhong_logged_aff");
+    const logged = currentAffUser;
     if(logged) {
-      currentAffUser = logged;
       document.getElementById("affAuthView").style.display = "none";
       document.getElementById("affDashboardView").style.display = "block";
       document.getElementById("affUserDisp").textContent = logged;
@@ -771,41 +787,32 @@ footer button{background:rgba(255,255,255,0.15);color:white;border:1px solid rgb
         const data = snap.val() || { sales: 0, commission: 0 };
         document.getElementById("affSalesCount").textContent = (data.sales || 0) + " টি";
         document.getElementById("affBalance").textContent = money(data.commission || 0);
-      });
+      }, () => {});
       document.getElementById("affLinkDisp").value = window.location.origin + window.location.pathname + "?ref=" + encodeURIComponent(logged);
     } else {
+      if(affListenerRef) { affListenerRef.off(); affListenerRef = null; }
       document.getElementById("affAuthView").style.display = "block";
       document.getElementById("affDashboardView").style.display = "none";
     }
   }
 
-  function affiliateLogout() {
-    localStorage.removeItem("dhong_logged_aff");
-    currentAffUser = null;
-    if(affListenerRef) { affListenerRef.off(); affListenerRef = null; }
-    checkAffiliateLogin();
-  }
+  function affiliateLogout() { auth.signOut(); }
 
-  function submitWithdrawal() {
+  async function submitWithdrawal() {
     const amt = Number(document.getElementById("wAmount").value);
     const method = document.getElementById("wMethod").value;
     const phone = document.getElementById("wPhone").value.trim();
     const msg = document.getElementById("wMsg");
+    if(!currentAffUser) { msg.innerHTML = "<span style='color:red'>❌ আগে লগইন করুন।</span>"; return; }
     if(!amt || amt <= 0 || !phone) { msg.innerHTML = "<span style='color:red'>❌ পরিমাণ এবং মোবাইল নম্বর দিন।</span>"; return; }
-    // ব্যালেন্স আগেই আটকে রাখা হয়, তাই একাধিক রিকোয়েস্টে ডবল তোলা যাবে না
-    db.ref('dhong_affiliates/' + currentAffUser + '/commission').transaction(v => {
-      v = Number(v) || 0;
-      if(amt > v) return;
-      return v - amt;
-    }).then(r => {
-      if(!r.committed) { msg.innerHTML = "<span style='color:red'>❌ আপনার একাউন্টে পর্যাপ্ত ব্যালেন্স নেই!</span>"; return; }
-      const wReq = { affiliate: currentAffUser, amount: amt, method: method, phone: phone, status: "Pending", reserved: true, created_at: new Date().toISOString() };
-      return db.ref('dhong_withdrawals').push(wReq).then(() => {
-        msg.innerHTML = "<span style='color:green'>✅ উইথড্রল রিকোয়েস্ট সফলভাবে পাঠানো হয়েছে! অ্যাডমিন চেক করে পেমেন্ট পাঠিয়ে দেবেন।</span>";
-        document.getElementById("wAmount").value = "";
-        document.getElementById("wPhone").value = "";
-      });
-    }).catch(() => { msg.innerHTML = "<span style='color:red'>❌ সমস্যা হয়েছে, আবার চেষ্টা করুন।</span>"; });
+    try {
+      const snap = await db.ref('dhong_affiliates/' + currentAffUser + '/commission').once('value');
+      if(amt > (Number(snap.val()) || 0)) { msg.innerHTML = "<span style='color:red'>❌ আপনার একাউন্টে পর্যাপ্ত ব্যালেন্স নেই!</span>"; return; }
+      await db.ref('dhong_withdrawals').push({ affiliate: currentAffUser, amount: amt, method: method, phone: phone, status: "Pending", created_at: new Date().toISOString() });
+      msg.innerHTML = "<span style='color:green'>✅ উইথড্রল রিকোয়েস্ট পাঠানো হয়েছে! অ্যাডমিন পেমেন্ট করলে ব্যালেন্স থেকে কাটা হবে।</span>";
+      document.getElementById("wAmount").value = "";
+      document.getElementById("wPhone").value = "";
+    } catch(e) { console.error(e); msg.innerHTML = "<span style='color:red'>❌ সমস্যা হয়েছে, আবার চেষ্টা করুন।</span>"; }
   }
 
   function closeModal(id){
@@ -848,7 +855,7 @@ footer button{background:rgba(255,255,255,0.15);color:white;border:1px solid rgb
       status: "Pending", created_at: new Date().toISOString()
     };
 
-    try { await db.ref('dhong_orders').push(newOrder); }
+    try { await saveOrder(newOrder); }
     catch(err) { console.error("order save error:", err); alert("❌ অর্ডার সেভ হয়নি, আবার চেষ্টা করুন।"); submitBtn.disabled = false; return; }
     localStorage.setItem("dhong_ordered_before", "true");
 
@@ -1012,7 +1019,7 @@ window.placeCartOrder=async function(){
   const order={id:String(Math.floor(100000+Math.random()*900000)),customer_name:name,phone,
     address:`${F.division} - ${address}`,affiliate_ref:ref,items_json:JSON.stringify(items),
     total:t.total,discount:t.disc,delivery_fee:t.fee,commission_amount:ref!=='None'?Math.round((t.total-t.fee)*0.05):0,commission_paid:false,status:'Pending',created_at:new Date().toISOString()};
-  try{await db.ref('dhong_orders').push(order);}
+  try{await saveOrder(order);}
   catch(e){console.error(e);alert('❌ অর্ডার সেভ হয়নি, আবার চেষ্টা করুন।');btn.disabled=false;return;}
   localStorage.setItem('dhong_ordered_before','true');
   lines.forEach(({c,p})=>{if(p._key!==undefined){const b='dhong_products/'+p._key;
@@ -1031,13 +1038,15 @@ nf.addEventListener('submit',function(e){
   e.preventDefault();
   const oid=e.target.orderId.value.replace(/[^0-9]/g,''),p4=e.target.phone4.value.trim();
   const res=$('trackResult');res.innerHTML='🔍 খোঁজা হচ্ছে...';
-  db.ref('dhong_orders').orderByChild('id').equalTo(oid).once('value').then(snap=>{
-    let o=null;snap.forEach(ch=>{const v=ch.val();if(String(v.phone||'').slice(-4)===p4)o=v;});
+  if(!oid){res.innerHTML='<div style="color:#e53e3e">❌ অর্ডার নম্বর দিন।</div>';return;}
+  db.ref('dhong_track/'+oid).once('value').then(async snap=>{
+    let o=snap.val();
+    if(o&&!(o.ph&&o.ph===await trackHash(oid,p4)))o=null;
     if(!o){res.innerHTML='<div style="color:#e53e3e">❌ অর্ডার পাওয়া যায়নি। অর্ডার নম্বর ও ফোনের শেষ ৪ ডিজিট ঠিক আছে কিনা দেখুন।</div>';return;}
     let items=[];try{items=JSON.parse(o.items_json)||[];}catch(err){}
     const date=o.created_at?new Date(o.created_at).toLocaleDateString('bn-BD'):'';
     res.innerHTML=`<div style="background:#f7fafc;padding:12px;border-radius:10px;border:1px solid #edf2f7">
-      <div><b>অর্ডার নম্বর:</b> #DH-${E(o.id)}</div><div><b>তারিখ:</b> ${E(date)}</div>
+      <div><b>অর্ডার নম্বর:</b> #DH-${E(oid)}</div><div><b>তারিখ:</b> ${E(date)}</div>
       <div style="margin:6px 0"><b>স্ট্যাটাস:</b> <span style="background:#e2e8f0;padding:3px 8px;border-radius:6px;font-weight:bold">${E(LABEL[o.status]||o.status||'Pending')}</span></div>
       ${o.tracking_code?`<div><b>কুরিয়ার ট্র্যাকিং কোড:</b> ${E(o.tracking_code)}</div>`:''}
       ${o.courier_status?`<div><b>কুরিয়ার স্ট্যাটাস:</b> ${E(o.courier_status)}</div>`:''}
