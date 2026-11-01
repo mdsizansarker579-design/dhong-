@@ -995,12 +995,18 @@ function totalsHtml(o,items){
   const sub=items.reduce((s,i)=>s+i.price*i.quantity,0);
   return `<div class="cart-sum">মূল্য: ${bd(sub)}${o.discount?` | ডিসকাউন্ট: -${bd(o.discount)}`:''}${o.delivery_fee!==undefined?` | ডেলিভারি: ${o.delivery_fee?bd(o.delivery_fee):'ফ্রি'}`:''}<br><b>মোট: ${bd(o.total)}</b> (ক্যাশ অন ডেলিভারি)</div>`;
 }
+function waText(o,items){
+  const lines=items.map(i=>'• '+i.name+' ('+(i.color||'-')+', '+(i.size||'-')+') × '+i.quantity).join('\n');
+  return 'আসসালামু আলাইকুম, আমার অর্ডার কনফার্ম করতে চাই।\nঅর্ডার নম্বর: #DH-'+o.id+'\nনাম: '+o.customer_name+'\n'+lines+'\nমোট: '+bd(o.total);
+}
+window.showReceipt=showReceipt;
 function showReceipt(o,items){
   $('receiptBody').innerHTML=`<div style="text-align:center"><div style="font-size:44px">✅</div><h2 style="margin:4px 0">অর্ডার সম্পন্ন হয়েছে!</h2>
     <div style="font-size:13px">অর্ডার নম্বর: <b>#DH-${E(o.id)}</b></div>
     <div style="font-size:12px;color:#718096;margin-top:4px">ট্র্যাক করতে এই নম্বর ও মোবাইলের শেষ ৪ ডিজিট লাগবে। নম্বরটি সংরক্ষণ করুন।</div></div>
     <div style="margin:12px 0;font-size:13px;line-height:1.6"><b>নাম:</b> ${E(o.customer_name)}<br><b>ফোন:</b> ${E(o.phone)}<br><b>ঠিকানা:</b> ${E(o.address)}</div>
     <h4 style="margin:10px 0 0">আপনার অর্ডারকৃত পণ্য</h4>${itemsHtml(items)}${totalsHtml(o,items)}
+    ${settings.whatsapp?`<a class="support-btn wa-order" target="_blank" rel="noopener" href="https://wa.me/${E(settings.whatsapp)}?text=${encodeURIComponent(waText(o,items))}">💬 WhatsApp-এ অর্ডার কনফার্ম করুন</a>`:''}
     <button class="primary" onclick="closeModal('receiptModal')">ঠিক আছে</button>`;
   $('receiptModal').classList.add('show');$('supportButtons').style.display='none';
 }
