@@ -333,6 +333,19 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     return (!r || r === me) ? 'None' : r;
   }
   const auth = firebase.auth();
+  // ---------- Facebook Pixel (অ্যাডমিন সেটিংসে Pixel ID দিলে চালু হয়) ----------
+  let pixelId = null;
+  function loadPixel() {
+    const id = String(settings.fbPixelId || '').replace(/\D/g, '');
+    if (!id || pixelId === id) return;
+    pixelId = id;
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', id);
+    fbq('track', 'PageView');
+  }
+  function track(ev, data, eventID) {
+    try { if (window.fbq) { eventID ? fbq('track', ev, data || {}, { eventID: eventID }) : fbq('track', ev, data || {}); } } catch (e) {}
+  }
   const AFF_DOMAIN = '@aff.dhong.local';
   async function trackHash(id, p4) {
     const t = 'dhong-track:' + id + ':' + p4;
@@ -506,6 +519,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     updateDeliveryFeeOption();
     renderSupport();
     renderFooter();
+    loadPixel();
   }
 
   function updateDeliveryFeeOption() {
@@ -770,7 +784,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
       total: price, commission_amount: affiliateRef !== "None" ? Math.round(price * 0.05) : 0, commission_paid: false, status: "WhatsApp Pending", created_at: new Date().toISOString()
     };
     try { await saveOrder(newOrder); } catch(e) { console.error(e); alert('❌ অর্ডার সেভ হয়নি, আবার চেষ্টা করুন।'); return; }
-
+    track('Lead', { content_name: p.name, value: Number(price) || 0, currency: 'BDT' });
 
     const text = `আসসালামু আলাইকুম, আমি এই পণ্যটি অর্ডার করতে চাই:\nঅর্ডার নম্বর: #DH-${newOrder.id}\nপণ্য: ${p.name}\nপণ্য আইডি: ${p.id}\nমূল্য: ${money(price)}\nলিংক: ${link}`;
     const url = `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(text)}`;
@@ -781,6 +795,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     selectedProduct = products.find(p => String(p.id) === String(id));
     if(!selectedProduct) return;
     document.getElementById("productId").value = id;
+    track('InitiateCheckout', { content_ids: [String(id)], num_items: 1, value: Number(selectedProduct.price) || 0, currency: 'BDT' });
     document.getElementById("quantity").value = "1";
     if(!currentSelectedImg) currentSelectedImg = selectedProduct.img;
     const previewImgEl = document.getElementById("orderPreviewImg");
@@ -1004,7 +1019,9 @@ renderProducts=function(){
 const _sd=showProductDetail;
 showProductDetail=function(id){
   _sd.apply(this,arguments);
-  const p=prod(id);if(!p||(Number(p.stock)||0)<=0)return;
+  const p=prod(id);
+  if(p)track('ViewContent',{content_ids:[String(p.id)],content_name:p.name,content_type:'product',value:Number(unit(p))||0,currency:'BDT'});
+  if(!p||(Number(p.stock)||0)<=0)return;
   const b=document.querySelector('#detailContent > div > button.primary');
   if(b)b.insertAdjacentHTML('beforebegin',`<button type="button" class="primary" style="background:#2b6cb0;margin-bottom:6px" onclick="addToCart('${E(p.id)}',true)">🛒 কার্টে যোগ করুন</button>`);
 };
@@ -1018,6 +1035,7 @@ window.addToCart=async function(pid,useSel){
   if(ex){if(ex.qty>=max)return flash('সর্বোচ্চ পরিমাণ যোগ করা হয়েছে');ex.qty++;}
   else{const L=designs(p);let k=useSel?L.indexOf(currentSelectedImg):0;if(k<0)k=0;cart.push({pid:p.id,qty:1,color:L.length>1?'ডিজাইন '+(k+1):'Standard',dz:k,size:'Free Size',img});}
   save();updateBadge();flash('🛒 কার্টে যোগ হয়েছে');
+  track('AddToCart',{content_ids:[String(p.id)],content_name:p.name,content_type:'product',value:Number(unit(p))||0,currency:'BDT'});
 };
 
 function totals(){
@@ -1062,7 +1080,8 @@ function renderCart(){
     <button class="primary" id="ckBtn" onclick="placeCartOrder()">অর্ডার নিশ্চিত করুন</button>`;
   sumUpdate();
 }
-window.openCart=function(){renderCart();$('cartModal').classList.add('show');$('supportButtons').style.display='none';};
+window.openCart=function(){renderCart();
+  if(cart.length)track('InitiateCheckout',{num_items:cart.reduce((n,c)=>n+c.qty,0),value:totals().total,currency:'BDT'});$('cartModal').classList.add('show');$('supportButtons').style.display='none';};
 
 /* অর্ডার ও রিসিপ্ট */
 function itemsHtml(items){
@@ -1081,6 +1100,7 @@ function waText(o,items){
 }
 window.showReceipt=showReceipt;
 function showReceipt(o,items){
+  track('Purchase',{value:Number(o.total)||0,currency:'BDT',content_type:'product',content_ids:items.map(i=>String(i.product_id||'')),contents:items.map(i=>({id:String(i.product_id||''),quantity:Number(i.quantity)||1})),num_items:items.reduce((n,i)=>n+(Number(i.quantity)||1),0)},'DH-'+o.id);
   $('receiptBody').innerHTML=`<div style="text-align:center"><div style="font-size:44px">✅</div><h2 style="margin:4px 0">অর্ডার সম্পন্ন হয়েছে!</h2>
     <div style="font-size:13px">অর্ডার নম্বর: <b>#DH-${E(o.id)}</b></div>
     <div style="font-size:12px;color:#718096;margin-top:4px">ট্র্যাক করতে এই নম্বর ও মোবাইলের শেষ ৪ ডিজিট লাগবে। নম্বরটি সংরক্ষণ করুন।</div></div>
