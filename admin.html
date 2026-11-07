@@ -96,7 +96,7 @@ th{color:var(--muted);font-weight:600}
 <main class="main">
 <header class="top">
   <div><h1 id="pageTitle">Dashboard</h1><div class="muted">DHONG স্টোরের লাইভ এডমিন প্যানেল</div></div>
-  <div style="display:flex;gap:8px;align-items:center"><div class="live">● Super Admin Live</div><button class="btn sm gray" id="logoutBtn">লগআউট</button></div>
+  <div style="display:flex;gap:8px;align-items:center"><div class="live">● Super Admin Live</div><button class="btn sm primary" id="notifBtn">🔔 নোটিফিকেশন চালু করুন</button><button class="btn sm gray" id="logoutBtn">লগআউট</button></div>
 </header>
 
 <section class="page active" id="dashboard">
@@ -229,6 +229,20 @@ th{color:var(--muted);font-weight:600}
         <select id="setTimerStatus"><option value="show">চালু (Show Timer)</option><option value="hide">বন্ধ (Hide Timer)</option></select>
       </div>
       <div class="field-group">অফারের সময়সীমা (ঘণ্টা) <input type="number" id="setTimerHours"></div>
+      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
+      <h3 class="section-title" style="color:var(--accent)">🏷️ ব্র্যান্ড পেজ ও সোশ্যাল</h3>
+      <div class="muted" style="margin:0 0 10px">লেখার ঘর খালি রাখলে সাইটে ডিফল্ট লেখা দেখাবে। নিজের নিয়ম অনুযায়ী বদলে নিন।</div>
+      <div class="field-group">ঠিকানা <input id="setAddress" placeholder="যেমন: মিরপুর, ঢাকা"></div>
+      <div class="field-group">ইমেইল <input id="setEmail" type="email" placeholder="info@yourshop.com"></div>
+      <div class="field-group">কাজের সময় <input id="setHours" placeholder="যেমন: সকাল ১০টা - রাত ১০টা (প্রতিদিন)"></div>
+      <div class="field-group">Facebook পেজ লিংক <input id="setFacebook" placeholder="https://facebook.com/..."></div>
+      <div class="field-group">Instagram লিংক <input id="setInstagram" placeholder="https://instagram.com/..."></div>
+      <div class="field-group">YouTube লিংক <input id="setYoutube" placeholder="https://youtube.com/..."></div>
+      <div class="field-group">TikTok লিংক <input id="setTiktok" placeholder="https://tiktok.com/@..."></div>
+      <div class="field-group">আমাদের সম্পর্কে <textarea id="setAbout" rows="4"></textarea></div>
+      <div class="field-group">রিটার্ন ও রিফান্ড নীতি <textarea id="setReturn" rows="4"></textarea></div>
+      <div class="field-group">গোপনীয়তা নীতি <textarea id="setPrivacy" rows="4"></textarea></div>
+      <div class="field-group">সাধারণ প্রশ্নোত্তর (প্রতি লাইনে একটি: প্রশ্ন | উত্তর) <textarea id="setFaq" rows="5" placeholder="ডেলিভারি কতদিনে পাবো? | ঢাকায় ১-২ দিন"></textarea></div>
       <button class="btn primary" type="submit" style="width:100%;padding:12px">সেটিংস সেভ করুন</button>
     </form>
   </div>
@@ -259,12 +273,12 @@ const FULL_MAX = 900, FULL_Q = .85, THUMB_MAX = 400, THUMB_Q = .75;
 
 let products = [], orders = [], affiliates = [], withdrawals = [], settings = {}, courier = {};
 
-function toast(msg, isErr) {
+function toast(msg, isErr, ms) {
   const t = document.createElement('div');
   t.className = 'toast' + (isErr ? ' err' : '');
   t.textContent = msg;
   $('toasts').appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  setTimeout(() => t.remove(), ms || 3000);
 }
 const fail = e => toast('❌ ' + (e && e.message || e), true);
 
@@ -309,12 +323,57 @@ function listFrom(snap) { const out = []; snap.forEach(ch => { const v = ch.val(
 const listen = (path, fn) => db.ref(path).on('value', fn, e => { console.error(path, e); toast('❌ ডাটা পড়ার অনুমতি নেই (' + path + ')। অ্যাডমিন ইমেইল দিয়ে লগইন করেছেন?', true); });
 function startListeners() {
 listen('dhong_products', s => { products = listFrom(s); render(); });
-listen('dhong_orders', s => { orders = listFrom(s).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)); render(); });
+listen('dhong_orders', s => { orders = listFrom(s).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)); render(); notifyNew(orders); });
 listen('dhong_affiliates', s => { affiliates = listFrom(s); render(); });
 listen('dhong_withdrawals', s => { withdrawals = listFrom(s); render(); });
 listen('dhong_courier', s => { courier = s.val() || {}; fillCourierForm(); });
 listen('dhong_settings', s => { settings = s.val() || {}; fillSettingsForm(); });
 }
+
+/* ---------- নতুন অর্ডার নোটিফিকেশন ---------- */
+let seenOrders = null, newCount = 0, audioCtx = null;
+const baseTitle = document.title;
+function getAudio() {
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
+  return audioCtx;
+}
+['click', 'touchstart', 'keydown'].forEach(ev => document.addEventListener(ev, getAudio, { once: true }));
+function beep() {
+  const c = getAudio(); if (!c) return;
+  [0, 0.3, 0.6].forEach(t => {
+    const o = c.createOscillator(), g = c.createGain();
+    o.connect(g); g.connect(c.destination); o.frequency.value = 880;
+    g.gain.setValueAtTime(0.3, c.currentTime + t);
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + t + 0.22);
+    o.start(c.currentTime + t); o.stop(c.currentTime + t + 0.25);
+  });
+}
+function notifyNew(list) {
+  const keys = new Set(list.map(o => o._key));
+  if (seenOrders === null) { seenOrders = keys; return; }   // প্রথম লোডে নোটিফিকেশন নয়
+  const fresh = list.filter(o => !seenOrders.has(o._key) && o.status !== 'Cancelled');
+  seenOrders = keys;
+  if (!fresh.length) return;
+  fresh.forEach(o => toast('🛎 নতুন অর্ডার #DH-' + o.id + ' — ' + money(o.total), false, 8000));
+  if (localStorage.getItem('dhong_sound') === 'on') beep();
+  try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
+  newCount += fresh.length; document.title = '(' + newCount + ') নতুন অর্ডার | DHONG';
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('🛎 নতুন অর্ডার', { body: fresh.map(o => '#DH-' + o.id + ' — ' + money(o.total)).join('\n') }); } catch (e) {}
+  }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { newCount = 0; document.title = baseTitle; } });
+function refreshNotifBtn() {
+  const on = localStorage.getItem('dhong_sound') === 'on';
+  $('notifBtn').textContent = on ? '🔔 নোটিফিকেশন চালু ✓' : '🔔 নোটিফিকেশন চালু করুন';
+}
+$('notifBtn').onclick = async () => {
+  if (localStorage.getItem('dhong_sound') === 'on') { localStorage.setItem('dhong_sound', 'off'); refreshNotifBtn(); return toast('নোটিফিকেশন বন্ধ করা হয়েছে'); }
+  localStorage.setItem('dhong_sound', 'on'); beep(); refreshNotifBtn();
+  if ('Notification' in window && Notification.permission === 'default') { try { await Notification.requestPermission(); } catch (e) {} }
+  toast('✅ নতুন অর্ডার এলে সাউন্ড ও নোটিফিকেশন আসবে (প্যানেল খোলা থাকলে)');
+};
+refreshNotifBtn();
 
 /* ---------- Rendering ---------- */
 function parseItems(o) {
@@ -642,14 +701,20 @@ function fillSettingsForm() {
   v('setWhatsapp', settings.whatsapp || ''); v('setPhone', settings.phone || '');
   v('setTopBanner', settings.topBannerText || '🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি');
   v('setHeroBg', settings.heroBg || '#242b49'); v('setTimerStatus', settings.timerStatus || 'show'); v('setTimerHours', settings.timerHours || '24');
+  v('setAddress', settings.address || ''); v('setEmail', settings.email || ''); v('setHours', settings.hours || '');
+  v('setFacebook', settings.facebook || ''); v('setInstagram', settings.instagram || ''); v('setYoutube', settings.youtube || ''); v('setTiktok', settings.tiktok || '');
+  v('setAbout', settings.aboutText || ''); v('setReturn', settings.returnPolicy || ''); v('setPrivacy', settings.privacyPolicy || ''); v('setFaq', settings.faqText || '');
 }
 $('settingsForm').addEventListener('submit', e => {
   e.preventDefault();
-  db.ref('dhong_settings').set({
+  db.ref('dhong_settings').update({
     siteName: $('setSiteName').value, themeColor: $('setThemeColor').value, dhakaFee: $('setDhaka').value,
     outsiderFee: $('setOutsider').value, freeThreshold: $('setThreshold').value, whatsapp: $('setWhatsapp').value,
     phone: $('setPhone').value, topBannerText: $('setTopBanner').value, heroBg: $('setHeroBg').value,
-    timerStatus: $('setTimerStatus').value, timerHours: $('setTimerHours').value
+    timerStatus: $('setTimerStatus').value, timerHours: $('setTimerHours').value,
+    address: $('setAddress').value.trim(), email: $('setEmail').value.trim(), hours: $('setHours').value.trim(),
+    facebook: $('setFacebook').value.trim(), instagram: $('setInstagram').value.trim(), youtube: $('setYoutube').value.trim(), tiktok: $('setTiktok').value.trim(),
+    aboutText: $('setAbout').value.trim(), returnPolicy: $('setReturn').value.trim(), privacyPolicy: $('setPrivacy').value.trim(), faqText: $('setFaq').value.trim()
   }).then(() => toast('✅ সেটিংস সংরক্ষণ হয়েছে')).catch(fail);
 });
 </script>
