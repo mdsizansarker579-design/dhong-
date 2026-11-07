@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title id="siteTitle">DHONG | Customer Panel</title>
+<meta name="description" content="ঢং — মানসম্মত পোশাক, ব্যাগ ও অ্যাক্সেসরিজ। সারা বাংলাদেশে ক্যাশ অন ডেলিভারি।">
+<meta name="theme-color" content="#e85d75">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ঢং | DHONG">
+<meta property="og:description" content="মানসম্মত পোশাক, ব্যাগ ও অ্যাক্সেসরিজ। সারা বাংলাদেশে ক্যাশ অন ডেলিভারি।">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23e85d75'/%3E%3Ctext x='50' y='70' font-size='62' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ED%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://www.gstatic.com">
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -89,6 +95,12 @@ footer button{background:rgba(255,255,255,0.15);color:white;border:1px solid rgb
 .video-container iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .comments-sec{margin-top:14px;text-align:left;border-top:1px solid #edf2f7;padding-top:12px}
 .comment-item{background:#f7fafc;padding:8px 12px;border-radius:8px;margin:6px 0;font-size:12px;border:1px solid #edf2f7}
+.social-a{color:#fff;text-decoration:none;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:6px 12px;border-radius:20px;font-size:12px}
+details.faq{background:#f7fafc;border:1px solid #edf2f7;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:13px}
+details.faq summary{cursor:pointer}
+details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
+.info-row{display:flex;gap:8px;padding:9px 0;border-bottom:1px solid #edf2f7;font-size:13px;line-height:1.5}
+.info-row a{color:var(--primary-color);text-decoration:none;font-weight:bold}
 @media(max-width:768px){
   .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .art{height:145px}
@@ -139,6 +151,16 @@ footer button{background:rgba(255,255,255,0.15);color:white;border:1px solid rgb
   <b id="footerLogo" style="font-size:16px">DHONG | ঢং</b><br>
   আপনার পছন্দের পণ্য সহজে ও নিরাপদে অর্ডার করুন।<br>
   <button onclick="openTrack()" style="margin-top:12px;font-size:12px" id="footerTrackBtn">আমার অর্ডার ট্র্যাক করুন</button>
+  <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+    <button onclick="openInfo('about')" style="font-size:12px">আমাদের সম্পর্কে</button>
+    <button onclick="openInfo('contact')" style="font-size:12px">যোগাযোগ</button>
+    <button onclick="openInfo('return')" style="font-size:12px">রিটার্ন ও রিফান্ড</button>
+    <button onclick="openInfo('privacy')" style="font-size:12px">গোপনীয়তা নীতি</button>
+    <button onclick="openInfo('faq')" style="font-size:12px">সাধারণ প্রশ্নোত্তর</button>
+  </div>
+  <div id="footerSocial" style="margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>
+  <div id="footerContact" style="margin-top:12px;font-size:12px;opacity:0.85"></div>
+  <div id="footerCopy" style="margin-top:10px;font-size:11px;opacity:0.6"></div>
 </footer>
 
 <div class="float-support" id="supportButtons"></div>
@@ -223,6 +245,14 @@ footer button{background:rgba(255,255,255,0.15);color:white;border:1px solid rgb
       <button class="primary" type="submit" id="trackSearchBtn">স্ট্যাটাস দেখুন</button>
     </form>
     <div id="trackResult" style="margin-top:14px;font-size:13px;line-height:1.6"></div>
+  </div>
+</div>
+
+<div class="modalbg" id="infoModal">
+  <div class="modal">
+    <button class="close" onclick="closeModal('infoModal')">✕</button>
+    <h2 id="infoTitle"></h2>
+    <div id="infoBody"></div>
   </div>
 </div>
 
@@ -475,6 +505,7 @@ footer button{background:rgba(255,255,255,0.15);color:white;border:1px solid rgb
     document.getElementById("countdownTimer").style.display = (settings.timerStatus === "hide") ? "none" : "inline-block";
     updateDeliveryFeeOption();
     renderSupport();
+    renderFooter();
   }
 
   function updateDeliveryFeeOption() {
@@ -491,6 +522,55 @@ footer button{background:rgba(255,255,255,0.15);color:white;border:1px solid rgb
     if(settings.whatsapp) html += `<a href="https://wa.me/${E(settings.whatsapp)}" target="_blank" class="support-btn">💬 WhatsApp চ্যাট</a>`;
     if(settings.phone) html += `<a href="tel:${E(settings.phone)}" class="support-btn call">📞 Call Now</a>`;
     box.innerHTML = html;
+  }
+
+  /* ---------- ব্র্যান্ড পেজ (আমাদের সম্পর্কে, যোগাযোগ, নীতি, FAQ) ---------- */
+  const INFO_DEFAULT = {
+    about: "আমরা একটি বাংলাদেশি অনলাইন শপ। মানসম্মত পোশাক, ব্যাগ ও অ্যাক্সেসরিজ সাশ্রয়ী দামে সারা বাংলাদেশে পৌঁছে দিই।\n\nপণ্য হাতে পেয়ে দেখে ক্যাশ অন ডেলিভারিতে দাম দেওয়ার সুবিধা, দ্রুত সাপোর্ট এবং স্বচ্ছ নীতিই আমাদের মূল কথা।",
+    return: "• পণ্য হাতে পেয়ে ডেলিভারি ম্যানের সামনেই দেখে নিন।\n• ভুল বা ত্রুটিপূর্ণ পণ্য পেলে ডেলিভারির ২৪ ঘণ্টার মধ্যে ছবি/ভিডিওসহ আমাদের WhatsApp-এ জানান।\n• যাচাই শেষে পণ্য পরিবর্তন বা টাকা ফেরত দেওয়া হবে।\n• ব্যবহৃত বা ক্ষতিগ্রস্ত পণ্য ফেরত নেওয়া হবে না।",
+    privacy: "অর্ডার পৌঁছে দিতে আমরা আপনার নাম, মোবাইল নম্বর ও ঠিকানা সংগ্রহ করি।\n\n• এই তথ্য শুধু অর্ডার প্রসেস ও ডেলিভারির (কুরিয়ার) কাজে ব্যবহার হয়।\n• আপনার তথ্য অন্য কারো কাছে বিক্রি বা শেয়ার করা হয় না।\n• আপনার কার্ট ও পছন্দ শুধু আপনার ব্রাউজারে সংরক্ষিত থাকে।\n• আপনার তথ্য মুছে ফেলতে চাইলে আমাদের সাথে যোগাযোগ করুন।",
+    faq: "ডেলিভারি কতদিনে পাবো? | সাধারণত ঢাকার ভেতরে ১-২ কর্মদিবস এবং ঢাকার বাইরে ২-৪ কর্মদিবসের মধ্যে পৌঁছে যায়।\nপেমেন্ট কীভাবে করবো? | পণ্য হাতে পেয়ে ক্যাশ অন ডেলিভারিতে টাকা দিতে পারবেন।\nঅর্ডারের অবস্থা কীভাবে দেখবো? | সাইটের ওপরের 'ট্র্যাক' বাটনে অর্ডার নম্বর ও মোবাইলের শেষ ৪ ডিজিট দিন।\nপণ্য পছন্দ না হলে কী করবো? | রিটার্ন ও রিফান্ড নীতি পেজ দেখুন অথবা আমাদের WhatsApp-এ জানান।"
+  };
+  const safeHref = u => /^https?:\/\//i.test(String(u || '')) ? E(u) : '';
+  const para = t => `<div style="font-size:13px;line-height:1.7;color:#4a5568">${E(t).replace(/\n/g, '<br>')}</div>`;
+
+  function renderFooter() {
+    const soc = [['facebook', '📘 Facebook'], ['instagram', '📸 Instagram'], ['youtube', '▶️ YouTube'], ['tiktok', '🎵 TikTok']];
+    document.getElementById('footerSocial').innerHTML = soc.filter(([k]) => safeHref(settings[k]))
+      .map(([k, l]) => `<a class="social-a" href="${safeHref(settings[k])}" target="_blank" rel="noopener">${l}</a>`).join('');
+    const bits = [];
+    if (settings.address) bits.push('📍 ' + E(settings.address));
+    if (settings.phone) bits.push('📞 ' + E(settings.phone));
+    document.getElementById('footerContact').innerHTML = bits.join(' &nbsp;|&nbsp; ');
+    document.getElementById('footerCopy').textContent = '© ' + new Date().getFullYear() + ' ' + (settings.siteName || '') + '. সর্বস্বত্ব সংরক্ষিত।';
+  }
+
+  function openInfo(key) {
+    const s = settings;
+    const titles = { about: 'আমাদের সম্পর্কে', contact: 'যোগাযোগ', return: 'রিটার্ন ও রিফান্ড নীতি', privacy: 'গোপনীয়তা নীতি', faq: 'সাধারণ প্রশ্নোত্তর' };
+    let html = '';
+    if (key === 'about') html = para(s.aboutText || INFO_DEFAULT.about);
+    else if (key === 'return') html = para(s.returnPolicy || INFO_DEFAULT.return);
+    else if (key === 'privacy') html = para(s.privacyPolicy || INFO_DEFAULT.privacy);
+    else if (key === 'faq') {
+      html = String(s.faqText || INFO_DEFAULT.faq).split('\n').map(l => l.split('|')).filter(p => p.length >= 2 && p[0].trim())
+        .map(p => `<details class="faq"><summary><b>${E(p[0].trim())}</b></summary><div>${E(p.slice(1).join('|').trim())}</div></details>`).join('');
+    } else if (key === 'contact') {
+      const rows = [];
+      if (s.address) rows.push(['📍', E(s.address)]);
+      if (s.phone) rows.push(['📞', `<a href="tel:${E(s.phone)}">${E(s.phone)}</a>`]);
+      if (s.whatsapp) rows.push(['💬', `<a href="https://wa.me/${E(s.whatsapp)}" target="_blank" rel="noopener">WhatsApp-এ মেসেজ করুন</a>`]);
+      if (s.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email)) rows.push(['✉️', `<a href="mailto:${E(s.email)}">${E(s.email)}</a>`]);
+      if (s.hours) rows.push(['🕒', E(s.hours)]);
+      [['facebook', 'Facebook'], ['instagram', 'Instagram'], ['youtube', 'YouTube'], ['tiktok', 'TikTok']].forEach(([k, l]) => {
+        if (safeHref(s[k])) rows.push(['🔗', `<a href="${safeHref(s[k])}" target="_blank" rel="noopener">${l}</a>`]);
+      });
+      html = rows.length ? rows.map(r => `<div class="info-row"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('') : para('যোগাযোগের তথ্য শীঘ্রই যোগ করা হবে।');
+    }
+    document.getElementById('infoTitle').textContent = titles[key] || '';
+    document.getElementById('infoBody').innerHTML = html;
+    document.getElementById('supportButtons').style.display = 'none';
+    document.getElementById('infoModal').classList.add('show');
   }
 
   function money(n){ return "৳"+Number(n).toLocaleString("en-US"); }
