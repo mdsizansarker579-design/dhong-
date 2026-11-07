@@ -128,7 +128,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     <div class="banner-slide">
       <h1 id="heroTitle">আপনার স্টাইল, আপনারই গল্প।</h1>
       <p id="heroSubtext">১০০% প্রিমিয়াম কোয়ালিটি নিশ্চিতকরণে ক্যাশ অন ডেলিভারিতে অর্ডার করুন।</p>
-      <div class="timer-box" id="countdownTimer">⏳ অফার শেষ হতে বাকি: --:--:--</div>
+      <div class="timer-box" id="countdownTimer" style="display:none">⏳ অফার শেষ হতে বাকি: --:--:--</div>
       <div>
         <button onclick="document.getElementById('products').scrollIntoView({behavior:'smooth'})" class="primary" id="heroBtnText" style="background:white;color:#182230;padding:8px 16px;font-size:13px;margin-top:6px">পণ্য দেখুন ↓</button>
       </div>
@@ -333,6 +333,12 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     return (!r || r === me) ? 'None' : r;
   }
   const auth = firebase.auth();
+
+  // ---------- সার্ভারের আসল সময় (কাস্টমারের ফোনের ঘড়ি ভুল হলেও টাইমার ঠিক থাকবে) ----------
+  let srvOffset = 0;
+  db.ref('.info/serverTimeOffset').on('value', s => { srvOffset = Number(s.val()) || 0; });
+  const nowMs = () => Date.now() + srvOffset;
+
   // ---------- বিজ্ঞাপনের UTM ট্র্যাকিং (কোন বিজ্ঞাপন থেকে অর্ডার এল) ----------
   function captureUtm() {
     try {
@@ -363,29 +369,46 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     try { if (window.fbq) { eventID ? fbq('track', ev, data || {}, { eventID: eventID }) : fbq('track', ev, data || {}); } } catch (e) {}
   }
   const AFF_DOMAIN = '@aff.dhong.local';
-  async function trackHash(id, p4) {
-    const t = 'dhong-track:' + id + ':' + p4;
-    if (!(window.crypto && crypto.subtle)) return p4;
+
+  // ---------- হ্যাশ কী: ট্র্যাকিং ও "প্রথম অর্ডার" যাচাইয়ের জন্য ----------
+  async function sha(t) {
+    if (!(window.crypto && crypto.subtle)) return t.replace(/[^a-zA-Z0-9]/g, '-');
     const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
     return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
-  // অর্ডার সেভ: আগে ট্র্যাকিং নোড (ইউনিক আইডি নিশ্চিত), তারপর অর্ডার
-  async function saveOrder(order) {
+  const trackHash = (id, p4) => sha('dhong-track:' + id + ':' + p4);
+  const phone4 = ph => { const d = String(ph || '').replace(/\D/g, '').slice(-4); return d.length === 4 ? d : 'wa'; };
+  const normPhone = ph => String(ph || '').replace(/\D/g, '').replace(/^88/, '');
+  async function firstKey(phone) {
+    const p = normPhone(phone);
+    return /^01[3-9][0-9]{8}$/.test(p) ? sha('dhong-first:' + p) : null;
+  }
+  // এই ফোন নম্বর থেকে আগে অর্ডার হয়েছে কিনা সার্ভারে যাচাই (১০% ছাড় শুধু প্রথম অর্ডারে)
+  async function checkFirst(phone) {
+    const h = await firstKey(phone);
+    if (!h) return { h: null, eligible: false };
+    try { const s = await db.ref('dhong_firstorder/' + h).once('value'); return { h, eligible: !s.exists() }; }
+    catch (e) { return { h, eligible: false }; }
+  }
+
+  // অর্ডার সেভ: আগে ট্র্যাকিং নোড (ইউনিক আইডি নিশ্চিত), তারপর অর্ডার (+ প্রথম অর্ডারের চিহ্ন একসাথে)
+  async function saveOrder(order, firstHash) {
     const utm = getUtm(); if (utm) order.utm = utm;
-    const p4 = String(order.phone || '').replace(/\D/g, '').slice(-4);
     for (let i = 0; ; i++) {
       try {
-        const t = { status: order.status, items_json: order.items_json, total: order.total, discount: order.discount || 0,
-          delivery_fee: order.delivery_fee || 0, created_at: order.created_at };
-        if (p4.length === 4) t.ph = await trackHash(order.id, p4);
-        await db.ref('dhong_track/' + order.id).set(t);
+        const key = await trackHash(order.id, phone4(order.phone));
+        await db.ref('dhong_track/' + key).set({ status: order.status, items_json: order.items_json, total: order.total,
+          discount: order.discount || 0, delivery_fee: order.delivery_fee || 0, created_at: order.created_at });
         break;
       } catch (e) {
         if (i >= 3) throw e;
         order.id = String(Math.floor(100000 + Math.random() * 900000));
       }
     }
-    await db.ref('dhong_orders').push(order);
+    const k = db.ref('dhong_orders').push().key, up = {};
+    up['dhong_orders/' + k] = order;
+    if (firstHash) up['dhong_firstorder/' + firstHash] = true;
+    await db.ref().update(up);
   }
 
   let products = [];
@@ -404,7 +427,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     siteName: "ঢং DHONG", themeColor: "#e85d75", dhakaFee: "60", outsiderFee: "120",
     whatsapp: "8801700000000", phone: "01700000000", freeThreshold: "3000",
     topBannerText: "🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি",
-    heroBg: "#242b49", timerStatus: "show", timerHours: "24", timerText: "⏳ অফার শেষ হতে বাকি:"
+    heroBg: "#242b49", timerStatus: "show", timerHours: "24", timerText: "⏳ অফার শেষ হতে বাকি:", offerEnd: 0
   };
 
   function getUrlParameter(name) {
@@ -482,29 +505,32 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     }, 3500);
   }
 
+  // আসল অফার টাইমার: শেষের সময় অ্যাডমিন সেটিংসে ঠিক করা, সব কাস্টমারের জন্য একই (ব্রাউজার ডাটা মুছলেও রিসেট হয় না)
   function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
-    let duration = (parseInt(settings.timerHours) || 24) * 3600;
-    let timerKey = "dhong_timer_start";
-    let startTime = localStorage.getItem(timerKey);
-    if (!startTime) { startTime = Date.now(); localStorage.setItem(timerKey, startTime); }
-    timerInterval = setInterval(() => {
-      let elapsed = Math.floor((Date.now() - startTime) / 1000);
-      let remaining = duration - elapsed;
+    const el = document.getElementById("countdownTimer");
+    const end = Number(settings.offerEnd) || 0;
+    if (settings.timerStatus === "hide" || !end) {
+      el.style.display = "none";
+      if (isTimerExpired) { isTimerExpired = false; renderProducts(); }
+      return;
+    }
+    el.style.display = "inline-block";
+    const tick = () => {
+      const remaining = Math.floor((end - nowMs()) / 1000);
       if (remaining <= 0) {
-        isTimerExpired = true;
-        document.getElementById("countdownTimer").textContent = "⏳ সময় শেষ!";
+        if (!isTimerExpired) { isTimerExpired = true; renderProducts(); }
+        el.textContent = "⏳ অফার শেষ";
         clearInterval(timerInterval);
-        renderProducts();
       } else {
-        isTimerExpired = false;
-        let hrs = Math.floor(remaining / 3600);
-        let mins = Math.floor((remaining % 3600) / 60);
-        let secs = remaining % 60;
-        document.getElementById("countdownTimer").textContent =
-          `${settings.timerText || '⏳ অফার শেষ হতে বাকি:'} ${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        if (isTimerExpired) { isTimerExpired = false; renderProducts(); }
+        const days = Math.floor(remaining / 86400), hrs = Math.floor((remaining % 86400) / 3600),
+              mins = Math.floor((remaining % 3600) / 60), secs = remaining % 60, p = n => String(n).padStart(2, '0');
+        el.textContent = `${settings.timerText || '⏳ অফার শেষ হতে বাকি:'} ${days ? days + 'দিন ' : ''}${p(hrs)}:${p(mins)}:${p(secs)}`;
       }
-    }, 1000);
+    };
+    tick();
+    if (!isTimerExpired) timerInterval = setInterval(tick, 1000);
   }
 
   function makeThumb(src){
@@ -532,7 +558,6 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     document.getElementById("siteTitle").textContent = settings.siteName + " | Customer Panel";
     document.getElementById("topBanner").textContent = settings.topBannerText || "🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড়";
     document.getElementById("heroBox").style.background = settings.heroBg || "#242b49";
-    document.getElementById("countdownTimer").style.display = (settings.timerStatus === "hide") ? "none" : "inline-block";
     updateDeliveryFeeOption();
     renderSupport();
     renderFooter();
@@ -659,6 +684,18 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
   }
 
+  const commentHtml = list => list.map(c=>`<div class="comment-item"><b>${E(c.name)}:</b> ${E(c.text)}</div>`).join("") || "<small style='color:#888'>এখনো কোনো রিভিউ নেই।</small>";
+  // পুরনো কমেন্ট (পণ্যের ভেতরে) + অ্যাডমিনের অনুমোদিত নতুন রিভিউ
+  function loadApprovedComments(p) {
+    db.ref('dhong_comments/' + p.id).once('value').then(snap => {
+      const legacy = Array.isArray(p.comments) ? p.comments : (p.comments ? Object.values(p.comments) : []);
+      const approved = [];
+      snap.forEach(ch => { const v = ch.val(); if (v && v.name) approved.push(v); });
+      const box = document.getElementById('commentBox');
+      if (box) box.innerHTML = commentHtml(legacy.concat(approved));
+    }).catch(() => {});
+  }
+
   function showProductDetail(id){
     const p = products.find(prod => String(prod.id) === String(id));
     if(!p) return;
@@ -691,9 +728,8 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
       sliderHtml = `<div style="font-size:60px;padding:20px;background:#f7fafc;border-radius:12px">🛍️</div>`;
     }
 
-    const commentsList = (p.comments || []).map(c=>`
-      <div class="comment-item"><b>${E(c.name)}:</b> ${E(c.text)}</div>
-    `).join("") || "<small style='color:#888'>এখনো কোনো রিভিউ নেই।</small>";
+    const legacyComments = Array.isArray(p.comments) ? p.comments : (p.comments ? Object.values(p.comments) : []);
+    const commentsList = commentHtml(legacyComments);
 
     let currentAffCode = currentAffUser || localStorage.getItem("dhong_ref_id") || "MyCode";
     let prodAffLink = window.location.origin + window.location.pathname + "?product=" + p.id + "&ref=" + encodeURIComponent(currentAffCode);
@@ -734,6 +770,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
       </div>`;
     document.getElementById("detailModal").classList.add("show");
     initTouchSlider(currentDetailImages);
+    loadApprovedComments(p);
   }
 
   function slideImage(index, el) {
@@ -768,20 +805,16 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     });
   }
 
+  // নতুন রিভিউ সরাসরি প্রকাশ হয় না, অ্যাডমিন অনুমোদনের অপেক্ষায় থাকে
   function addComment(e, prodId){
     e.preventDefault();
-    const name = document.getElementById("cName").value;
-    const text = document.getElementById("cText").value;
-    const p = products.find(prod => String(prod.id) === String(prodId));
-    if(!p || p._key === undefined) return;
-    db.ref('dhong_products/' + p._key + '/comments').transaction(c => {
-      c = Array.isArray(c) ? c : (c ? Object.values(c) : []);
-      c.push({name, text});
-      return c;
-    });
-    if(!p.comments) p.comments = [];
-    p.comments.push({name, text});
-    showProductDetail(prodId);
+    const form = e.target;
+    const name = document.getElementById("cName").value.trim().slice(0, 60);
+    const text = document.getElementById("cText").value.trim().slice(0, 500);
+    if(!name || !text) return;
+    db.ref('dhong_comments_pending/' + prodId).push({ name, text, created_at: new Date().toISOString() })
+      .then(() => { form.reset(); alert('✅ ধন্যবাদ! আপনার মতামত অনুমোদনের পর সাইটে দেখা যাবে।'); })
+      .catch(err => { console.error(err); alert('❌ মতামত জমা হয়নি, আবার চেষ্টা করুন।'); });
   }
 
   async function waOrder(prodId){
@@ -797,7 +830,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     const newOrder = {
       id: orderId, customer_name: "WhatsApp Customer", phone: "", address: "",
       affiliate_ref: affiliateRef,
-      items_json: JSON.stringify([{ name: p.name, price: price, quantity: 1, color: "", size: "", img: thumb, deliveryFee: 0 }]),
+      items_json: JSON.stringify([{ product_id: p.id, name: p.name, price: price, quantity: 1, color: "", size: "", img: thumb, deliveryFee: 0 }]),
       total: price, commission_amount: affiliateRef !== "None" ? Math.round(price * 0.05) : 0, commission_paid: false, status: "WhatsApp Pending", created_at: new Date().toISOString()
     };
     try { await saveOrder(newOrder); } catch(e) { console.error(e); alert('❌ অর্ডার সেভ হয়নি, আবার চেষ্টা করুন।'); return; }
@@ -822,6 +855,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     document.getElementById("orderModal").classList.add("show");
   }
 
+  // স্ক্রিনে দেখানো হিসাব (ছাড় এখানে ব্রাউজারের অনুমান; অর্ডার দেওয়ার সময় সার্ভারে ফোন নম্বর দিয়ে যাচাই হয়)
   function updateTotal(){
     if(selectedProduct){
       const qty=Number(document.getElementById("quantity").value);
@@ -920,7 +954,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     try {
       const snap = await db.ref('dhong_affiliates/' + currentAffUser + '/commission').once('value');
       if(amt > (Number(snap.val()) || 0)) { msg.innerHTML = "<span style='color:red'>❌ আপনার একাউন্টে পর্যাপ্ত ব্যালেন্স নেই!</span>"; return; }
-      await db.ref('dhong_withdrawals').push({ affiliate: currentAffUser, amount: amt, method: method, phone: phone, status: "Pending", created_at: new Date().toISOString() });
+      await db.ref('dhong_withdrawals').push({ affiliate: currentAffUser, amount: amt, method: method, phone: phone.slice(0, 20), status: "Pending", created_at: new Date().toISOString() });
       msg.innerHTML = "<span style='color:green'>✅ উইথড্রল রিকোয়েস্ট পাঠানো হয়েছে! অ্যাডমিন পেমেন্ট করলে ব্যালেন্স থেকে কাটা হবে।</span>";
       document.getElementById("wAmount").value = "";
       document.getElementById("wPhone").value = "";
@@ -944,10 +978,14 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
 
     let activeUnitPrice = (isTimerExpired && selectedProduct.oldPrice) ? selectedProduct.oldPrice : selectedProduct.price;
     const subtotal = activeUnitPrice * qty;
-    let isFirstOrder = !localStorage.getItem("dhong_ordered_before");
-    let discount = isFirstOrder ? Math.round(subtotal * 0.1) : 0;
     if(settings.freeThreshold && subtotal >= Number(settings.freeThreshold)) delivery = 0;
+
+    // প্রথম অর্ডারের ১০% ছাড়: ফোন নম্বর দিয়ে সার্ভারে যাচাই
+    const shownDiscount = localStorage.getItem("dhong_ordered_before") ? 0 : Math.round(subtotal * 0.1);
+    const chk = await checkFirst(formData.get("phone"));
+    const discount = chk.eligible ? Math.round(subtotal * 0.1) : 0;
     const totalPrice = (subtotal - discount) + delivery;
+    if(discount < shownDiscount && !confirm("এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ১০% ছাড় প্রযোজ্য নয়।\nনতুন মোট: ৳" + totalPrice + "\nঅর্ডার করবেন?")) { submitBtn.disabled = false; return; }
 
     const thumb = await makeThumb(currentSelectedImg || selectedProduct.img);
     const affiliateRef = getRef();
@@ -966,17 +1004,13 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
       commission_amount: affiliateRef !== "None" ? Math.round((totalPrice - delivery) * 0.05) : 0, commission_paid: false,
       status: "Pending", created_at: new Date().toISOString()
     };
+    if(chk.h) newOrder.phoneHash = chk.h;
 
-    try { await saveOrder(newOrder); }
+    try { await saveOrder(newOrder, chk.eligible ? chk.h : null); }
     catch(err) { console.error("order save error:", err); alert("❌ অর্ডার সেভ হয়নি, আবার চেষ্টা করুন।"); submitBtn.disabled = false; return; }
     localStorage.setItem("dhong_ordered_before", "true");
 
-
-    if(selectedProduct._key !== undefined) {
-      const base = 'dhong_products/' + selectedProduct._key;
-      db.ref(base + '/stock').transaction(v => Math.max(0, (Number(v) || 0) - qty));
-      db.ref(base + '/sales').transaction(v => (Number(v) || 0) + qty);
-    }
+    // স্টক ও সেলস এখন অ্যাডমিন প্যানেল আপডেট করে (কাস্টমার ব্রাউজার আর বদলায় না)
 
     form.reset();
     submitBtn.disabled = false;
@@ -1055,6 +1089,7 @@ window.addToCart=async function(pid,useSel){
   track('AddToCart',{content_ids:[String(p.id)],content_name:p.name,content_type:'product',value:Number(unit(p))||0,currency:'BDT'});
 };
 
+// স্ক্রিনের হিসাব (ছাড় ব্রাউজারের অনুমান; অর্ডারের সময় সার্ভারে ফোন নম্বর দিয়ে যাচাই হয়)
 function totals(){
   let sub=0;cart.forEach(c=>{const p=prod(c.pid);if(p)sub+=unit(p)*c.qty;});
   const disc=localStorage.getItem('dhong_ordered_before')?0:Math.round(sub*0.1);
@@ -1136,23 +1171,27 @@ window.placeCartOrder=async function(){
   if(!lines.length)return;
   for(const {c,p} of lines)if(c.qty>(Number(p.stock)||0))return alert(`"${E(p.name)}" এর স্টক মাত্র ${p.stock} পিস।`);
   const btn=$('ckBtn');btn.disabled=true;
-  const t=totals();
+  const shown=totals();
+  // প্রথম অর্ডারের ১০% ছাড়: ফোন নম্বর দিয়ে সার্ভারে যাচাই
+  const chk=await checkFirst(phone);
+  const disc=chk.eligible?Math.round(shown.sub*0.1):0;
+  const t={sub:shown.sub,disc,fee:shown.fee,total:shown.sub-disc+shown.fee};
+  if(disc<shown.disc&&!confirm('এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ১০% ছাড় প্রযোজ্য নয়।\nনতুন মোট: '+bd(t.total)+'\nঅর্ডার করবেন?')){btn.disabled=false;return;}
   const items=lines.map(({c,p})=>({product_id:p.id,name:p.name,price:unit(p),quantity:c.qty,color:c.color,size:c.size,img:c.img||p.img||''}));
   const ref=getRef();
   const order={id:String(Math.floor(100000+Math.random()*900000)),customer_name:name,phone,
     address:`${F.division} - ${address}`,affiliate_ref:ref,items_json:JSON.stringify(items),
     total:t.total,discount:t.disc,delivery_fee:t.fee,commission_amount:ref!=='None'?Math.round((t.total-t.fee)*0.05):0,commission_paid:false,status:'Pending',created_at:new Date().toISOString()};
-  try{await saveOrder(order);}
+  if(chk.h)order.phoneHash=chk.h;
+  try{await saveOrder(order,chk.eligible?chk.h:null);}
   catch(e){console.error(e);alert('❌ অর্ডার সেভ হয়নি, আবার চেষ্টা করুন।');btn.disabled=false;return;}
   localStorage.setItem('dhong_ordered_before','true');
-  lines.forEach(({c,p})=>{if(p._key!==undefined){const b='dhong_products/'+p._key;
-    db.ref(b+'/stock').transaction(v=>Math.max(0,(Number(v)||0)-c.qty));
-    db.ref(b+'/sales').transaction(v=>(Number(v)||0)+c.qty);}});
+  // স্টক ও সেলস এখন অ্যাডমিন প্যানেল আপডেট করে
   cart=[];save();updateBadge();F.address='';
   closeModal('cartModal');showReceipt(order,items);
 };
 
-/* ট্র্যাক: পণ্যের ছবি সহ, ফোনের শেষ ৪ ডিজিট দিয়ে যাচাই */
+/* ট্র্যাক: অর্ডার নম্বর + ফোনের শেষ ৪ ডিজিট দিয়ে হ্যাশ কী তৈরি করে খোঁজা (দুটো না জানলে খুঁজে পাওয়া যায় না) */
 const tf=$('trackForm');
 tf.querySelector('label').insertAdjacentHTML('afterend','<label class="field">মোবাইল নম্বরের শেষ ৪ ডিজিট<input name="phone4" required inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="যেমন: 5678"></label>');
 const nf=tf.cloneNode(true);tf.replaceWith(nf);
@@ -1162,9 +1201,8 @@ nf.addEventListener('submit',function(e){
   const oid=e.target.orderId.value.replace(/[^0-9]/g,''),p4=e.target.phone4.value.trim();
   const res=$('trackResult');res.innerHTML='🔍 খোঁজা হচ্ছে...';
   if(!oid){res.innerHTML='<div style="color:#e53e3e">❌ অর্ডার নম্বর দিন।</div>';return;}
-  db.ref('dhong_track/'+oid).once('value').then(async snap=>{
-    let o=snap.val();
-    if(o&&!(o.ph&&o.ph===await trackHash(oid,p4)))o=null;
+  trackHash(oid,p4).then(k=>db.ref('dhong_track/'+k).once('value')).then(snap=>{
+    const o=snap.val();
     if(!o){res.innerHTML='<div style="color:#e53e3e">❌ অর্ডার পাওয়া যায়নি। অর্ডার নম্বর ও ফোনের শেষ ৪ ডিজিট ঠিক আছে কিনা দেখুন।</div>';return;}
     let items=[];try{items=JSON.parse(o.items_json)||[];}catch(err){}
     const date=o.created_at?new Date(o.created_at).toLocaleDateString('bn-BD'):'';
