@@ -159,7 +159,8 @@ th{color:var(--muted);font-weight:600}
       <button class="btn gray" type="button" id="cancelEdit" style="display:none">বাতিল</button>
     </form>
   </div>
-  <div class="card"><h3 class="section-title">পণ্য তালিকা</h3><div class="toolbar"><button class="btn gray" id="migrateBtn">☁️ পুরনো ছবি Cloudinary-তে সরান</button></div><div id="productList"></div></div>
+  <div class="card"><h3 class="section-title">পণ্য তালিকা</h3><div class="toolbar"><button class="btn gray" id="migrateBtn">☁️ পুরনো ছবি Cloudinary-তে সরান</button>
+    <button class="btn primary" id="feedBtn">📤 Meta ক্যাটালগ ফিড (CSV)</button></div><div id="productList"></div></div>
 </section>
 
 <section class="page" id="affiliates">
@@ -407,7 +408,7 @@ function render() {
     const items = parseItems(o);
     const itemsHtml = items === null ? esc(o.items_json) : items.map(i => `<div class="item">${safeUrl(i.img) ? `<img src="${safeUrl(i.img)}" alt="">` : ''}<div><b>${esc(i.name)}</b><br><small>রং: ${esc(i.color || '-')} | সাইজ: ${esc(i.size || '-')} | পিস: ${esc(i.quantity)}</small></div></div>`).join('');
     return `<tr><td>#DH-${esc(o.id)}</td><td><b>${esc(o.customer_name)}</b></td><td>${esc(o.phone)}</td><td>${esc(o.address)}</td><td>${itemsHtml}</td>
-      <td><b>${esc(o.affiliate_ref || 'None')}</b>${o.commission_amount ? `<br><small>৳${esc(o.commission_amount)} ${o.commission_paid ? '✅ যোগ হয়েছে' : '⏳ ডেলিভারির অপেক্ষায়'}</small>` : ''}</td><td>${money(o.total)}</td>
+      <td><b>${esc(o.affiliate_ref || 'None')}</b>${o.commission_amount ? `<br><small>৳${esc(o.commission_amount)} ${o.commission_paid ? '✅ যোগ হয়েছে' : '⏳ ডেলিভারির অপেক্ষায়'}</small>` : ''}${o.utm && o.utm.utm_campaign ? `<br><small>📣 ${esc(o.utm.utm_campaign)}</small>` : ''}</td><td>${money(o.total)}</td>
       <td><select data-act="status" data-key="${esc(o._key)}">${STATUSES.map(s => `<option ${o.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
       <td>${o.created_at ? esc(new Date(o.created_at).toLocaleString()) : ''}</td>
       <td>${o.consignment_id ? `<small>CID: ${esc(o.consignment_id)}<br>${esc(o.courier_status || '')}</small><br><button class="btn sm gray" data-act="trackCourier" data-key="${esc(o._key)}">স্ট্যাটাস</button>` : `<button class="btn sm blue" data-act="sendCourier" data-key="${esc(o._key)}">🚚 কুরিয়ারে পাঠান</button>`}
@@ -445,8 +446,8 @@ $('statusFilter').addEventListener('change', render);
 /* ---------- CSV export ---------- */
 $('exportCsv').onclick = () => {
   const cell = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const rows = [['ID', 'কাস্টমার', 'ফোন', 'ঠিকানা', 'রেফ', 'মোট', 'স্ট্যাটাস', 'তারিখ']];
-  filteredOrders().forEach(o => rows.push([o.id, o.customer_name, o.phone, o.address, o.affiliate_ref, o.total, o.status, o.created_at]));
+  const rows = [['ID', 'কাস্টমার', 'ফোন', 'ঠিকানা', 'রেফ', 'মোট', 'স্ট্যাটাস', 'তারিখ', 'ক্যাম্পেইন', 'বিজ্ঞাপন', 'সোর্স']];
+  filteredOrders().forEach(o => rows.push([o.id, o.customer_name, o.phone, o.address, o.affiliate_ref, o.total, o.status, o.created_at, (o.utm || {}).utm_campaign, (o.utm || {}).utm_content, (o.utm || {}).utm_source]));
   const blob = new Blob(['\ufeff' + rows.map(r => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -622,6 +623,34 @@ $('migrateBtn').onclick = async () => {
   }
   b.disabled = false;
   toast('✅ মাইগ্রেশন শেষ: ' + done + '/' + targets.length);
+};
+
+/* ---------- Meta ক্যাটালগ ফিড ---------- */
+function buildFeedCsv(list, base, brand) {
+  const cell = v => '"' + String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
+  const fmt = n => Number(n).toFixed(2) + ' BDT';
+  const rows = [['id', 'title', 'description', 'availability', 'condition', 'price', 'sale_price', 'link', 'image_link', 'additional_image_link', 'brand']];
+  let skipped = 0;
+  list.forEach(p => {
+    const img = p.imgMain || p.img;
+    if (!isUrl(img)) { skipped++; return; }
+    const price = Number(p.price) || 0, old = Number(p.oldPrice) || 0, sale = old > price;
+    rows.push([p.id, String(p.name || '').slice(0, 150), String(p.desc || p.name || '').slice(0, 4000),
+      (Number(p.stock) || 0) > 0 ? 'in stock' : 'out of stock', 'new', fmt(sale ? old : price), sale ? fmt(price) : '',
+      base + '?product=' + encodeURIComponent(p.id) + '&utm_source=facebook&utm_medium=catalog', img,
+      colorsOf(p).filter(isUrl).slice(0, 10).join(','), brand]);
+  });
+  return { csv: '\ufeff' + rows.map(r => r.map(cell).join(',')).join('\n'), skipped, count: rows.length - 1 };
+}
+$('feedBtn').onclick = () => {
+  const base = location.origin + location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1) + 'index.html';
+  const r = buildFeedCsv(products, base, settings.siteName || 'DHONG');
+  if (!r.count) return toast('ফিডে দেওয়ার মতো পণ্য নেই। আগে ছবি Cloudinary-তে সরান।', true);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([r.csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'dhong-meta-catalog.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('✅ ' + r.count + 'টি পণ্যের ফিড ডাউনলোড হয়েছে' + (r.skipped ? ' (' + r.skipped + 'টি ছবির লিংক না থাকায় বাদ)' : ''));
 };
 
 $('productForm').addEventListener('submit', async e => {
