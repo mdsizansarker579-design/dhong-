@@ -232,6 +232,7 @@ th{color:var(--muted);font-weight:600}
       <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
       <h3 class="section-title" style="color:var(--accent)">🏷️ ব্র্যান্ড পেজ ও সোশ্যাল</h3>
       <div class="muted" style="margin:0 0 10px">লেখার ঘর খালি রাখলে সাইটে ডিফল্ট লেখা দেখাবে। নিজের নিয়ম অনুযায়ী বদলে নিন।</div>
+      <div class="field-group">Facebook Pixel ID (শুধু সংখ্যা) <input id="setPixel" inputmode="numeric" placeholder="যেমন: 123456789012345"></div>
       <div class="field-group">ঠিকানা <input id="setAddress" placeholder="যেমন: মিরপুর, ঢাকা"></div>
       <div class="field-group">ইমেইল <input id="setEmail" type="email" placeholder="info@yourshop.com"></div>
       <div class="field-group">কাজের সময় <input id="setHours" placeholder="যেমন: সকাল ১০টা - রাত ১০টা (প্রতিদিন)"></div>
@@ -701,7 +702,7 @@ function fillSettingsForm() {
   v('setWhatsapp', settings.whatsapp || ''); v('setPhone', settings.phone || '');
   v('setTopBanner', settings.topBannerText || '🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি');
   v('setHeroBg', settings.heroBg || '#242b49'); v('setTimerStatus', settings.timerStatus || 'show'); v('setTimerHours', settings.timerHours || '24');
-  v('setAddress', settings.address || ''); v('setEmail', settings.email || ''); v('setHours', settings.hours || '');
+  v('setPixel', settings.fbPixelId || ''); v('setAddress', settings.address || ''); v('setEmail', settings.email || ''); v('setHours', settings.hours || '');
   v('setFacebook', settings.facebook || ''); v('setInstagram', settings.instagram || ''); v('setYoutube', settings.youtube || ''); v('setTiktok', settings.tiktok || '');
   v('setAbout', settings.aboutText || ''); v('setReturn', settings.returnPolicy || ''); v('setPrivacy', settings.privacyPolicy || ''); v('setFaq', settings.faqText || '');
 }
@@ -712,7 +713,7 @@ $('settingsForm').addEventListener('submit', e => {
     outsiderFee: $('setOutsider').value, freeThreshold: $('setThreshold').value, whatsapp: $('setWhatsapp').value,
     phone: $('setPhone').value, topBannerText: $('setTopBanner').value, heroBg: $('setHeroBg').value,
     timerStatus: $('setTimerStatus').value, timerHours: $('setTimerHours').value,
-    address: $('setAddress').value.trim(), email: $('setEmail').value.trim(), hours: $('setHours').value.trim(),
+    fbPixelId: $('setPixel').value.replace(/\D/g, ''), address: $('setAddress').value.trim(), email: $('setEmail').value.trim(), hours: $('setHours').value.trim(),
     facebook: $('setFacebook').value.trim(), instagram: $('setInstagram').value.trim(), youtube: $('setYoutube').value.trim(), tiktok: $('setTiktok').value.trim(),
     aboutText: $('setAbout').value.trim(), returnPolicy: $('setReturn').value.trim(), privacyPolicy: $('setPrivacy').value.trim(), faqText: $('setFaq').value.trim()
   }).then(() => toast('✅ সেটিংস সংরক্ষণ হয়েছে')).catch(fail);
