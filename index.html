@@ -430,6 +430,47 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     heroBg: "#242b49", timerStatus: "show", timerHours: "24", timerText: "⏳ অফার শেষ হতে বাকি:", offerEnd: 0
   };
 
+  /* ---------- ভেরিয়েন্ট (রং × সাইজ, আলাদা স্টক) ---------- */
+  const variantsOf = p => {
+    const v = p && p.variants; if (!v) return [];
+    return (Array.isArray(v) ? v : Object.values(v)).filter(x => x && x.color != null && x.size != null)
+      .map(x => ({ color: String(x.color), size: String(x.size), stock: Number(x.stock) || 0 }));
+  };
+  const variantColors = p => [...new Set(variantsOf(p).map(x => x.color))];
+  // নির্দিষ্ট রং+সাইজের স্টক; ভেরিয়েন্ট না থাকলে পণ্যের মোট স্টক
+  const availStock = (p, color, size) => {
+    const v = variantsOf(p); if (!v.length) return Number(p.stock) || 0;
+    const f = v.find(x => x.color === color && x.size === size); return f ? f.stock : 0;
+  };
+  const ORDER_STATIC = { color: null, size: null };
+  function setupVariantSelects(p) {
+    const cs = document.getElementById('productColor'), ss = document.getElementById('productSize');
+    if (ORDER_STATIC.color === null) { ORDER_STATIC.color = cs.innerHTML; ORDER_STATIC.size = ss.innerHTML; }
+    const v = variantsOf(p);
+    if (!v.length) { cs.innerHTML = ORDER_STATIC.color; ss.innerHTML = ORDER_STATIC.size; cs.onchange = null; ss.onchange = () => refreshQty(p); refreshQty(p); return; }
+    const colors = variantColors(p);
+    cs.innerHTML = colors.map(c => { const has = v.some(x => x.color === c && x.stock > 0); return `<option value="${E(c)}" ${has ? '' : 'disabled'}>${E(c)}${has ? '' : ' (স্টক শেষ)'}</option>`; }).join('');
+    cs.value = colors.find(c => v.some(x => x.color === c && x.stock > 0)) || colors[0];
+    cs.onchange = () => fillSizes(p);
+    ss.onchange = () => refreshQty(p);
+    fillSizes(p);
+  }
+  function fillSizes(p) {
+    const cs = document.getElementById('productColor'), ss = document.getElementById('productSize');
+    const v = variantsOf(p).filter(x => x.color === cs.value);
+    ss.innerHTML = v.map(x => `<option value="${E(x.size)}" ${x.stock > 0 ? '' : 'disabled'}>${E(x.size)}${x.stock > 0 ? ' (স্টক: ' + x.stock + ')' : ' (স্টক শেষ)'}</option>`).join('');
+    const f = v.find(x => x.stock > 0) || v[0]; if (f) ss.value = f.size;
+    refreshQty(p);
+  }
+  function refreshQty(p) {
+    const cs = document.getElementById('productColor'), ss = document.getElementById('productSize'), q = document.getElementById('quantity');
+    const cur = Number(q.value) || 1, max = Math.max(1, Math.min(5, availStock(p, cs.value, ss.value)));
+    const bn = ['১', '২', '৩', '৪', '৫'];
+    q.innerHTML = Array.from({ length: max }, (_, k) => `<option value="${k + 1}">${bn[k]}টি</option>`).join('');
+    q.value = String(Math.min(cur, max));
+    updateTotal();
+  }
+
   function getUrlParameter(name) {
     const m = window.location.href.match(new RegExp('[?&#]' + name + '=([^&#]*)'));
     return m ? decodeURIComponent(m[1]) : null;
@@ -731,6 +772,14 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     const legacyComments = Array.isArray(p.comments) ? p.comments : (p.comments ? Object.values(p.comments) : []);
     const commentsList = commentHtml(legacyComments);
 
+    const vv = variantsOf(p);
+    const chip = (x) => x.stock > 0
+      ? `<span style="background:#e6fffa;border:1px solid #b2f5ea;padding:1px 7px;border-radius:10px;margin-right:4px;display:inline-block">${E(x.size)} (${x.stock})</span>`
+      : `<span style="background:#fff5f5;color:#9b2c2c;border:1px solid #fed7d7;padding:1px 7px;border-radius:10px;margin-right:4px;display:inline-block;text-decoration:line-through">${E(x.size)}</span>`;
+    const variantHtml = vv.length
+      ? `<div style="text-align:left;background:#f7fafc;padding:10px;border-radius:8px;font-size:12px;line-height:2;margin:8px 0;border:1px solid #edf2f7"><b>উপলব্ধ রং ও সাইজ:</b><br>${variantColors(p).map(c => `<b>${E(c)}:</b> ` + vv.filter(x => x.color === c).map(chip).join('')).join('<br>')}</div>`
+      : '';
+
     let currentAffCode = currentAffUser || localStorage.getItem("dhong_ref_id") || "MyCode";
     let prodAffLink = window.location.origin + window.location.pathname + "?product=" + p.id + "&ref=" + encodeURIComponent(currentAffCode);
 
@@ -748,6 +797,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
           ${displayOldPrice ? `<span style="text-decoration:line-through;color:#a0aec0;font-size:13px">${money(displayOldPrice)}</span>` : ''}
         </div>
         ${p.quality ? `<p style="font-size:12px;color:#234e52;background:#e6fffa;padding:6px 10px;border-radius:6px;margin:8px 0;border:1px solid #b2f5ea"><b>পণ্যের মান:</b> ${E(p.quality)}</p>` : ''}
+        ${variantHtml}
         <p style="text-align:left;background:#f7fafc;padding:10px;border-radius:8px;font-size:13px;line-height:1.5;color:#4a5568">${E(p.desc || 'কোনো বিবরণ দেওয়া হয়নি।')}</p>
         <div style="background:#f0f4ff;padding:10px;border-radius:8px;border:1px dashed #6558e8;margin:12px 0;text-align:left">
           <div style="font-size:11px;font-weight:bold;color:#4c51bf">🔗 এই পণ্যের এফিলিয়েট লিংক:</div>
@@ -852,6 +902,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     if(currentSelectedImg) { previewImgEl.src = currentSelectedImg; previewImgEl.style.display = "inline-block"; }
     else previewImgEl.style.display = "none";
     updateTotal();
+    setupVariantSelects(selectedProduct);
     document.getElementById("orderModal").classList.add("show");
   }
 
@@ -973,7 +1024,8 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     const qty = Number(formData.get("quantity"));
     let delivery = Number(formData.get("deliveryFee"));
     const submitBtn = document.getElementById("submitBtn");
-    if((Number(selectedProduct.stock) || 0) < qty) { alert("স্টকে মাত্র " + selectedProduct.stock + " পিস আছে।"); return; }
+    const av = availStock(selectedProduct, formData.get("color"), formData.get("size"));
+    if(av < qty) { alert("এই ভ্যারিয়েন্টের স্টকে মাত্র " + av + " পিস আছে।"); return; }
     submitBtn.disabled = true;
 
     let activeUnitPrice = (isTimerExpired && selectedProduct.oldPrice) ? selectedProduct.oldPrice : selectedProduct.price;
@@ -1083,8 +1135,10 @@ window.addToCart=async function(pid,useSel){
   const img=await makeThumb((useSel&&currentSelectedImg)||p.img||'');
   const max=Math.min(5,Number(p.stock)||0);
   const ex=cart.find(c=>String(c.pid)===String(p.id)&&c.img===img);
-  if(ex){if(ex.qty>=max)return flash('সর্বোচ্চ পরিমাণ যোগ করা হয়েছে');ex.qty++;}
-  else{const L=designs(p);let k=useSel?L.indexOf(currentSelectedImg):0;if(k<0)k=0;cart.push({pid:p.id,qty:1,color:L.length>1?'ডিজাইন '+(k+1):'Standard',dz:k,size:'Free Size',img});}
+  if(ex){if(ex.qty>=Math.min(max,availStock(p,ex.color,ex.size)))return flash('সর্বোচ্চ পরিমাণ যোগ করা হয়েছে');ex.qty++;}
+  else{const L=designs(p);let k=useSel?L.indexOf(currentSelectedImg):0;if(k<0)k=0;
+    const fv=variantsOf(p).find(x=>x.stock>0);
+    cart.push({pid:p.id,qty:1,color:fv?fv.color:(L.length>1?'ডিজাইন '+(k+1):'Standard'),dz:k,size:fv?fv.size:'Free Size',img});}
   save();updateBadge();flash('🛒 কার্টে যোগ হয়েছে');
   track('AddToCart',{content_ids:[String(p.id)],content_name:p.name,content_type:'product',value:Number(unit(p))||0,currency:'BDT'});
 };
@@ -1102,22 +1156,31 @@ function sumUpdate(){
   el.innerHTML=`মূল্য: ${bd(t.sub)}${t.disc?` | ডিসকাউন্ট (১০%): -${bd(t.disc)}`:''} | ডেলিভারি: ${t.fee?bd(t.fee):'ফ্রি'}<br><b>মোট: ${bd(t.total)}</b>`;
 }
 window.cartSet=function(i,k,v){if(!cart[i])return;cart[i][k]=k==='qty'?Number(v):v;save();updateBadge();sumUpdate();};
-window.cartPick=async function(i,k){const c=cart[i],p=c&&prod(c.pid);if(!p)return;const L=designs(p);if(!L[k])return;c.img=await makeThumb(L[k]);c.dz=k;c.color='ডিজাইন '+(k+1);save();renderCart();};
+window.cartPick=async function(i,k){const c=cart[i],p=c&&prod(c.pid);if(!p)return;const L=designs(p);if(!L[k])return;c.img=await makeThumb(L[k]);c.dz=k;if(!variantsOf(p).length)c.color='ডিজাইন '+(k+1);save();renderCart();};
+const variantSelects=(c,p,i)=>{const vs=variantsOf(p);
+  if(!vs.length)return `<select onchange="cartSet(${i},'size',this.value)">${SIZES.map(v=>`<option ${c.size===v?'selected':''}>${v}</option>`).join('')}</select>`;
+  const sizes=vs.filter(x=>x.color===c.color);
+  return `<select onchange="cartVar(${i},'color',this.value)">${variantColors(p).map(x=>`<option value="${E(x)}" ${c.color===x?'selected':''} ${vs.some(y=>y.color===x&&y.stock>0)?'':'disabled'}>${E(x)}</option>`).join('')}</select>`+
+    `<select onchange="cartVar(${i},'size',this.value)">${sizes.map(x=>`<option value="${E(x.size)}" ${c.size===x.size?'selected':''} ${x.stock>0?'':'disabled'}>${E(x.size)}</option>`).join('')}</select>`;};
+window.cartVar=function(i,k,v){const c=cart[i],p=c&&prod(c.pid);if(!p)return;c[k]=v;
+  if(k==='color'){const f=variantsOf(p).find(x=>x.color===v&&x.stock>0);if(f)c.size=f.size;}save();renderCart();};
 window.cartDel=function(i){cart.splice(i,1);save();renderCart();};
 window.cartF=function(k,v){F[k]=v;if(k==='division')sumUpdate();};
 
 function renderCart(){
   if(products.length)cart=cart.filter(c=>{const p=prod(c.pid);return p&&(Number(p.stock)||0)>0;});
+  cart.forEach(c=>{const p=prod(c.pid);if(!p)return;const vs=variantsOf(p);
+    if(vs.length&&!vs.some(x=>x.color===c.color&&x.size===c.size)){const f=vs.find(x=>x.stock>0);if(f){c.color=f.color;c.size=f.size;}}});
   updateBadge();
   const body=$('cartBody');
   if(!cart.length){body.innerHTML='<p style="text-align:center;color:#718096;padding:20px 0">কার্ট খালি। পণ্যে "কার্টে যোগ করুন" চাপুন।</p>';return;}
   const rows=cart.map((c,i)=>{
     const p=prod(c.pid)||{name:'পণ্য',price:0,stock:5};
-    const max=Math.max(1,Math.min(5,Number(p.stock)||0));if(c.qty>max)c.qty=max;
+    const max=Math.max(1,Math.min(5,availStock(p,c.color,c.size)));if(c.qty>max)c.qty=max;
     return `<div class="cart-row">${c.img?`<img src="${E(c.img)}" alt="">`:''}
       <div style="flex:1;min-width:0"><b>${E(p.name)}</b><div style="color:var(--primary-color);font-weight:bold">${bd(unit(p))}</div>
       ${designPicker(c,p,i)}<div class="cart-sel">
-        <select onchange="cartSet(${i},'size',this.value)">${SIZES.map(v=>`<option ${c.size===v?'selected':''}>${v}</option>`).join('')}</select>
+        ${variantSelects(c,p,i)}
         <select onchange="cartSet(${i},'qty',this.value)">${Array.from({length:max},(_,k)=>`<option value="${k+1}" ${c.qty===k+1?'selected':''}>${k+1}টি</option>`).join('')}</select>
       </div></div><button class="cart-x" onclick="cartDel(${i})">🗑</button></div>`;
   }).join('');
@@ -1169,7 +1232,9 @@ window.placeCartOrder=async function(){
   if(!address)return alert('ঠিকানা দিন।');
   const lines=cart.map(c=>({c,p:prod(c.pid)})).filter(x=>x.p);
   if(!lines.length)return;
-  for(const {c,p} of lines)if(c.qty>(Number(p.stock)||0))return alert(`"${E(p.name)}" এর স্টক মাত্র ${p.stock} পিস।`);
+  const need={};
+  for(const {c,p} of lines){const k=p.id+'|'+c.color+'|'+c.size;need[k]=(need[k]||0)+c.qty;const av=availStock(p,c.color,c.size);
+    if(need[k]>av)return alert(`"${p.name}" (${c.color}, ${c.size}) এর স্টক মাত্র ${av} পিস।`);}
   const btn=$('ckBtn');btn.disabled=true;
   const shown=totals();
   // প্রথম অর্ডারের ১০% ছাড়: ফোন নম্বর দিয়ে সার্ভারে যাচাই
