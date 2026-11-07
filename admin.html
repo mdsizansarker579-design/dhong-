@@ -159,7 +159,7 @@ th{color:var(--muted);font-weight:600}
       <button class="btn gray" type="button" id="cancelEdit" style="display:none">বাতিল</button>
     </form>
   </div>
-  <div class="card"><h3 class="section-title">পণ্য তালিকা</h3><div id="productList"></div></div>
+  <div class="card"><h3 class="section-title">পণ্য তালিকা</h3><div class="toolbar"><button class="btn gray" id="migrateBtn">☁️ পুরনো ছবি Cloudinary-তে সরান</button></div><div id="productList"></div></div>
 </section>
 
 <section class="page" id="affiliates">
@@ -229,6 +229,11 @@ th{color:var(--muted);font-weight:600}
         <select id="setTimerStatus"><option value="show">চালু (Show Timer)</option><option value="hide">বন্ধ (Hide Timer)</option></select>
       </div>
       <div class="field-group">অফারের সময়সীমা (ঘণ্টা) <input type="number" id="setTimerHours"></div>
+      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
+      <h3 class="section-title" style="color:var(--accent)">☁️ ছবি হোস্টিং (Cloudinary)</h3>
+      <div class="muted" style="margin:0 0 10px">দুটো ঘর পূরণ করলে নতুন পণ্যের ছবি Cloudinary-তে সেভ হবে (সাইট দ্রুত হবে, Meta ক্যাটালগেও লাগবে)। খালি থাকলে আগের মতো ডাটাবেসে সেভ হবে।</div>
+      <div class="field-group">Cloud name <input id="setCloudName" placeholder="যেমন: dxxxxxxxx" autocomplete="off"></div>
+      <div class="field-group">Unsigned upload preset নাম <input id="setCloudPreset" placeholder="যেমন: dhong_unsigned" autocomplete="off"></div>
       <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
       <h3 class="section-title" style="color:var(--accent)">🏷️ ব্র্যান্ড পেজ ও সোশ্যাল</h3>
       <div class="muted" style="margin:0 0 10px">লেখার ঘর খালি রাখলে সাইটে ডিফল্ট লেখা দেখাবে। নিজের নিয়ম অনুযায়ী বদলে নিন।</div>
@@ -581,6 +586,44 @@ function resetProductForm() {
 }
 $('cancelEdit').onclick = resetProductForm;
 
+/* ---------- Cloudinary ছবি আপলোড ---------- */
+const cloudReady = () => !!((settings.cloudName || '').trim() && (settings.cloudPreset || '').trim());
+const isCloud = u => /res\.cloudinary\.com/.test(String(u || ''));
+const cloudThumb = u => isCloud(u) ? String(u).replace('/upload/', '/upload/w_400,c_limit,q_auto/') : u;
+const colorsOf = p => p.colors ? (Array.isArray(p.colors) ? p.colors : Object.values(p.colors)) : [];
+async function cloudUpload(src) {
+  const fd = new FormData();
+  fd.append('file', src);
+  fd.append('upload_preset', settings.cloudPreset.trim());
+  fd.append('folder', 'dhong');
+  const r = await fetch('https://api.cloudinary.com/v1_1/' + encodeURIComponent(settings.cloudName.trim()) + '/image/upload', { method: 'POST', body: fd });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.secure_url) throw new Error((j.error && j.error.message) || 'Cloudinary আপলোড হয়নি');
+  return j.secure_url;
+}
+$('migrateBtn').onclick = async () => {
+  if (!cloudReady()) return toast('আগে Settings-এ Cloudinary-র Cloud name ও preset দিন।', true);
+  const targets = products.filter(p => String(p.img || '').startsWith('data:') || colorsOf(p).some(c => String(c).startsWith('data:')));
+  if (!targets.length) return toast('সরানোর মতো পুরনো ছবি নেই।');
+  if (!confirm(targets.length + 'টি পণ্যের ছবি Cloudinary-তে আপলোড হবে। চালাবেন?')) return;
+  const b = $('migrateBtn'); b.disabled = true;
+  let done = 0;
+  for (const p of targets) {
+    try {
+      const im = (await db.ref('dhong_images/' + p.id).once('value')).val() || {};
+      const mainSrc = (String(im.main || '').startsWith('data:') || isUrl(im.main)) ? im.main : p.img;
+      const mainUrl = isUrl(mainSrc) ? mainSrc : await cloudUpload(mainSrc);
+      const cols = [];
+      for (const c of colorsOf(p)) cols.push(String(c).startsWith('data:') ? await cloudUpload(c) : c);
+      await db.ref('dhong_products/' + p._key).update({ img: cloudThumb(mainUrl), imgMain: mainUrl, colors: cols });
+      await db.ref('dhong_images/' + p.id).set({ main: mainUrl, colors: cols });
+      toast('☁️ ' + (++done) + '/' + targets.length + ' সম্পন্ন: ' + p.name);
+    } catch (err) { fail(err); }
+  }
+  b.disabled = false;
+  toast('✅ মাইগ্রেশন শেষ: ' + done + '/' + targets.length);
+};
+
 $('productForm').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = $('saveProductBtn'); btn.disabled = true; btn.textContent = 'সংরক্ষণ হচ্ছে...';
@@ -588,17 +631,27 @@ $('productForm').addEventListener('submit', async e => {
     await pendingUploads;
     const key = $('editKey').value, old = key ? products.find(p => p._key === key) : null;
     if (key && !old) throw new Error('পণ্যটি আর নেই, পেজ রিফ্রেশ করুন।');
-    const main = mainFull || $('pImg').value.trim() || existing.main || '';
+    let main = mainFull || $('pImg').value.trim() || existing.main || '';
     const urlColors = $('pColors').value.split(',').map(s => s.trim()).filter(Boolean);
     const kept = colorsFull.length ? [] : existing.colors.filter(c => !isUrl(c));
-    const colors = [...kept, ...urlColors, ...colorsFull];
-    const thumb = String(main).startsWith('data:') ? await shrink(main, THUMB_MAX, THUMB_Q) : main;
+    let colors = [...kept, ...urlColors, ...colorsFull];
+    let thumb;
+    if (cloudReady()) {
+      toast('☁️ ছবি আপলোড হচ্ছে...');
+      if (String(main).startsWith('data:')) main = await cloudUpload(main);
+      const up = [];
+      for (const c of colors) up.push(String(c).startsWith('data:') ? await cloudUpload(c) : c);
+      colors = up;
+      thumb = cloudThumb(main);
+    } else {
+      thumb = String(main).startsWith('data:') ? await shrink(main, THUMB_MAX, THUMB_Q) : main;
+    }
     const id = old ? old.id : Date.now(), price = Number($('pPrice').value);
     const data = {
       id, name: $('pName').value.trim(), cat: $('pCat').value.trim(), price,
       oldPrice: Number($('pOldPrice').value) || price, stock: Number($('pStock').value),
       rating: $('pRating').value || '5.0', sales: Number($('pSales').value) || 0,
-      quality: $('pQuality').value, img: thumb, colors, hasFull: true,
+      quality: $('pQuality').value, img: thumb, imgMain: isUrl(main) ? main : '', colors, hasFull: true,
       video: $('pVideo').value, desc: $('pDesc').value, comments: old ? (old.comments || []) : []
     };
     await db.ref('dhong_images/' + id).set({ main, colors });
@@ -617,8 +670,8 @@ function editProduct(key) {
   set('pStock', p.stock || 0); set('pRating', p.rating || '5.0'); set('pSales', p.sales || 0);
   set('pQuality', p.quality); set('pVideo', p.video); set('pDesc', p.desc);
   const cols = p.colors ? (Array.isArray(p.colors) ? p.colors : Object.values(p.colors)) : [];
-  mainFull = ''; colorsFull = []; existing = { main: p.img || '', colors: cols };
-  set('pImg', isUrl(p.img) ? p.img : ''); set('pColors', cols.filter(isUrl).join(', '));
+  mainFull = ''; colorsFull = []; existing = { main: p.imgMain || p.img || '', colors: cols };
+  set('pImg', isUrl(p.imgMain || p.img) ? (p.imgMain || p.img) : ''); set('pColors', cols.filter(isUrl).join(', '));
   showPreview(p.img);
   $('formTitle').textContent = 'এডিট করুন: ' + p.name; $('cancelEdit').style.display = 'inline-block';
   document.querySelector('[data-page="products"]').click();
@@ -702,7 +755,7 @@ function fillSettingsForm() {
   v('setWhatsapp', settings.whatsapp || ''); v('setPhone', settings.phone || '');
   v('setTopBanner', settings.topBannerText || '🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি');
   v('setHeroBg', settings.heroBg || '#242b49'); v('setTimerStatus', settings.timerStatus || 'show'); v('setTimerHours', settings.timerHours || '24');
-  v('setPixel', settings.fbPixelId || ''); v('setAddress', settings.address || ''); v('setEmail', settings.email || ''); v('setHours', settings.hours || '');
+  v('setPixel', settings.fbPixelId || ''); v('setCloudName', settings.cloudName || ''); v('setCloudPreset', settings.cloudPreset || ''); v('setAddress', settings.address || ''); v('setEmail', settings.email || ''); v('setHours', settings.hours || '');
   v('setFacebook', settings.facebook || ''); v('setInstagram', settings.instagram || ''); v('setYoutube', settings.youtube || ''); v('setTiktok', settings.tiktok || '');
   v('setAbout', settings.aboutText || ''); v('setReturn', settings.returnPolicy || ''); v('setPrivacy', settings.privacyPolicy || ''); v('setFaq', settings.faqText || '');
 }
@@ -713,7 +766,7 @@ $('settingsForm').addEventListener('submit', e => {
     outsiderFee: $('setOutsider').value, freeThreshold: $('setThreshold').value, whatsapp: $('setWhatsapp').value,
     phone: $('setPhone').value, topBannerText: $('setTopBanner').value, heroBg: $('setHeroBg').value,
     timerStatus: $('setTimerStatus').value, timerHours: $('setTimerHours').value,
-    fbPixelId: $('setPixel').value.replace(/\D/g, ''), address: $('setAddress').value.trim(), email: $('setEmail').value.trim(), hours: $('setHours').value.trim(),
+    fbPixelId: $('setPixel').value.replace(/\D/g, ''), cloudName: $('setCloudName').value.trim(), cloudPreset: $('setCloudPreset').value.trim(), address: $('setAddress').value.trim(), email: $('setEmail').value.trim(), hours: $('setHours').value.trim(),
     facebook: $('setFacebook').value.trim(), instagram: $('setInstagram').value.trim(), youtube: $('setYoutube').value.trim(), tiktok: $('setTiktok').value.trim(),
     aboutText: $('setAbout').value.trim(), returnPolicy: $('setReturn').value.trim(), privacyPolicy: $('setPrivacy').value.trim(), faqText: $('setFaq').value.trim()
   }).then(() => toast('✅ সেটিংস সংরক্ষণ হয়েছে')).catch(fail);
