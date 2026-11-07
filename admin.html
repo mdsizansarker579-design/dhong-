@@ -138,7 +138,18 @@ th{color:var(--muted);font-weight:600}
       <div class="field-group">ক্যাটাগরি <input id="pCat" list="categoryList" required><datalist id="categoryList"><option value="পোশাক"><option value="ব্যাগ"><option value="অ্যাক্সেসরিজ"></datalist></div>
       <div class="field-group">অফার মূল্য (৳) <input type="number" id="pPrice" required min="0"></div>
       <div class="field-group">নিয়মিত মূল্য (৳) <input type="number" id="pOldPrice" min="0"></div>
-      <div class="field-group">স্টক <input type="number" id="pStock" required min="0"></div>
+      <div class="field-group" style="background:#fffaf0;padding:10px;border-radius:8px;border:1px dashed #d69e2e">
+        🎨📏 ভেরিয়েন্ট (রং × সাইজ, প্রতিটার আলাদা স্টক)
+        <div class="muted">কমা দিয়ে লিখুন, "টেবিল তৈরি করুন" চাপুন, তারপর প্রতিটার স্টক বসান। খালি রাখলে নিচের সাধারণ স্টক চলবে।</div>
+        <input id="vColors" placeholder="রং: কালো, সাদা, লাল">
+        <input id="vSizes" placeholder="সাইজ: M, L, XL">
+        <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+          <button type="button" class="btn amber sm" id="vBuild">টেবিল তৈরি করুন</button>
+          <button type="button" class="btn gray sm" id="vClear">ভেরিয়েন্ট মুছুন</button>
+        </div>
+        <div class="table-wrap"><table style="min-width:280px"><tbody id="vRows"></tbody></table></div>
+      </div>
+      <div class="field-group">স্টক (ভেরিয়েন্ট থাকলে অটো যোগফল) <input type="number" id="pStock" required min="0"></div>
       <div class="field-group">রেটিং (১-৫) <input type="number" step="0.1" min="1" max="5" id="pRating" placeholder="4.8"></div>
       <div class="field-group">মোট সেলস <input type="number" id="pSales" min="0"></div>
       <div class="field-group">পণ্যের মান <input id="pQuality" placeholder="১০০% সুতি কটন"></div>
@@ -518,12 +529,30 @@ async function applyStock() {
       for (const i of parseItems(o) || []) {
         const p = products.find(x => String(x.id) === String(i.product_id)); if (!p) continue;
         const q = Number(i.quantity) || 0;
-        await db.ref('dhong_products/' + p._key + '/stock').transaction(v => Math.max(0, (Number(v) || 0) - q));
+        await changeStock(p, i, -q);
         await db.ref('dhong_products/' + p._key + '/sales').transaction(v => (Number(v) || 0) + q);
       }
     }
   } catch (e) { console.error(e); }
   finally { applying = false; }
+}
+// ভেরিয়েন্ট থাকলে ওই রং+সাইজের স্টক বদলায় ও মোট স্টক আবার যোগ করে; না থাকলে শুধু মোট স্টক
+async function changeStock(p, item, delta) {
+  const vs = Array.isArray(p.variants) ? p.variants : Object.values(p.variants || {});
+  if (vs.some(x => x && x.color === item.color && x.size === item.size)) {
+    const r = await db.ref('dhong_products/' + p._key + '/variants').transaction(v => {
+      if (!v) return;
+      const a = (Array.isArray(v) ? v : Object.values(v)).map(x => Object.assign({}, x));
+      const k = a.findIndex(x => x.color === item.color && x.size === item.size); if (k < 0) return;
+      a[k].stock = Math.max(0, (Number(a[k].stock) || 0) + delta); return a;
+    });
+    if (r.committed && r.snapshot.val()) {
+      const val = r.snapshot.val(), list = Array.isArray(val) ? val : Object.values(val);
+      await db.ref('dhong_products/' + p._key + '/stock').set(list.reduce((s, x) => s + (Number(x.stock) || 0), 0));
+      return;
+    }
+  }
+  await db.ref('dhong_products/' + p._key + '/stock').transaction(v => Math.max(0, (Number(v) || 0) + delta));
 }
 async function restoreStock(key) {
   const o = orders.find(x => x._key === key); if (!o || !o.stock_applied) return;
@@ -532,7 +561,7 @@ async function restoreStock(key) {
   for (const i of parseItems(o) || []) {
     const p = products.find(x => String(x.id) === String(i.product_id)); if (!p) continue;
     const q = Number(i.quantity) || 0;
-    await db.ref('dhong_products/' + p._key + '/stock').transaction(v => (Number(v) || 0) + q);
+    await changeStock(p, i, q);
     await db.ref('dhong_products/' + p._key + '/sales').transaction(v => Math.max(0, (Number(v) || 0) - q));
   }
 }
@@ -698,10 +727,42 @@ $('pColorFiles').addEventListener('change', e => {
   pendingUploads = pendingUploads.then(async () => { const out = []; for (const f of files) out.push(await shrink(await fileToDataUrl(f), FULL_MAX, FULL_Q)); colorsFull = out; }).catch(() => toast('❌ কিছু ছবি পড়া যায়নি', true));
 });
 
+/* ---------- ভেরিয়েন্ট টেবিল ---------- */
+let variantRows = [];
+const variantSum = () => variantRows.reduce((s, v) => s + (Number(v.stock) || 0), 0);
+function renderVariants() {
+  $('vRows').innerHTML = variantRows.length
+    ? '<tr><th>রং</th><th>সাইজ</th><th>স্টক</th><th></th></tr>' + variantRows.map((v, i) =>
+        `<tr><td>${esc(v.color)}</td><td>${esc(v.size)}</td><td><input type="number" min="0" value="${esc(v.stock)}" data-vi="${i}" style="width:80px;margin:0"></td><td><button type="button" class="btn sm red" data-vdel="${i}">✕</button></td></tr>`).join('')
+    : '';
+  $('pStock').readOnly = variantRows.length > 0;
+  if (variantRows.length) $('pStock').value = variantSum();
+}
+$('vBuild').onclick = () => {
+  const split = s => [...new Set(s.split(',').map(x => x.trim()).filter(Boolean))];
+  const cols = split($('vColors').value), sizes = split($('vSizes').value);
+  if (!cols.length || !sizes.length) return toast('রং ও সাইজ দুটোই দিন।', true);
+  if (cols.length * sizes.length > 60) return toast('সর্বোচ্চ ৬০টি ভেরিয়েন্ট।', true);
+  const old = variantRows; variantRows = [];
+  cols.forEach(c => sizes.forEach(s => { const f = old.find(x => x.color === c && x.size === s); variantRows.push({ color: c, size: s, stock: f ? f.stock : 0 }); }));
+  renderVariants();
+};
+$('vClear').onclick = () => { variantRows = []; $('vColors').value = ''; $('vSizes').value = ''; renderVariants(); };
+$('vRows').addEventListener('input', e => {
+  const i = e.target.dataset.vi; if (i === undefined) return;
+  variantRows[i].stock = Math.max(0, Math.floor(Number(e.target.value) || 0));
+  $('pStock').value = variantSum();
+});
+$('vRows').addEventListener('click', e => {
+  const i = e.target.dataset.vdel; if (i === undefined) return;
+  variantRows.splice(Number(i), 1); renderVariants();
+});
+
 /* ---------- Products ---------- */
 function resetProductForm() {
   $('productForm').reset(); $('editKey').value = ''; showPreview('');
   mainFull = ''; colorsFull = []; existing = { main: '', colors: [] };
+  variantRows = []; renderVariants(); $('pStock').readOnly = false;
   $('formTitle').textContent = 'নতুন পণ্য যোগ করুন'; $('cancelEdit').style.display = 'none';
 }
 $('cancelEdit').onclick = resetProductForm;
@@ -797,7 +858,9 @@ $('productForm').addEventListener('submit', async e => {
     const id = old ? old.id : Date.now(), price = Number($('pPrice').value);
     const data = {
       id, name: $('pName').value.trim(), cat: $('pCat').value.trim(), price,
-      oldPrice: Number($('pOldPrice').value) || price, stock: Number($('pStock').value),
+      oldPrice: Number($('pOldPrice').value) || price,
+      stock: variantRows.length ? variantSum() : Number($('pStock').value),
+      variants: variantRows.map(v => ({ color: v.color, size: v.size, stock: Number(v.stock) || 0 })),
       rating: $('pRating').value || '5.0', sales: Number($('pSales').value) || 0,
       quality: $('pQuality').value, img: thumb, imgMain: isUrl(main) ? main : '', colors, hasFull: true,
       video: $('pVideo').value, desc: $('pDesc').value, comments: old ? (old.comments || []) : []
@@ -821,6 +884,11 @@ function editProduct(key) {
   mainFull = ''; colorsFull = []; existing = { main: p.imgMain || p.img || '', colors: cols };
   set('pImg', isUrl(p.imgMain || p.img) ? (p.imgMain || p.img) : ''); set('pColors', cols.filter(isUrl).join(', '));
   showPreview(p.img);
+  variantRows = (p.variants ? (Array.isArray(p.variants) ? p.variants : Object.values(p.variants)) : [])
+    .filter(v => v && v.color != null).map(v => ({ color: String(v.color), size: String(v.size), stock: Number(v.stock) || 0 }));
+  $('vColors').value = [...new Set(variantRows.map(v => v.color))].join(', ');
+  $('vSizes').value = [...new Set(variantRows.map(v => v.size))].join(', ');
+  renderVariants();
   $('formTitle').textContent = 'এডিট করুন: ' + p.name; $('cancelEdit').style.display = 'inline-block';
   document.querySelector('[data-page="products"]').click();
   scrollTo({ top: 0, behavior: 'smooth' });
