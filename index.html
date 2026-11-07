@@ -333,6 +333,22 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     return (!r || r === me) ? 'None' : r;
   }
   const auth = firebase.auth();
+  // ---------- বিজ্ঞাপনের UTM ট্র্যাকিং (কোন বিজ্ঞাপন থেকে অর্ডার এল) ----------
+  function captureUtm() {
+    try {
+      const q = new URLSearchParams(location.search), u = {};
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid'].forEach(k => { const v = q.get(k); if (v) u[k] = v.slice(0, 100); });
+      if (Object.keys(u).length) { u.t = Date.now(); localStorage.setItem('dhong_utm', JSON.stringify(u)); }
+    } catch (e) {}
+  }
+  function getUtm() {
+    try {
+      const u = JSON.parse(localStorage.getItem('dhong_utm') || 'null');
+      if (u && Date.now() - u.t < 30 * 864e5) { const r = Object.assign({}, u); delete r.t; return r; }
+    } catch (e) {}
+    return null;
+  }
+  captureUtm();
   // ---------- Facebook Pixel (অ্যাডমিন সেটিংসে Pixel ID দিলে চালু হয়) ----------
   let pixelId = null;
   function loadPixel() {
@@ -355,6 +371,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
   }
   // অর্ডার সেভ: আগে ট্র্যাকিং নোড (ইউনিক আইডি নিশ্চিত), তারপর অর্ডার
   async function saveOrder(order) {
+    const utm = getUtm(); if (utm) order.utm = utm;
     const p4 = String(order.phone || '').replace(/\D/g, '').slice(-4);
     for (let i = 0; ; i++) {
       try {
