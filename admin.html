@@ -73,7 +73,7 @@ th{color:var(--muted);font-weight:600}
     <input type="email" id="adminEmailInput" placeholder="অ্যাডমিন ইমেইল" autocomplete="username" style="margin-bottom:8px">
     <input type="password" id="adminPassInput" placeholder="পাসওয়ার্ড লিখুন..." autocomplete="current-password">
     <button class="btn primary" id="loginBtn" style="width:100%;margin-top:12px">লগইন করুন</button>
-    <div id="loginError" style="color:red;font-size:12px;margin-top:10px"></div>
+    <div id="loginError" style="color:red;font-size:12px;margin-top:10px;word-break:break-all"></div>
   </div>
 </div>
 <div id="toasts" aria-live="polite"></div>
@@ -85,6 +85,7 @@ th{color:var(--muted);font-weight:600}
     <button class="active" data-page="dashboard" data-title="Dashboard">▦ Dashboard</button>
     <button data-page="orders" data-title="Orders">▤ Orders</button>
     <button data-page="products" data-title="Products">◈ Products</button>
+    <button data-page="comments" data-title="Reviews">💬 Reviews <span id="pendingCommentBadge"></span></button>
     <button data-page="affiliates" data-title="Affiliates & Withdraws">🤝 Affiliates</button>
     <button data-page="moderators" data-title="Moderators & Security">🛡️ Moderators</button>
     <button data-page="profit" data-title="Profit Report">৳ Profit</button>
@@ -163,6 +164,14 @@ th{color:var(--muted);font-weight:600}
     <button class="btn primary" id="feedBtn">📤 Meta ক্যাটালগ ফিড (CSV)</button></div><div id="productList"></div></div>
 </section>
 
+<section class="page" id="comments">
+  <div class="card">
+    <h3 class="section-title">💬 অনুমোদনের অপেক্ষায় রিভিউ</h3>
+    <div class="muted" style="margin-bottom:12px">কাস্টমারের রিভিউ আপনি অনুমোদন করলে তবেই সাইটে দেখা যাবে।</div>
+    <div class="table-wrap"><table><thead><tr><th>পণ্য</th><th>নাম</th><th>মতামত</th><th>তারিখ</th><th></th></tr></thead><tbody id="commentRows"></tbody></table></div>
+  </div>
+</section>
+
 <section class="page" id="affiliates">
   <div class="card">
     <h3 class="section-title">💸 উইথড্রল রিকোয়েস্ট</h3>
@@ -177,7 +186,7 @@ th{color:var(--muted);font-weight:600}
 <section class="page" id="moderators">
   <div class="card">
     <h3 class="section-title">🛡️ সিকিউরিটি ও মডারেটর</h3>
-    <div class="muted" style="margin-bottom:14px">অ্যাডমিন পাসওয়ার্ড বদলাতে Firebase Console → Authentication → Users থেকে করুন।</div>
+    <div class="muted" style="margin-bottom:14px">অ্যাডমিন পাসওয়ার্ড বদলাতে Firebase Console → Authentication → Users থেকে করুন। নতুন অ্যাডমিন যোগ করতে Realtime Database-এ dhong_admins/&lt;UID&gt; = true বসান।<br><b>নোট:</b> এই তালিকা এখনো শুধু নাম সংরক্ষণ করে, আলাদা লগইন বা পারমিশন দেয় না (পরের ধাপে রোল সিস্টেম হবে)।</div>
     <h4 style="margin:0 0 10px">নতুন মডারেটর</h4>
     <div class="field-group">ইউজারনেম <input id="modUser"></div>
     <button class="btn primary" id="addModBtn">মডারেটর যুক্ত করুন</button>
@@ -199,13 +208,10 @@ th{color:var(--muted);font-weight:600}
 
 <section class="page" id="courier">
   <div class="card">
-    <h3 class="section-title">🚚 কুরিয়ার API সেটিংস (Steadfast)</h3>
-    <div class="muted" style="margin:0 0 12px;color:#9a5b08">⚠️ API Key ডাটাবেসে সেভ হয়। Firebase Rules ঠিক না করা পর্যন্ত নিজের ঝুঁকিতে ব্যবহার করুন। নিরাপদ উপায়: নিচের Proxy URL ব্যবহার করুন, তখন Key ব্রাউজারে লাগে না।</div>
+    <h3 class="section-title">🚚 কুরিয়ার সেটিংস (Steadfast)</h3>
+    <div class="muted" style="margin:0 0 12px;color:#9a5b08">🔒 নিরাপত্তা: Steadfast API Key/Secret এখন আর এখানে বা ডাটাবেসে থাকে না, Cloudflare Worker-এ থাকে। শুধু Worker-এর URL দিন, তারপর "সেভ করুন" চাপুন। সেভ করলে ডাটাবেস থেকে পুরনো Key/Secret মুছে যাবে।</div>
     <form id="courierForm">
-      <div class="field-group">API Base URL <input id="cBase" placeholder="https://portal.steadfast.com.bd/api/v1"></div>
-      <div class="field-group">API Key <input id="cKey" autocomplete="off"></div>
-      <div class="field-group">Secret Key <input type="password" id="cSecret" autocomplete="new-password"></div>
-      <div class="field-group">Proxy URL (ঐচ্ছিক, CORS সমস্যা হলে) <input id="cProxy" placeholder="https://your-worker.workers.dev"></div>
+      <div class="field-group">Worker URL <input id="cProxy" placeholder="https://dhong-courier.yourname.workers.dev"></div>
       <div class="field-group">ডিফল্ট নোট (কুরিয়ারের জন্য) <input id="cNote" placeholder="Handle with care"></div>
       <button class="btn primary" type="submit">সেভ করুন</button>
       <button class="btn gray" type="button" id="cTest">ব্যালেন্স চেক (টেস্ট)</button>
@@ -227,9 +233,15 @@ th{color:var(--muted);font-weight:600}
       <div class="field-group">অফার বার টেক্সট <input id="setTopBanner"></div>
       <div class="field-group">ব্যানার ব্যাকগ্রাউন্ড কালার <input type="color" id="setHeroBg" style="height:40px;padding:0"></div>
       <div class="field-group">ফ্ল্যাশ সেল টাইমার
-        <select id="setTimerStatus"><option value="show">চালু (Show Timer)</option><option value="hide">বন্ধ (Hide Timer)</option></select>
+        <select id="setTimerStatus"><option value="show">চালু (Show Timer)</option><option value="hide">বন্ধ (Hide Timer, অফার দাম সবসময় চালু)</option></select>
       </div>
-      <div class="field-group">অফারের সময়সীমা (ঘণ্টা) <input type="number" id="setTimerHours"></div>
+      <div class="field-group">অফার শেষের আসল সময় (সব কাস্টমারের জন্য একই)
+        <input type="datetime-local" id="setOfferEnd">
+        <div class="muted">এই সময় পার হলে অফার শেষ, নিয়মিত মূল্য চালু হবে। খালি রাখলে টাইমার দেখাবে না।</div>
+      </div>
+      <div class="field-group">দ্রুত সেট: এখন থেকে কত ঘণ্টা
+        <div style="display:flex;gap:8px"><input type="number" id="setTimerHours" min="1" style="margin-top:4px"><button type="button" class="btn blue" id="quickOfferBtn" style="margin-top:4px;white-space:nowrap">সেট করুন</button></div>
+      </div>
       <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
       <h3 class="section-title" style="color:var(--accent)">☁️ ছবি হোস্টিং (Cloudinary)</h3>
       <div class="muted" style="margin:0 0 10px">দুটো ঘর পূরণ করলে নতুন পণ্যের ছবি Cloudinary-তে সেভ হবে (সাইট দ্রুত হবে, Meta ক্যাটালগেও লাগবে)। খালি থাকলে আগের মতো ডাটাবেসে সেভ হবে।</div>
@@ -278,7 +290,7 @@ const STATUSES = ['WhatsApp Pending', 'Pending', 'Processing', 'Delivered', 'Can
 const LOW_STOCK = 5;
 const FULL_MAX = 900, FULL_Q = .85, THUMB_MAX = 400, THUMB_Q = .75;
 
-let products = [], orders = [], affiliates = [], withdrawals = [], settings = {}, courier = {};
+let products = [], orders = [], affiliates = [], withdrawals = [], pendingComments = [], settings = {}, courier = {};
 
 function toast(msg, isErr, ms) {
   const t = document.createElement('div');
@@ -289,7 +301,7 @@ function toast(msg, isErr, ms) {
 }
 const fail = e => toast('❌ ' + (e && e.message || e), true);
 
-/* ---------- Login (Firebase Auth) ---------- */
+/* ---------- Login (Firebase Auth + অ্যাডমিন তালিকা যাচাই) ---------- */
 const auth = firebase.auth();
 let started = false;
 function doLogin() {
@@ -299,9 +311,17 @@ function doLogin() {
 $('loginBtn').onclick = doLogin;
 ['adminEmailInput', 'adminPassInput'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
 $('logoutBtn').onclick = () => auth.signOut();
-auth.onAuthStateChanged(u => {
-  if (u) { $('loginModal').style.display = 'none'; $('loginError').textContent = ''; if (!started) { started = true; startListeners(); } }
-  else { $('loginModal').style.display = 'flex'; if (started) location.reload(); }
+auth.onAuthStateChanged(async u => {
+  if (u) {
+    let ok = false;
+    try { ok = (await db.ref('dhong_admins/' + u.uid).once('value')).val() === true; } catch (e) {}
+    if (!ok) {
+      $('loginError').textContent = '❌ এই অ্যাকাউন্টের অ্যাডমিন অনুমতি নেই। আপনার UID: ' + u.uid + ' (Firebase-এ dhong_admins/' + u.uid + ' = true বসান)';
+      auth.signOut(); return;
+    }
+    $('loginModal').style.display = 'none'; $('loginError').textContent = '';
+    if (!started) { started = true; startListeners(); }
+  } else { $('loginModal').style.display = 'flex'; if (started) location.reload(); }
 });
 
 /* ---------- Moderators ---------- */
@@ -327,12 +347,17 @@ function loadModerators() {
 
 /* ---------- Realtime data ---------- */
 function listFrom(snap) { const out = []; snap.forEach(ch => { const v = ch.val(); if (v && typeof v === 'object') { v._key = ch.key; out.push(v); } }); return out; }
-const listen = (path, fn) => db.ref(path).on('value', fn, e => { console.error(path, e); toast('❌ ডাটা পড়ার অনুমতি নেই (' + path + ')। অ্যাডমিন ইমেইল দিয়ে লগইন করেছেন?', true); });
+const listen = (path, fn) => db.ref(path).on('value', fn, e => { console.error(path, e); toast('❌ ডাটা পড়ার অনুমতি নেই (' + path + ')। Rules ও dhong_admins ঠিক আছে কিনা দেখুন।', true); });
 function startListeners() {
-listen('dhong_products', s => { products = listFrom(s); render(); });
-listen('dhong_orders', s => { orders = listFrom(s).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)); render(); notifyNew(orders); });
+listen('dhong_products', s => { products = listFrom(s); render(); applyStock(); });
+listen('dhong_orders', s => { orders = listFrom(s).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)); render(); notifyNew(orders); applyStock(); });
 listen('dhong_affiliates', s => { affiliates = listFrom(s); render(); });
 listen('dhong_withdrawals', s => { withdrawals = listFrom(s); render(); });
+listen('dhong_comments_pending', s => {
+  pendingComments = [];
+  s.forEach(ps => { ps.forEach(cs => { const v = cs.val(); if (v && typeof v === 'object') pendingComments.push(Object.assign({}, v, { pid: ps.key, cid: cs.key })); }); });
+  render();
+});
 listen('dhong_courier', s => { courier = s.val() || {}; fillCourierForm(); });
 listen('dhong_settings', s => { settings = s.val() || {}; fillSettingsForm(); });
 }
@@ -387,6 +412,27 @@ function parseItems(o) {
   if (Array.isArray(o.items)) return o.items;
   try { const v = JSON.parse(o.items_json); return Array.isArray(v) ? v : []; } catch { return null; }
 }
+// অর্ডারের দাম/ছাড়/ডেলিভারি সন্দেহজনক কিনা যাচাই (কাস্টমার ব্রাউজার থেকে দাম বদলালে ধরা পড়বে)
+function orderIssue(o) {
+  if (o.status === 'WhatsApp Pending') return '';
+  const items = parseItems(o);
+  if (!items || !items.length) return 'আইটেম পড়া যায়নি';
+  let sub = 0;
+  for (const i of items) {
+    const p = products.find(x => String(x.id) === String(i.product_id));
+    if (!p) return 'পণ্য খুঁজে পাওয়া যায়নি';
+    const pr = Number(i.price), q = Number(i.quantity);
+    if (![Number(p.price), Number(p.oldPrice)].includes(pr)) return 'দাম পণ্যের বর্তমান দামের সাথে মেলেনি';
+    if (!(q > 0 && q <= 5)) return 'পরিমাণ সন্দেহজনক';
+    sub += pr * q;
+  }
+  const d = Number(o.discount) || 0, f = Number(o.delivery_fee) || 0, thr = Number(settings.freeThreshold) || 0;
+  if (d > Math.round(sub * 0.1)) return 'ছাড় ১০% এর বেশি';
+  if (![0, Number(settings.dhakaFee) || 60, Number(settings.outsiderFee) || 120].includes(f)) return 'ডেলিভারি চার্জ মেলেনি';
+  if (f === 0 && thr && sub < thr) return 'ফ্রি ডেলিভারির শর্ত পূরণ হয়নি';
+  if (Math.abs(sub - d + f - Number(o.total)) > 1) return 'মোট হিসাব মেলেনি';
+  return '';
+}
 function filteredOrders() {
   const q = $('orderSearch').value.trim().toLowerCase(), st = $('statusFilter').value;
   return orders.filter(o => (!st || o.status === st) && (!q ||
@@ -406,9 +452,10 @@ function render() {
   const list = filteredOrders();
   $('orderRows').innerHTML = list.map(o => {
     const items = parseItems(o);
+    const issue = orderIssue(o);
     const itemsHtml = items === null ? esc(o.items_json) : items.map(i => `<div class="item">${safeUrl(i.img) ? `<img src="${safeUrl(i.img)}" alt="">` : ''}<div><b>${esc(i.name)}</b><br><small>রং: ${esc(i.color || '-')} | সাইজ: ${esc(i.size || '-')} | পিস: ${esc(i.quantity)}</small></div></div>`).join('');
     return `<tr><td>#DH-${esc(o.id)}</td><td><b>${esc(o.customer_name)}</b></td><td>${esc(o.phone)}</td><td>${esc(o.address)}</td><td>${itemsHtml}</td>
-      <td><b>${esc(o.affiliate_ref || 'None')}</b>${o.commission_amount ? `<br><small>৳${esc(o.commission_amount)} ${o.commission_paid ? '✅ যোগ হয়েছে' : '⏳ ডেলিভারির অপেক্ষায়'}</small>` : ''}${o.utm && o.utm.utm_campaign ? `<br><small>📣 ${esc(o.utm.utm_campaign)}</small>` : ''}</td><td>${money(o.total)}</td>
+      <td><b>${esc(o.affiliate_ref || 'None')}</b>${o.commission_amount ? `<br><small>৳${esc(o.commission_amount)} ${o.commission_paid ? '✅ যোগ হয়েছে' : '⏳ ডেলিভারির অপেক্ষায়'}</small>` : ''}${o.utm && o.utm.utm_campaign ? `<br><small>📣 ${esc(o.utm.utm_campaign)}</small>` : ''}</td><td>${money(o.total)}${issue ? `<br><span class="pill bad" title="${esc(issue)}">⚠️ ${esc(issue)}</span>` : ''}</td>
       <td><select data-act="status" data-key="${esc(o._key)}">${STATUSES.map(s => `<option ${o.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
       <td>${o.created_at ? esc(new Date(o.created_at).toLocaleString()) : ''}</td>
       <td>${o.consignment_id ? `<small>CID: ${esc(o.consignment_id)}<br>${esc(o.courier_status || '')}</small><br><button class="btn sm gray" data-act="trackCourier" data-key="${esc(o._key)}">স্ট্যাটাস</button>` : `<button class="btn sm blue" data-act="sendCourier" data-key="${esc(o._key)}">🚚 কুরিয়ারে পাঠান</button>`}
@@ -420,6 +467,13 @@ function render() {
     <td>${w.status === 'Paid' ? '✅' : w.status === 'Rejected' ? '❌' : `<button class="btn sm blue" data-act="pay" data-key="${esc(w._key)}">পেমেন্ট কমপ্লিট</button> <button class="btn sm red" data-act="rejectW" data-key="${esc(w._key)}">বাতিল</button>`}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">কোনো উইথড্রল রিকোয়েস্ট নেই।</td></tr>';
 
   $('affiliateRows').innerHTML = affiliates.map(a => `<tr><td><b>${esc(a._key)}</b></td><td>${esc(a.sales || 0)} টি</td><td>${money(a.commission)}</td></tr>`).join('') || '<tr><td colspan="3" class="empty">কোনো এফিলিয়েট নেই।</td></tr>';
+
+  $('pendingCommentBadge').textContent = pendingComments.length ? '(' + pendingComments.length + ')' : '';
+  $('commentRows').innerHTML = pendingComments.map(c => {
+    const p = products.find(x => String(x.id) === String(c.pid));
+    return `<tr><td>${esc(p ? p.name : c.pid)}</td><td><b>${esc(c.name)}</b></td><td style="max-width:320px;word-break:break-word">${esc(c.text)}</td><td>${c.created_at ? esc(new Date(c.created_at).toLocaleString()) : ''}</td>
+      <td><button class="btn sm green" data-act="apprC" data-pid="${esc(c.pid)}" data-cid="${esc(c.cid)}">অনুমোদন</button> <button class="btn sm red" data-act="delC" data-pid="${esc(c.pid)}" data-cid="${esc(c.cid)}">মুছুন</button></td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="empty">অনুমোদনের অপেক্ষায় কোনো রিভিউ নেই।</td></tr>';
 
   const base = location.origin + location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
   $('productList').innerHTML = products.map(p => {
@@ -443,6 +497,46 @@ $('statusFilter').innerHTML = '<option value="">সব স্ট্যাটা�
 $('orderSearch').addEventListener('input', debounce(render));
 $('statusFilter').addEventListener('change', render);
 
+/* ---------- স্টক ও সেলস (এখন শুধু অ্যাডমিন প্যানেল আপডেট করে, কাস্টমার ব্রাউজার নয়) ---------- */
+let applying = false;
+async function applyStock() {
+  if (applying || !products.length || !orders.length) return;
+  if (!settings || !Object.keys(settings).length) return;
+  if (!settings.stockApplyFrom) {
+    // প্রথমবার: এর আগের অর্ডারের স্টক পুরনো সাইট আগেই কেটেছে, তাই দ্বিতীয়বার কাটা হবে না
+    try { await db.ref('dhong_settings/stockApplyFrom').set(new Date().toISOString()); } catch (e) { console.error(e); }
+    return;
+  }
+  const from = new Date(settings.stockApplyFrom).getTime();
+  applying = true;
+  try {
+    for (const o of orders) {
+      if (o.stock_applied || o.status === 'Cancelled' || o.status === 'WhatsApp Pending') continue;
+      if (new Date(o.created_at || 0).getTime() < from) continue;
+      const r = await db.ref('dhong_orders/' + o._key + '/stock_applied').transaction(c => c ? undefined : true);
+      if (!r.committed) continue;
+      for (const i of parseItems(o) || []) {
+        const p = products.find(x => String(x.id) === String(i.product_id)); if (!p) continue;
+        const q = Number(i.quantity) || 0;
+        await db.ref('dhong_products/' + p._key + '/stock').transaction(v => Math.max(0, (Number(v) || 0) - q));
+        await db.ref('dhong_products/' + p._key + '/sales').transaction(v => (Number(v) || 0) + q);
+      }
+    }
+  } catch (e) { console.error(e); }
+  finally { applying = false; }
+}
+async function restoreStock(key) {
+  const o = orders.find(x => x._key === key); if (!o || !o.stock_applied) return;
+  const r = await db.ref('dhong_orders/' + key + '/stock_applied').transaction(c => c ? false : undefined);
+  if (!r.committed) return;
+  for (const i of parseItems(o) || []) {
+    const p = products.find(x => String(x.id) === String(i.product_id)); if (!p) continue;
+    const q = Number(i.quantity) || 0;
+    await db.ref('dhong_products/' + p._key + '/stock').transaction(v => (Number(v) || 0) + q);
+    await db.ref('dhong_products/' + p._key + '/sales').transaction(v => Math.max(0, (Number(v) || 0) - q));
+  }
+}
+
 /* ---------- CSV export ---------- */
 $('exportCsv').onclick = () => {
   const cell = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
@@ -455,22 +549,24 @@ $('exportCsv').onclick = () => {
   a.click(); URL.revokeObjectURL(a.href);
 };
 
-/* ---------- Tracking sync (কাস্টমারের ট্র্যাকিংয়ের জন্য নিরাপদ কপি) ---------- */
-async function trackHash(id, p4) {
-  const t = 'dhong-track:' + id + ':' + p4;
-  if (!(window.crypto && crypto.subtle)) return p4;
+/* ---------- Tracking sync ----------
+   ট্র্যাকিং নোডের কী = hash(অর্ডার নম্বর + ফোনের শেষ ৪ ডিজিট)। দুটো না জানলে কেউ খুঁজে পাবে না। */
+async function sha(t) {
+  if (!(window.crypto && crypto.subtle)) return t.replace(/[^a-zA-Z0-9]/g, '-');
   const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
   return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+const trackHash = (id, p4) => sha('dhong-track:' + id + ':' + p4);
+const phone4 = o => String(o.phone || '').replace(/\D/g, '').slice(-4).replace(/^(.{0,3})$/, 'wa');
+async function trackKey(o) { return trackHash(o.id, phone4(o)); }
 async function syncTrack(key, extra = {}) {
   const o = Object.assign({}, orders.find(x => x._key === key) || {}, extra);
   if (!o.id) return;
-  const p4 = String(o.phone || '').replace(/\D/g, '').slice(-4);
   const data = { status: o.status || 'Pending', items_json: o.items_json || '[]', total: Number(o.total) || 0,
     discount: Number(o.discount) || 0, delivery_fee: Number(o.delivery_fee) || 0, created_at: o.created_at || '',
     tracking_code: o.tracking_code || null, courier_status: o.courier_status || null };
-  if (p4.length === 4) data.ph = await trackHash(o.id, p4);
-  await db.ref('dhong_track/' + o.id).update(data);
+  await db.ref('dhong_track/' + await trackKey(o)).update(data);
+  await db.ref('dhong_track/' + o.id).remove().catch(() => {});   // পুরনো খোলা নোড মুছে ফেলা
 }
 $('syncTrackBtn').onclick = async () => {
   try { for (const o of orders) await syncTrack(o._key); toast('✅ ' + orders.length + ' টি অর্ডারের ট্র্যাকিং সিঙ্ক হয়েছে'); } catch (e) { fail(e); }
@@ -480,7 +576,11 @@ $('syncTrackBtn').onclick = async () => {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'SELECT') return;
   const { act, key } = b.dataset;
-  if (act === 'delOrder' && confirm('এই অর্ডার ডিলিট করবেন?')) { const o = orders.find(x => x._key === key); Promise.all([db.ref('dhong_orders/' + key).remove(), o && o.id ? db.ref('dhong_track/' + o.id).remove() : null]).then(() => toast('✅ অর্ডার মুছে গেছে')).catch(fail); }
+  if (act === 'delOrder' && confirm('এই অর্ডার ডিলিট করবেন?')) {
+    const o = orders.find(x => x._key === key);
+    Promise.all([db.ref('dhong_orders/' + key).remove(), o && o.id ? trackKey(o).then(k => db.ref('dhong_track/' + k).remove()) : null, o && o.id ? db.ref('dhong_track/' + o.id).remove() : null])
+      .then(() => toast('✅ অর্ডার মুছে গেছে')).catch(fail);
+  }
   if (act === 'pay') approveWithdrawal(key);
   if (act === 'rejectW') rejectWithdrawal(key);
   if (act === 'sendCourier') sendCourier(key, b);
@@ -490,13 +590,29 @@ document.addEventListener('click', e => {
   if (act === 'delProduct') deleteProduct(key);
   if (act === 'toggleMod') db.ref('dhong_moderators/' + key + '/status').set(b.dataset.blocked === 'true' ? 'Active' : 'Blocked').then(() => { toast('✅ আপডেট হয়েছে'); loadModerators(); }).catch(fail);
   if (act === 'delMod' && confirm(`মডারেটর (${key}) ডিলিট করবেন?`)) db.ref('dhong_moderators/' + key).remove().then(loadModerators).catch(fail);
+  if (act === 'apprC') {
+    const c = pendingComments.find(x => x.pid === b.dataset.pid && x.cid === b.dataset.cid); if (!c) return;
+    db.ref().update({
+      ['dhong_comments/' + c.pid + '/' + c.cid]: { name: c.name, text: c.text, created_at: c.created_at },
+      ['dhong_comments_pending/' + c.pid + '/' + c.cid]: null
+    }).then(() => toast('✅ রিভিউ প্রকাশিত হয়েছে')).catch(fail);
+  }
+  if (act === 'delC' && confirm('এই রিভিউ মুছে ফেলবেন?')) db.ref('dhong_comments_pending/' + b.dataset.pid + '/' + b.dataset.cid).remove().then(() => toast('রিভিউ মুছে গেছে')).catch(fail);
 });
-document.addEventListener('change', e => {
-  const s = e.target.closest('select[data-act="status"]');
-  if (s) db.ref('dhong_orders/' + s.dataset.key + '/status').set(s.value)
-    .then(() => settleCommission(s.dataset.key, s.value))
-    .then(() => syncTrack(s.dataset.key, { status: s.value }))
-    .then(() => toast('✅ স্ট্যাটাস আপডেট হয়েছে')).catch(fail);
+document.addEventListener('change', async e => {
+  const s = e.target.closest('select[data-act="status"]'); if (!s) return;
+  const key = s.dataset.key, o = orders.find(x => x._key === key);
+  if (s.value === 'Delivered' && o) {
+    const iss = orderIssue(o);
+    if (iss && !confirm('⚠️ এই অর্ডারে সমস্যা: ' + iss + '\nতবুও Delivered করবেন? (কমিশনও যোগ হবে)')) { render(); return; }
+  }
+  try {
+    await db.ref('dhong_orders/' + key + '/status').set(s.value);
+    await settleCommission(key, s.value);
+    if (s.value === 'Cancelled') await restoreStock(key);
+    await syncTrack(key, { status: s.value });
+    toast('✅ স্ট্যাটাস আপডেট হয়েছে');
+  } catch (err) { fail(err); }
 });
 
 async function approveWithdrawal(key) {
@@ -531,11 +647,14 @@ function rejectWithdrawal(key) {
   }).then(() => toast('উইথড্রল বাতিল ও ব্যালেন্স ফেরত দেওয়া হয়েছে')).catch(fail);
 }
 
-// অর্ডার Delivered হলে একবারই কমিশন যোগ হয়; Delivered থেকে সরলে (ক্যান্সেল/রিটার্ন) কমিশন ফেরত কাটা হয়
+// অর্ডার Delivered হলে একবারই কমিশন যোগ হয়; Delivered থেকে সরলে (ক্যান্সেল/রিটার্ন) কমিশন ফেরত কাটা হয়।
+// কমিশনের অঙ্ক এখানে নিজে হিসাব করা হয় (কাস্টমারের পাঠানো commission_amount বিশ্বাস করা হয় না)।
 async function settleCommission(key, status) {
   const o = orders.find(x => x._key === key); if (!o) return;
-  const ref = o.affiliate_ref, amt = Number(o.commission_amount) || 0;
-  if (!ref || ref === 'None' || !amt) return;
+  const ref = o.affiliate_ref;
+  if (!ref || ref === 'None') return;
+  const amt = Math.max(0, Math.round((Number(o.total || 0) - Number(o.delivery_fee || 0)) * 0.05));
+  if (!amt) return;
   const want = status === 'Delivered';
   if (want && !(await db.ref('dhong_affiliates/' + ref).once('value')).exists()) return;
   const r = await db.ref('dhong_orders/' + key + '/commission_paid').transaction(cur => (!!cur === want) ? undefined : want);
@@ -711,29 +830,25 @@ function deleteProduct(key) {
   Promise.all([db.ref('dhong_products/' + key).remove(), db.ref('dhong_images/' + p.id).remove()]).then(() => toast('✅ পণ্য মুছে গেছে')).catch(fail);
 }
 
-/* ---------- Courier (Steadfast) ---------- */
-const DEFAULT_COURIER_BASE = 'https://portal.steadfast.com.bd/api/v1';
+/* ---------- Courier (Steadfast, Cloudflare Worker এর মাধ্যমে) ---------- */
 function fillCourierForm() {
   const v = (id, val) => { const el = $(id); if (el) el.value = val || ''; };
-  v('cBase', courier.baseUrl || DEFAULT_COURIER_BASE); v('cKey', courier.apiKey); v('cSecret', courier.secretKey);
   v('cProxy', courier.proxyUrl); v('cNote', courier.note);
 }
 $('courierForm').addEventListener('submit', e => {
   e.preventDefault();
-  db.ref('dhong_courier').set({
-    baseUrl: $('cBase').value.trim(), apiKey: $('cKey').value.trim(), secretKey: $('cSecret').value.trim(),
-    proxyUrl: $('cProxy').value.trim(), note: $('cNote').value.trim()
-  }).then(() => toast('✅ কুরিয়ার সেটিংস সংরক্ষণ হয়েছে')).catch(fail);
+  // set() পুরো নোড বদলায়, তাই আগের apiKey/secretKey ডাটাবেস থেকে মুছে যায়
+  db.ref('dhong_courier').set({ proxyUrl: $('cProxy').value.trim(), note: $('cNote').value.trim() })
+    .then(() => toast('✅ কুরিয়ার সেটিংস সংরক্ষণ হয়েছে (পুরনো Key মুছে গেছে)')).catch(fail);
 });
 async function courierCall(path, method, body) {
-  const c = courier, proxy = (c.proxyUrl || '').replace(/\/$/, '');
-  if (!proxy && (!c.apiKey || !c.secretKey)) throw new Error('Courier ট্যাবে API Key ও Secret Key দিন।');
-  const url = (proxy || (c.baseUrl || DEFAULT_COURIER_BASE).replace(/\/$/, '')) + path;
-  const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
-  if (!proxy) { headers['Api-Key'] = c.apiKey; headers['Secret-Key'] = c.secretKey; }
+  const proxy = (courier.proxyUrl || '').replace(/\/$/, '');
+  if (!proxy) throw new Error('Courier ট্যাবে Worker URL দিন।');
+  const token = await auth.currentUser.getIdToken();
+  const headers = { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: 'Bearer ' + token };
   let r;
-  try { r = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined }); }
-  catch { throw new Error('কুরিয়ার সার্ভারে পৌঁছানো যায়নি (CORS/নেটওয়ার্ক)। Proxy URL ব্যবহার করুন।'); }
+  try { r = await fetch(proxy + path, { method, headers, body: body ? JSON.stringify(body) : undefined }); }
+  catch { throw new Error('Worker-এ পৌঁছানো যায়নি। URL ও ALLOWED_ORIGIN ঠিক আছে কিনা দেখুন।'); }
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.message || 'কুরিয়ার API এরর (' + r.status + ')');
   return j;
@@ -777,6 +892,13 @@ async function trackCourier(key, btn) {
 }
 
 /* ---------- Settings ---------- */
+const toLocalInput = ms => ms ? new Date(ms - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
+$('quickOfferBtn').onclick = () => {
+  const h = Number($('setTimerHours').value);
+  if (!(h > 0)) return toast('ঘণ্টা দিন।', true);
+  $('setOfferEnd').value = toLocalInput(Date.now() + h * 3600 * 1000);
+  toast('সময় বসানো হয়েছে, নিচে "সেটিংস সেভ করুন" চাপুন');
+};
 function fillSettingsForm() {
   const v = (id, val) => { const el = $(id); if (el) el.value = val; };
   v('setSiteName', settings.siteName || 'ঢং DHONG'); v('setThemeColor', settings.themeColor || '#e85d75');
@@ -784,17 +906,19 @@ function fillSettingsForm() {
   v('setWhatsapp', settings.whatsapp || ''); v('setPhone', settings.phone || '');
   v('setTopBanner', settings.topBannerText || '🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি');
   v('setHeroBg', settings.heroBg || '#242b49'); v('setTimerStatus', settings.timerStatus || 'show'); v('setTimerHours', settings.timerHours || '24');
+  v('setOfferEnd', toLocalInput(Number(settings.offerEnd) || 0));
   v('setPixel', settings.fbPixelId || ''); v('setCloudName', settings.cloudName || ''); v('setCloudPreset', settings.cloudPreset || ''); v('setAddress', settings.address || ''); v('setEmail', settings.email || ''); v('setHours', settings.hours || '');
   v('setFacebook', settings.facebook || ''); v('setInstagram', settings.instagram || ''); v('setYoutube', settings.youtube || ''); v('setTiktok', settings.tiktok || '');
   v('setAbout', settings.aboutText || ''); v('setReturn', settings.returnPolicy || ''); v('setPrivacy', settings.privacyPolicy || ''); v('setFaq', settings.faqText || '');
 }
 $('settingsForm').addEventListener('submit', e => {
   e.preventDefault();
+  const endVal = $('setOfferEnd').value;
   db.ref('dhong_settings').update({
     siteName: $('setSiteName').value, themeColor: $('setThemeColor').value, dhakaFee: $('setDhaka').value,
     outsiderFee: $('setOutsider').value, freeThreshold: $('setThreshold').value, whatsapp: $('setWhatsapp').value,
     phone: $('setPhone').value, topBannerText: $('setTopBanner').value, heroBg: $('setHeroBg').value,
-    timerStatus: $('setTimerStatus').value, timerHours: $('setTimerHours').value,
+    timerStatus: $('setTimerStatus').value, timerHours: $('setTimerHours').value, offerEnd: endVal ? new Date(endVal).getTime() : 0,
     fbPixelId: $('setPixel').value.replace(/\D/g, ''), cloudName: $('setCloudName').value.trim(), cloudPreset: $('setCloudPreset').value.trim(), address: $('setAddress').value.trim(), email: $('setEmail').value.trim(), hours: $('setHours').value.trim(),
     facebook: $('setFacebook').value.trim(), instagram: $('setInstagram').value.trim(), youtube: $('setYoutube').value.trim(), tiktok: $('setTiktok').value.trim(),
     aboutText: $('setAbout').value.trim(), returnPolicy: $('setReturn').value.trim(), privacyPolicy: $('setPrivacy').value.trim(), faqText: $('setFaq').value.trim()
