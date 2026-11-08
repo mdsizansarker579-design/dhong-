@@ -1,1014 +1,127 @@
-<!DOCTYPE html>
-<html lang="bn">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DHONG Admin Panel</title>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<!-- ===== DHONG ADMIN UPDATE: admin.html এর </body> ট্যাগের ঠিক আগে এই পুরো অংশ (style + section + script) পেস্ট করুন ===== -->
 <style>
-:root{--bg:#f4f6fb;--card:#fff;--text:#182230;--muted:#667085;--dark:#151b2b;--accent:#6558e8;--line:#e7eaf0;--green:#12805c;--red:#e53e3e}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--text)}
-button,input,select,textarea{font:inherit}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.layout{display:flex;min-height:100vh}
-.sidebar{width:240px;background:var(--dark);color:#fff;padding:20px 14px;flex-shrink:0}
-.brand{font-size:22px;font-weight:900;letter-spacing:1px;padding:8px 0}
-.brand small{display:block;font-size:10px;color:#aeb7ca;margin-top:4px}
-.nav{margin-top:15px;display:flex;flex-direction:column;gap:4px}
-.nav button{width:100%;text-align:left;border:0;background:transparent;color:#cbd2e1;padding:11px 12px;border-radius:8px;cursor:pointer;font-size:13px}
-.nav button.active,.nav button:hover{background:#343b54;color:#fff;font-weight:bold}
-.main{flex:1;min-width:0;padding:20px}
-.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
-.top h1{font-size:22px;margin:0}
-.muted{color:var(--muted);font-size:12px;margin-top:5px}
-.live{background:#e8f7ef;color:var(--green);border:1px solid var(--line);padding:8px 12px;border-radius:10px;font-size:12px}
-.page{display:none}.page.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
-.stat-label{color:var(--muted);font-size:12px}
-.stat{font-size:24px;font-weight:800;margin:10px 0 4px}
-.section-title{font-size:16px;font-weight:700;margin:0 0 12px}
-input,select,textarea{border:1px solid #dce1eb;background:#fff;border-radius:8px;padding:10px;width:100%;margin-top:4px}
-.field-group{margin-bottom:12px;font-size:12px;font-weight:bold}
-.btn{border:0;border-radius:8px;padding:10px 12px;cursor:pointer;font-weight:650;color:#fff}
-.btn:disabled{opacity:.6;cursor:not-allowed}
-.btn.sm{padding:5px 8px;font-size:11px}
-.primary{background:var(--accent)}.gray{background:#6c757d}.blue{background:#007bff}.red{background:#ff4d4d}.green{background:#38a169}.amber{background:#d69e2e}
-table{width:100%;border-collapse:collapse;min-width:550px}
-th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:top}
-th{color:var(--muted);font-weight:600}
-.table-wrap{overflow-x:auto}
-.pill{display:inline-block;padding:4px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#e8f7ef;color:#16754e}
-.pill.pending{background:#fff2db;color:#9a5b08}.pill.bad{background:#fed7d7;color:#9b2c2c}
-.empty{padding:20px;text-align:center;color:var(--muted)}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.toolbar input{flex:2;min-width:180px;margin:0}.toolbar select{flex:1;min-width:130px;margin:0}
-.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;flex-wrap:wrap;gap:8px}
-.item{display:flex;align-items:center;gap:8px;margin-bottom:6px;background:#f9f9f9;padding:4px;border-radius:6px}
-.item img,.thumb{width:45px;height:45px;object-fit:cover;border-radius:4px;border:1px solid #ddd;flex-shrink:0}
-#toasts{position:fixed;bottom:16px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:100000}
-.toast{background:#151b2b;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
-.toast.err{background:#c53030}
-#loginModal{position:fixed;inset:0;background:var(--dark);display:flex;align-items:center;justify-content:center;z-index:99999}
-.login-box{background:#fff;padding:30px;border-radius:14px;width:100%;max-width:380px;text-align:center}
-@media(max-width:768px){
-  .layout{flex-direction:column}
-  .sidebar{width:100%;padding:15px;text-align:center}
-  .nav{display:grid;grid-template-columns:repeat(3,1fr);margin-top:10px}
-  .nav button{padding:8px 4px;font-size:11px;text-align:center;border:1px solid #2d364f}
-  .main{padding:12px}
-}
-@media(max-width:480px){.nav{grid-template-columns:repeat(2,1fr)}}
+.nav button{display:flex;align-items:center;gap:8px}
+[data-act="delOrder"]::before,[data-act="delProduct"]::before,[data-act="delC"]::before,[data-act="delMod"]::before,[data-act="delAff"]::before,[data-act="delW"]::before,[data-act="delRev"]::before,[data-act="delCat"]::before{content:'🗑️ '}
+[data-act="editProduct"]::before,[data-act="editOrder"]::before,[data-act="editRev"]::before,[data-act="renCat"]::before{content:'✏️ '}
+[data-act="copy"]::before{content:'📋 '}
+[data-act="trackCourier"]::before{content:'📦 '}
+[data-act="pay"]::before{content:'💸 '}
+[data-act="rejectW"]::before{content:'✖️ '}
+[data-act="apprC"]::before{content:'✅ '}
+[data-act="toggleMod"]::before{content:'🔒 '}
+#exportCsv::before{content:'⬇️ '}#syncTrackBtn::before{content:'🔄 '}#saveProductBtn::before{content:'💾 '}
+#cancelEdit::before{content:'↩️ '}#vGen::before{content:'✨ '}#vAdd::before{content:'➕ '}
+#addModBtn::before{content:'➕ '}#cTest::before{content:'🔌 '}#loginBtn::before{content:'🔐 '}
+#logoutBtn::before{content:'🚪 '}#quickOfferBtn::before{content:'⏱️ '}#migrateBtn::before{content:'☁️ '}#feedBtn::before{content:'📤 '}
+.sec-ico{font-size:18px;margin-right:6px}
 </style>
-</head>
-<body>
 
-<div id="loginModal">
-  <div class="login-box">
-    <h2 style="margin-top:0">DHONG Super Admin</h2>
-    <p class="muted" style="margin-bottom:20px">প্যানেলে প্রবেশ করতে ইমেইল ও পাসওয়ার্ড দিন</p>
-    <input type="email" id="adminEmailInput" placeholder="অ্যাডমিন ইমেইল" autocomplete="username" style="margin-bottom:8px">
-    <input type="password" id="adminPassInput" placeholder="পাসওয়ার্ড লিখুন..." autocomplete="current-password">
-    <button class="btn primary" id="loginBtn" style="width:100%;margin-top:12px">লগইন করুন</button>
-    <div id="loginError" style="color:red;font-size:12px;margin-top:10px;word-break:break-all"></div>
-  </div>
-</div>
-<div id="toasts" aria-live="polite"></div>
-
-<div class="layout">
-<aside class="sidebar">
-  <div class="brand">DHONG<small>SUPER ADMIN</small></div>
-  <nav class="nav">
-    <button class="active" data-page="dashboard" data-title="Dashboard">▦ Dashboard</button>
-    <button data-page="orders" data-title="Orders">▤ Orders</button>
-    <button data-page="products" data-title="Products">◈ Products</button>
-    <button data-page="comments" data-title="Reviews">💬 Reviews <span id="pendingCommentBadge"></span></button>
-    <button data-page="affiliates" data-title="Affiliates & Withdraws">🤝 Affiliates</button>
-    <button data-page="moderators" data-title="Moderators & Security">🛡️ Moderators</button>
-    <button data-page="profit" data-title="Profit Report">৳ Profit</button>
-    <button data-page="courier" data-title="Courier API">🚚 Courier</button>
-    <button data-page="api" data-title="Settings">⚙ Settings</button>
-  </nav>
-</aside>
-
-<main class="main">
-<header class="top">
-  <div><h1 id="pageTitle">Dashboard</h1><div class="muted">DHONG স্টোরের লাইভ এডমিন প্যানেল</div></div>
-  <div style="display:flex;gap:8px;align-items:center"><div class="live">● Super Admin Live</div><button class="btn sm primary" id="notifBtn">🔔 নোটিফিকেশন চালু করুন</button><button class="btn sm gray" id="logoutBtn">লগআউট</button></div>
-</header>
-
-<section class="page active" id="dashboard">
-  <div class="grid">
-    <div class="card"><div class="stat-label">মোট অর্ডার</div><div class="stat" id="totalOrdersCount">0</div></div>
-    <div class="card"><div class="stat-label">নতুন অর্ডার</div><div class="stat" id="newOrdersCount">0</div></div>
-    <div class="card"><div class="stat-label">মোট বিক্রি</div><div class="stat" id="totalSalesAmount">৳ 0</div></div>
-    <div class="card"><div class="stat-label">কম স্টকের পণ্য</div><div class="stat" id="lowStockCount" style="color:var(--red)">0</div></div>
+<section class="page" id="store">
+  <div class="card">
+    <h3 class="section-title"><span class="sec-ico">🏷️</span>ক্যাটাগরি ম্যানেজার (নাম বদলান / মুছুন)</h3>
+    <div id="catMgr"></div>
   </div>
   <div class="card">
-    <h3 class="section-title">সাম্প্রতিক অর্ডার</h3>
-    <div class="table-wrap"><table><thead><tr><th>আইডি</th><th>কাস্টমার</th><th>টাকা</th><th>স্ট্যাটাস</th></tr></thead>
-    <tbody id="recentOrders"></tbody></table></div>
+    <h3 class="section-title"><span class="sec-ico">💬</span>প্রকাশিত কাস্টমার রিভিউ (এডিট / ডিলিট)</h3>
+    <div id="revMgr"></div>
   </div>
 </section>
-
-<section class="page" id="orders">
-  <div class="card">
-    <h3 class="section-title">অর্ডার ম্যানেজমেন্ট</h3>
-    <div class="toolbar">
-      <input type="search" id="orderSearch" placeholder="🔍 নাম, ফোন বা অর্ডার নম্বর...">
-      <select id="statusFilter"></select>
-      <button class="btn gray" id="exportCsv">CSV এক্সপোর্ট</button>
-      <button class="btn gray" id="syncTrackBtn">ট্র্যাকিং সিঙ্ক</button>
-    </div>
-    <div class="table-wrap"><table><thead><tr><th>ID</th><th>কাস্টমার</th><th>ফোন</th><th>ঠিকানা</th><th>পণ্য</th><th>রেফ</th><th>মোট</th><th>স্ট্যাটাস</th><th>তারিখ</th><th></th></tr></thead>
-    <tbody id="orderRows"></tbody></table></div>
-  </div>
-</section>
-
-<section class="page" id="products">
-  <div class="card">
-    <h3 class="section-title" id="formTitle">নতুন পণ্য যোগ করুন</h3>
-    <form id="productForm">
-      <input type="hidden" id="editKey">
-      <div style="text-align:center;margin-bottom:12px"><img id="previewImage" alt="" style="max-height:120px;max-width:100%;border-radius:8px;display:none;margin:0 auto"></div>
-      <div class="field-group">পণ্যের নাম <input id="pName" required></div>
-      <div class="field-group">ক্যাটাগরি <input id="pCat" list="categoryList" required><datalist id="categoryList"><option value="পোশাক"><option value="ব্যাগ"><option value="অ্যাক্সেসরিজ"></datalist></div>
-      <div class="field-group">অফার মূল্য (৳) <input type="number" id="pPrice" required min="0"></div>
-      <div class="field-group">নিয়মিত মূল্য (৳) <input type="number" id="pOldPrice" min="0"></div>
-      <div class="field-group">স্টক (ভেরিয়েন্ট থাকলে নিজে হিসাব হয়) <input type="number" id="pStock" min="0"></div>
-      <div class="field-group" style="background:#fff8e6;padding:10px;border-radius:8px;border:1px solid #f3dca0">
-        🎨 ভেরিয়েন্ট (রং × সাইজ, প্রতিটির আলাদা স্টক)
-        <div class="muted">রং ও সাইজ কমা দিয়ে লিখে "তৈরি করুন" চাপুন, তারপর প্রতিটির স্টক বসান। ভেরিয়েন্ট না দিলে সাধারণ স্টক ও আগের ড্রপডাউন চলবে।</div>
-        <input id="vColors" placeholder="রং: কালো, সাদা, লাল">
-        <input id="vSizes" placeholder="সাইজ: M, L, XL" style="margin-bottom:6px">
-        <button type="button" class="btn blue sm" id="vGen">তৈরি করুন / যোগ করুন</button>
-        <button type="button" class="btn gray sm" id="vAdd">+ একটি ভেরিয়েন্ট</button>
-        <div id="vList" style="margin-top:8px;font-weight:normal"></div>
-      </div>
-      <div class="field-group">রেটিং (১-৫) <input type="number" step="0.1" min="1" max="5" id="pRating" placeholder="4.8"></div>
-      <div class="field-group">মোট সেলস <input type="number" id="pSales" min="0"></div>
-      <div class="field-group">পণ্যের মান <input id="pQuality" placeholder="১০০% সুতি কটন"></div>
-      <div class="field-group" style="background:#f0f4ff;padding:10px;border-radius:8px;border:1px dashed var(--accent)">
-        📸 প্রধান ছবি আপলোড:
-        <input type="file" id="pImgFile" accept="image/*">
-        <div class="muted">অথবা সরাসরি লিংক:</div>
-        <input id="pImg" placeholder="https://...">
-      </div>
-      <div class="field-group" style="background:#f9f9f9;padding:10px;border-radius:8px;border:1px solid #ddd">
-        🎨 একাধিক থাম্বনেইল (৭-৮টি পর্যন্ত):
-        <input type="file" id="pColorFiles" accept="image/*" multiple>
-        <div class="muted">অথবা লিংকসমূহ (কমা দিয়ে):</div>
-        <input id="pColors" placeholder="https://img1..., https://img2...">
-      </div>
-      <div class="field-group">ইউটিউব রিভিউ লিংক <input id="pVideo" placeholder="https://www.youtube.com/watch?v=..."></div>
-      <div class="field-group">বিবরণ <textarea id="pDesc" rows="2"></textarea></div>
-      <button class="btn primary" type="submit" id="saveProductBtn">পণ্য সংরক্ষণ করুন</button>
-      <button class="btn gray" type="button" id="cancelEdit" style="display:none">বাতিল</button>
-    </form>
-  </div>
-  <div class="card"><h3 class="section-title">পণ্য তালিকা</h3><div class="toolbar"><button class="btn gray" id="migrateBtn">☁️ পুরনো ছবি Cloudinary-তে সরান</button>
-    <button class="btn primary" id="feedBtn">📤 Meta ক্যাটালগ ফিড (CSV)</button></div><div id="productList"></div></div>
-</section>
-
-<section class="page" id="comments">
-  <div class="card">
-    <h3 class="section-title">💬 অনুমোদনের অপেক্ষায় রিভিউ</h3>
-    <div class="muted" style="margin-bottom:12px">কাস্টমারের রিভিউ আপনি অনুমোদন করলে তবেই সাইটে দেখা যাবে।</div>
-    <div class="table-wrap"><table><thead><tr><th>পণ্য</th><th>নাম</th><th>মতামত</th><th>তারিখ</th><th></th></tr></thead><tbody id="commentRows"></tbody></table></div>
-  </div>
-</section>
-
-<section class="page" id="affiliates">
-  <div class="card">
-    <h3 class="section-title">💸 উইথড্রল রিকোয়েস্ট</h3>
-    <div class="table-wrap"><table><thead><tr><th>মার্কেটার</th><th>টাকা</th><th>মেথড</th><th>নম্বর</th><th>স্ট্যাটাস</th><th></th></tr></thead><tbody id="withdrawRows"></tbody></table></div>
-  </div>
-  <div class="card">
-    <h3 class="section-title">🤝 এফিলিয়েট তালিকা</h3>
-    <div class="table-wrap"><table><thead><tr><th>আইডি</th><th>মোট সেলস</th><th>কমিশন ব্যালেন্স</th></tr></thead><tbody id="affiliateRows"></tbody></table></div>
-  </div>
-</section>
-
-<section class="page" id="moderators">
-  <div class="card">
-    <h3 class="section-title">🛡️ সিকিউরিটি ও মডারেটর</h3>
-    <div class="muted" style="margin-bottom:14px">অ্যাডমিন পাসওয়ার্ড বদলাতে Firebase Console → Authentication → Users থেকে করুন। নতুন অ্যাডমিন যোগ করতে Realtime Database-এ dhong_admins/&lt;UID&gt; = true বসান।<br><b>নোট:</b> এই তালিকা এখনো শুধু নাম সংরক্ষণ করে, আলাদা লগইন বা পারমিশন দেয় না (পরের ধাপে রোল সিস্টেম হবে)।</div>
-    <h4 style="margin:0 0 10px">নতুন মডারেটর</h4>
-    <div class="field-group">ইউজারনেম <input id="modUser"></div>
-    <button class="btn primary" id="addModBtn">মডারেটর যুক্ত করুন</button>
-    <h4 style="margin:20px 0 10px">মডারেটর তালিকা</h4>
-    <div id="moderatorList"></div>
-  </div>
-</section>
-
-<section class="page" id="profit">
-  <div class="card">
-    <h3 class="section-title">প্রফিট রিপোর্ট</h3>
-    <div class="field-group" style="max-width:240px">প্রফিট মার্জিন (%) <input type="number" id="profitMargin" min="0" max="100" value="35"></div>
-    <div class="grid">
-      <div class="card" style="margin:0"><div class="stat-label">মোট সেলস</div><div class="stat" id="profitTotalSales">৳ 0</div></div>
-      <div class="card" style="margin:0"><div class="stat-label">আনুমানিক প্রফিট</div><div class="stat" id="netProfitAmount" style="color:var(--green)">৳ 0</div></div>
-    </div>
-  </div>
-</section>
-
-<section class="page" id="courier">
-  <div class="card">
-    <h3 class="section-title">🚚 কুরিয়ার সেটিংস (Steadfast)</h3>
-    <div class="muted" style="margin:0 0 12px;color:#9a5b08">🔒 নিরাপত্তা: Steadfast API Key/Secret এখন আর এখানে বা ডাটাবেসে থাকে না, Cloudflare Worker-এ থাকে। শুধু Worker-এর URL দিন, তারপর "সেভ করুন" চাপুন। সেভ করলে ডাটাবেস থেকে পুরনো Key/Secret মুছে যাবে।</div>
-    <form id="courierForm">
-      <div class="field-group">Worker URL <input id="cProxy" placeholder="https://dhong-courier.yourname.workers.dev"></div>
-      <div class="field-group">ডিফল্ট নোট (কুরিয়ারের জন্য) <input id="cNote" placeholder="Handle with care"></div>
-      <button class="btn primary" type="submit">সেভ করুন</button>
-      <button class="btn gray" type="button" id="cTest">ব্যালেন্স চেক (টেস্ট)</button>
-    </form>
-  </div>
-</section>
-
-<section class="page" id="api">
-  <div class="card">
-    <h3 class="section-title">ওয়েবসাইট ও নোটিফিকেশন সেটিংস</h3>
-    <form id="settingsForm">
-      <div class="field-group">ওয়েবসাইটের নাম <input id="setSiteName"></div>
-      <div class="field-group">থিম কালার <input type="color" id="setThemeColor" style="height:40px;padding:0"></div>
-      <div class="field-group">ঢাকার ভেতরে ডেলিভারি (৳) <input type="number" id="setDhaka"></div>
-      <div class="field-group">ঢাকার বাইরে ডেলিভারি (৳) <input type="number" id="setOutsider"></div>
-      <div class="field-group">ফ্রি ডেলিভারি থ্রেশহোল্ড (৳) <input type="number" id="setThreshold"></div>
-      <div class="field-group">WhatsApp নম্বর <input id="setWhatsapp"></div>
-      <div class="field-group">ফোন নম্বর <input id="setPhone"></div>
-      <div class="field-group">অফার বার টেক্সট <input id="setTopBanner"></div>
-      <div class="field-group">ব্যানার ব্যাকগ্রাউন্ড কালার <input type="color" id="setHeroBg" style="height:40px;padding:0"></div>
-      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
-      <h3 class="section-title" style="color:var(--accent)">🗂️ ক্যাটাগরির ছবি</h3>
-      <div class="muted" style="margin:0 0 10px">প্রতিটি ক্যাটাগরির গোল আইকনের ছবি দিন (লিংক বা ফাইল)। না দিলে ইমোজি দেখাবে। বদলের পর নিচে "সেটিংস সেভ করুন" চাপুন।</div>
-      <div id="catImgBox" style="margin-bottom:12px"></div>
-      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
-      <div class="field-group">ফ্ল্যাশ সেল টাইমার
-        <select id="setTimerStatus"><option value="show">চালু (Show Timer)</option><option value="hide">বন্ধ (Hide Timer, অফার দাম সবসময় চালু)</option></select>
-      </div>
-      <div class="field-group">অফার শেষের আসল সময় (সব কাস্টমারের জন্য একই)
-        <input type="datetime-local" id="setOfferEnd">
-        <div class="muted">এই সময় পার হলে অফার শেষ, নিয়মিত মূল্য চালু হবে। খালি রাখলে টাইমার দেখাবে না।</div>
-      </div>
-      <div class="field-group">দ্রুত সেট: এখন থেকে কত ঘণ্টা
-        <div style="display:flex;gap:8px"><input type="number" id="setTimerHours" min="1" style="margin-top:4px"><button type="button" class="btn blue" id="quickOfferBtn" style="margin-top:4px;white-space:nowrap">সেট করুন</button></div>
-      </div>
-      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
-      <h3 class="section-title" style="color:var(--accent)">☁️ ছবি হোস্টিং (Cloudinary)</h3>
-      <div class="muted" style="margin:0 0 10px">দুটো ঘর পূরণ করলে নতুন পণ্যের ছবি Cloudinary-তে সেভ হবে (সাইট দ্রুত হবে, Meta ক্যাটালগেও লাগবে)। খালি থাকলে আগের মতো ডাটাবেসে সেভ হবে।</div>
-      <div class="field-group">Cloud name <input id="setCloudName" placeholder="যেমন: dxxxxxxxx" autocomplete="off"></div>
-      <div class="field-group">Unsigned upload preset নাম <input id="setCloudPreset" placeholder="যেমন: dhong_unsigned" autocomplete="off"></div>
-      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
-      <h3 class="section-title" style="color:var(--accent)">🏷️ ব্র্যান্ড পেজ ও সোশ্যাল</h3>
-      <div class="muted" style="margin:0 0 10px">লেখার ঘর খালি রাখলে সাইটে ডিফল্ট লেখা দেখাবে। নিজের নিয়ম অনুযায়ী বদলে নিন।</div>
-      <div class="field-group">Facebook Pixel ID (শুধু সংখ্যা) <input id="setPixel" inputmode="numeric" placeholder="যেমন: 123456789012345"></div>
-      <div class="field-group">ঠিকানা <input id="setAddress" placeholder="যেমন: মিরপুর, ঢাকা"></div>
-      <div class="field-group">ইমেইল <input id="setEmail" type="email" placeholder="info@yourshop.com"></div>
-      <div class="field-group">কাজের সময় <input id="setHours" placeholder="যেমন: সকাল ১০টা - রাত ১০টা (প্রতিদিন)"></div>
-      <div class="field-group">Facebook পেজ লিংক <input id="setFacebook" placeholder="https://facebook.com/..."></div>
-      <div class="field-group">Instagram লিংক <input id="setInstagram" placeholder="https://instagram.com/..."></div>
-      <div class="field-group">YouTube লিংক <input id="setYoutube" placeholder="https://youtube.com/..."></div>
-      <div class="field-group">TikTok লিংক <input id="setTiktok" placeholder="https://tiktok.com/@..."></div>
-      <div class="field-group">আমাদের সম্পর্কে <textarea id="setAbout" rows="4"></textarea></div>
-      <div class="field-group">রিটার্ন ও রিফান্ড নীতি <textarea id="setReturn" rows="4"></textarea></div>
-      <div class="field-group">গোপনীয়তা নীতি <textarea id="setPrivacy" rows="4"></textarea></div>
-      <div class="field-group">সাধারণ প্রশ্নোত্তর (প্রতি লাইনে একটি: প্রশ্ন | উত্তর) <textarea id="setFaq" rows="5" placeholder="ডেলিভারি কতদিনে পাবো? | ঢাকায় ১-২ দিন"></textarea></div>
-      <button class="btn primary" type="submit" style="width:100%;padding:12px">সেটিংস সেভ করুন</button>
-    </form>
-  </div>
-</section>
-</main>
-</div>
 
 <script>
-firebase.initializeApp({
-  apiKey: "AIzaSyBNQLZU6KiVHp6IcAh4G70Trf7ThTcuLqw",
-  authDomain: "dhong-c897d.firebaseapp.com",
-  projectId: "dhong-c897d",
-  storageBucket: "dhong-c897d.firebasestorage.app",
-  messagingSenderId: "14236976798",
-  appId: "1:14236976798:web:d8ae40a5add4a70b2a1d8f",
-  measurementId: "G-J2RC81D0WB"
-});
-const db = firebase.database();
-const $ = id => document.getElementById(id);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const safeUrl = u => /^(https?:\/\/|data:image\/)/i.test(String(u || '')) ? esc(u) : '';
-const isUrl = s => /^https?:\/\//i.test(String(s || ''));
-const money = n => '৳ ' + Number(n || 0).toLocaleString();
-const debounce = (fn, ms = 250) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
-const STATUSES = ['WhatsApp Pending', 'Pending', 'Processing', 'Delivered', 'Cancelled'];
-const LOW_STOCK = 5;
-const FULL_MAX = 900, FULL_Q = .85, THUMB_MAX = 400, THUMB_Q = .75;
-
-let products = [], orders = [], affiliates = [], withdrawals = [], pendingComments = [], settings = {}, courier = {};
-
-function toast(msg, isErr, ms) {
-  const t = document.createElement('div');
-  t.className = 'toast' + (isErr ? ' err' : '');
-  t.textContent = msg;
-  $('toasts').appendChild(t);
-  setTimeout(() => t.remove(), ms || 3000);
-}
-const fail = e => toast('❌ ' + (e && e.message || e), true);
-
-/* ---------- Login (Firebase Auth + অ্যাডমিন তালিকা যাচাই) ---------- */
-const auth = firebase.auth();
-let started = false;
-function doLogin() {
-  auth.signInWithEmailAndPassword($('adminEmailInput').value.trim(), $('adminPassInput').value)
-    .catch(() => { $('loginError').textContent = '❌ ইমেইল বা পাসওয়ার্ড ভুল!'; });
-}
-$('loginBtn').onclick = doLogin;
-['adminEmailInput', 'adminPassInput'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
-$('logoutBtn').onclick = () => auth.signOut();
-auth.onAuthStateChanged(async u => {
-  if (u) {
-    let ok = false;
-    try { ok = (await db.ref('dhong_admins/' + u.uid).once('value')).val() === true; } catch (e) {}
-    if (!ok) {
-      $('loginError').textContent = '❌ এই অ্যাকাউন্টের অ্যাডমিন অনুমতি নেই। আপনার UID: ' + u.uid + ' (Firebase-এ dhong_admins/' + u.uid + ' = true বসান)';
-      auth.signOut(); return;
-    }
-    $('loginModal').style.display = 'none'; $('loginError').textContent = '';
-    if (!started) { started = true; startListeners(); }
-  } else { $('loginModal').style.display = 'flex'; if (started) location.reload(); }
-});
-
-/* ---------- Moderators ---------- */
-$('addModBtn').onclick = () => {
-  const u = $('modUser').value.trim();
-  if (!/^[A-Za-z0-9_]{3,20}$/.test(u)) return toast('ইউজারনেম ৩-২০ অক্ষর, শুধু ইংরেজি অক্ষর/সংখ্যা/_ দিন।', true);
-  db.ref('dhong_moderators/' + u).set({ status: 'Active', created_at: new Date().toISOString() })
-    .then(() => { toast('✅ মডারেটর যুক্ত হয়েছে'); $('modUser').value = ''; loadModerators(); }).catch(fail);
-};
-function loadModerators() {
-  db.ref('dhong_moderators').once('value').then(snap => {
-    if (!snap.exists()) { $('moderatorList').innerHTML = '<div class="muted">কোনো মডারেটর নেই।</div>'; return; }
-    let html = '';
-    snap.forEach(ch => {
-      const blocked = ch.val().status === 'Blocked';
-      html += `<div class="row"><div><b>👤 ${esc(ch.key)}</b> <span class="pill ${blocked ? 'bad' : ''}">${blocked ? 'Blocked' : 'Active'}</span></div>
-        <div><button class="btn sm ${blocked ? 'green' : 'amber'}" data-act="toggleMod" data-key="${esc(ch.key)}" data-blocked="${blocked}">${blocked ? 'আনব্লক' : 'ব্লক'}</button>
-        <button class="btn sm red" data-act="delMod" data-key="${esc(ch.key)}">ডিলিট</button></div></div>`;
-    });
-    $('moderatorList').innerHTML = html;
-  }).catch(fail);
-}
-
-/* ---------- Realtime data ---------- */
-function listFrom(snap) { const out = []; snap.forEach(ch => { const v = ch.val(); if (v && typeof v === 'object') { v._key = ch.key; out.push(v); } }); return out; }
-const listen = (path, fn) => db.ref(path).on('value', fn, e => { console.error(path, e); toast('❌ ডাটা পড়ার অনুমতি নেই (' + path + ')। Rules ও dhong_admins ঠিক আছে কিনা দেখুন।', true); });
-function startListeners() {
-listen('dhong_products', s => { products = listFrom(s); render(); applyStock(); renderCatImgs(); });
-listen('dhong_orders', s => { orders = listFrom(s).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)); render(); notifyNew(orders); applyStock(); });
-listen('dhong_affiliates', s => { affiliates = listFrom(s); render(); });
-listen('dhong_withdrawals', s => { withdrawals = listFrom(s); render(); });
-listen('dhong_comments_pending', s => {
-  pendingComments = [];
-  s.forEach(ps => { ps.forEach(cs => { const v = cs.val(); if (v && typeof v === 'object') pendingComments.push(Object.assign({}, v, { pid: ps.key, cid: cs.key })); }); });
-  render();
-});
-listen('dhong_courier', s => { courier = s.val() || {}; fillCourierForm(); });
-listen('dhong_settings', s => { settings = s.val() || {}; fillSettingsForm(); });
-}
-
-/* ---------- নতুন অর্ডার নোটিফিকেশন ---------- */
-let seenOrders = null, newCount = 0, audioCtx = null;
-const baseTitle = document.title;
-function getAudio() {
-  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
-  return audioCtx;
-}
-['click', 'touchstart', 'keydown'].forEach(ev => document.addEventListener(ev, getAudio, { once: true }));
-function beep() {
-  const c = getAudio(); if (!c) return;
-  [0, 0.3, 0.6].forEach(t => {
-    const o = c.createOscillator(), g = c.createGain();
-    o.connect(g); g.connect(c.destination); o.frequency.value = 880;
-    g.gain.setValueAtTime(0.3, c.currentTime + t);
-    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + t + 0.22);
-    o.start(c.currentTime + t); o.stop(c.currentTime + t + 0.25);
+(function () {
+  const ICON = { dashboard: '📊', orders: '🧾', products: '🛍️', comments: '💬', affiliates: '🤝', moderators: '🛡️', profit: '💰', courier: '🚚', api: '⚙️' };
+  document.querySelectorAll('.nav button').forEach(b => {
+    const ic = ICON[b.dataset.page]; if (!ic) return;
+    const label = b.textContent.replace(/\(\d+\)/, '').replace(/^[^A-Za-z]+/, '').trim();
+    b.innerHTML = '<span>' + ic + '</span><span>' + label + '</span>' + (b.dataset.page === 'comments' ? '<span id="pendingCommentBadge"></span>' : '');
   });
-}
-function notifyNew(list) {
-  const keys = new Set(list.map(o => o._key));
-  if (seenOrders === null) { seenOrders = keys; return; }   // প্রথম লোডে নোটিফিকেশন নয়
-  const fresh = list.filter(o => !seenOrders.has(o._key) && o.status !== 'Cancelled');
-  seenOrders = keys;
-  if (!fresh.length) return;
-  fresh.forEach(o => toast('🛎 নতুন অর্ডার #DH-' + o.id + ' — ' + money(o.total), false, 8000));
-  if (localStorage.getItem('dhong_sound') === 'on') beep();
-  try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
-  newCount += fresh.length; document.title = '(' + newCount + ') নতুন অর্ডার | DHONG';
-  if ('Notification' in window && Notification.permission === 'granted') {
-    try { new Notification('🛎 নতুন অর্ডার', { body: fresh.map(o => '#DH-' + o.id + ' — ' + money(o.total)).join('\n') }); } catch (e) {}
-  }
-}
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { newCount = 0; document.title = baseTitle; } });
-function refreshNotifBtn() {
-  const on = localStorage.getItem('dhong_sound') === 'on';
-  $('notifBtn').textContent = on ? '🔔 নোটিফিকেশন চালু ✓' : '🔔 নোটিফিকেশন চালু করুন';
-}
-$('notifBtn').onclick = async () => {
-  if (localStorage.getItem('dhong_sound') === 'on') { localStorage.setItem('dhong_sound', 'off'); refreshNotifBtn(); return toast('নোটিফিকেশন বন্ধ করা হয়েছে'); }
-  localStorage.setItem('dhong_sound', 'on'); beep(); refreshNotifBtn();
-  if ('Notification' in window && Notification.permission === 'default') { try { await Notification.requestPermission(); } catch (e) {} }
-  toast('✅ নতুন অর্ডার এলে সাউন্ড ও নোটিফিকেশন আসবে (প্যানেল খোলা থাকলে)');
-};
-refreshNotifBtn();
-
-/* ---------- Rendering ---------- */
-function parseItems(o) {
-  if (Array.isArray(o.items)) return o.items;
-  try { const v = JSON.parse(o.items_json); return Array.isArray(v) ? v : []; } catch { return null; }
-}
-// অর্ডারের দাম/ছাড়/ডেলিভারি সন্দেহজনক কিনা যাচাই (কাস্টমার ব্রাউজার থেকে দাম বদলালে ধরা পড়বে)
-function orderIssue(o) {
-  if (o.status === 'WhatsApp Pending') return '';
-  const items = parseItems(o);
-  if (!items || !items.length) return 'আইটেম পড়া যায়নি';
-  let sub = 0;
-  for (const i of items) {
-    const p = products.find(x => String(x.id) === String(i.product_id));
-    if (!p) return 'পণ্য খুঁজে পাওয়া যায়নি';
-    const pv = variantsOf(p);
-    if (pv.length && !pv.some(v => v.color === i.color && v.size === i.size)) return 'রং/সাইজ ভেরিয়েন্ট মেলেনি';
-    const pr = Number(i.price), q = Number(i.quantity);
-    if (![Number(p.price), Number(p.oldPrice)].includes(pr)) return 'দাম পণ্যের বর্তমান দামের সাথে মেলেনি';
-    if (!(q > 0 && q <= 5)) return 'পরিমাণ সন্দেহজনক';
-    sub += pr * q;
-  }
-  const d = Number(o.discount) || 0, f = Number(o.delivery_fee) || 0, thr = Number(settings.freeThreshold) || 0;
-  if (d > Math.round(sub * 0.1)) return 'ছাড় ১০% এর বেশি';
-  if (![0, Number(settings.dhakaFee) || 60, Number(settings.outsiderFee) || 120].includes(f)) return 'ডেলিভারি চার্জ মেলেনি';
-  if (f === 0 && thr && sub < thr) return 'ফ্রি ডেলিভারির শর্ত পূরণ হয়নি';
-  if (Math.abs(sub - d + f - Number(o.total)) > 1) return 'মোট হিসাব মেলেনি';
-  return '';
-}
-function filteredOrders() {
-  const q = $('orderSearch').value.trim().toLowerCase(), st = $('statusFilter').value;
-  return orders.filter(o => (!st || o.status === st) && (!q ||
-    String(o.customer_name || '').toLowerCase().includes(q) || String(o.phone || '').includes(q) || String(o.id || '').includes(q)));
-}
-function render() {
-  const counted = orders.filter(o => o.status !== 'Cancelled' && o.status !== 'WhatsApp Pending');
-  const total = counted.reduce((s, o) => s + Number(o.total || 0), 0);
-  $('totalOrdersCount').textContent = orders.length;
-  $('newOrdersCount').textContent = orders.filter(o => String(o.status || '').includes('Pending')).length;
-  $('totalSalesAmount').textContent = $('profitTotalSales').textContent = money(total);
-  $('lowStockCount').textContent = products.filter(p => Number(p.stock || 0) <= LOW_STOCK).length;
-  renderProfit(total);
-
-  $('recentOrders').innerHTML = orders.slice(0, 5).map(o => `<tr><td>#DH-${esc(o.id)}</td><td>${esc(o.customer_name)}</td><td>${money(o.total)}</td><td><span class="pill pending">${esc(o.status)}</span></td></tr>`).join('') || '<tr><td colspan="4" class="empty">কোনো অর্ডার নেই।</td></tr>';
-
-  const list = filteredOrders();
-  $('orderRows').innerHTML = list.map(o => {
-    const items = parseItems(o);
-    const issue = orderIssue(o);
-    const itemsHtml = items === null ? esc(o.items_json) : items.map(i => `<div class="item">${safeUrl(i.img) ? `<img src="${safeUrl(i.img)}" alt="">` : ''}<div><b>${esc(i.name)}</b><br><small>রং: ${esc(i.color || '-')} | সাইজ: ${esc(i.size || '-')} | পিস: ${esc(i.quantity)}</small></div></div>`).join('');
-    return `<tr><td>#DH-${esc(o.id)}</td><td><b>${esc(o.customer_name)}</b></td><td>${esc(o.phone)}</td><td>${esc(o.address)}</td><td>${itemsHtml}</td>
-      <td><b>${esc(o.affiliate_ref || 'None')}</b>${o.commission_amount ? `<br><small>৳${esc(o.commission_amount)} ${o.commission_paid ? '✅ যোগ হয়েছে' : '⏳ ডেলিভারির অপেক্ষায়'}</small>` : ''}${o.utm && o.utm.utm_campaign ? `<br><small>📣 ${esc(o.utm.utm_campaign)}</small>` : ''}</td><td>${money(o.total)}${issue ? `<br><span class="pill bad" title="${esc(issue)}">⚠️ ${esc(issue)}</span>` : ''}</td>
-      <td><select data-act="status" data-key="${esc(o._key)}">${STATUSES.map(s => `<option ${o.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
-      <td>${o.created_at ? esc(new Date(o.created_at).toLocaleString()) : ''}</td>
-      <td>${o.consignment_id ? `<small>CID: ${esc(o.consignment_id)}<br>${esc(o.courier_status || '')}</small><br><button class="btn sm gray" data-act="trackCourier" data-key="${esc(o._key)}">স্ট্যাটাস</button>` : `<button class="btn sm blue" data-act="sendCourier" data-key="${esc(o._key)}">🚚 কুরিয়ারে পাঠান</button>`}
-      <button class="btn sm red" data-act="delOrder" data-key="${esc(o._key)}">ডিলিট</button></td></tr>`;
-  }).join('') || '<tr><td colspan="10" class="empty">কোনো অর্ডার পাওয়া যায়নি।</td></tr>';
-
-  $('withdrawRows').innerHTML = withdrawals.map(w => `<tr><td><b>${esc(w.affiliate)}</b></td><td>${money(w.amount)}</td><td>${esc(w.method)}</td><td><b>${esc(w.phone)}</b></td>
-    <td><span class="pill ${w.status === 'Paid' ? '' : 'pending'}">${esc(w.status || 'Pending')}</span></td>
-    <td>${w.status === 'Paid' ? '✅' : w.status === 'Rejected' ? '❌' : `<button class="btn sm blue" data-act="pay" data-key="${esc(w._key)}">পেমেন্ট কমপ্লিট</button> <button class="btn sm red" data-act="rejectW" data-key="${esc(w._key)}">বাতিল</button>`}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">কোনো উইথড্রল রিকোয়েস্ট নেই।</td></tr>';
-
-  $('affiliateRows').innerHTML = affiliates.map(a => `<tr><td><b>${esc(a._key)}</b></td><td>${esc(a.sales || 0)} টি</td><td>${money(a.commission)}</td></tr>`).join('') || '<tr><td colspan="3" class="empty">কোনো এফিলিয়েট নেই।</td></tr>';
-
-  $('pendingCommentBadge').textContent = pendingComments.length ? '(' + pendingComments.length + ')' : '';
-  $('commentRows').innerHTML = pendingComments.map(c => {
-    const p = products.find(x => String(x.id) === String(c.pid));
-    return `<tr><td>${esc(p ? p.name : c.pid)}</td><td><b>${esc(c.name)}</b></td><td style="max-width:320px;word-break:break-word">${esc(c.text)}</td><td>${c.created_at ? esc(new Date(c.created_at).toLocaleString()) : ''}</td>
-      <td><button class="btn sm green" data-act="apprC" data-pid="${esc(c.pid)}" data-cid="${esc(c.cid)}">অনুমোদন</button> <button class="btn sm red" data-act="delC" data-pid="${esc(c.pid)}" data-cid="${esc(c.cid)}">মুছুন</button></td></tr>`;
-  }).join('') || '<tr><td colspan="5" class="empty">অনুমোদনের অপেক্ষায় কোনো রিভিউ নেই।</td></tr>';
-
-  const base = location.origin + location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
-  $('productList').innerHTML = products.map(p => {
-    const link = base + 'index.html?product=' + encodeURIComponent(p.id);
-    const low = Number(p.stock || 0) <= LOW_STOCK;
-    return `<div class="row"><div style="display:flex;gap:10px;align-items:center">${safeUrl(p.img) ? `<img class="thumb" src="${safeUrl(p.img)}" alt="" style="width:48px;height:48px">` : ''}
-      <div><b>${esc(p.name)}</b> (${esc(p.cat)}) - ${money(p.price)}<br>
-      <small style="color:green">স্টক: ${esc(p.stock ?? 0)}${variantsOf(p).length ? ' (' + variantsOf(p).length + 'টি ভেরিয়েন্ট)' : ''} | ⭐${esc(p.rating || '5.0')} | আইডি: ${esc(p.id)}</small> ${low ? '<span class="pill bad">কম স্টক</span>' : ''}<br>
-      <small style="word-break:break-all"><a href="${esc(link)}" target="_blank" rel="noopener">${esc(link)}</a></small></div></div>
-      <div><button class="btn sm gray" data-act="copy" data-link="${esc(link)}">লিংক কপি</button>
-      <button class="btn sm blue" data-act="editProduct" data-key="${esc(p._key)}">এডিট</button>
-      <button class="btn sm red" data-act="delProduct" data-key="${esc(p._key)}">ডিলিট</button></div></div>`;
-  }).join('') || '<div class="empty">কোনো পণ্য নেই।</div>';
-}
-function renderProfit(total) {
-  const m = Math.min(100, Math.max(0, Number($('profitMargin').value) || 0));
-  $('netProfitAmount').textContent = money(Math.round(total * m / 100));
-}
-$('profitMargin').addEventListener('input', render);
-$('statusFilter').innerHTML = '<option value="">সব স্ট্যাটাস</option>' + STATUSES.map(s => `<option>${s}</option>`).join('');
-$('orderSearch').addEventListener('input', debounce(render));
-$('statusFilter').addEventListener('change', render);
-
-/* ---------- স্টক ও সেলস (এখন শুধু অ্যাডমিন প্যানেল আপডেট করে, কাস্টমার ব্রাউজার নয়) ---------- */
-let applying = false;
-async function applyStock() {
-  if (applying || !products.length || !orders.length) return;
-  if (!settings || !Object.keys(settings).length) return;
-  if (!settings.stockApplyFrom) {
-    // প্রথমবার: এর আগের অর্ডারের স্টক পুরনো সাইট আগেই কেটেছে, তাই দ্বিতীয়বার কাটা হবে না
-    try { await db.ref('dhong_settings/stockApplyFrom').set(new Date().toISOString()); } catch (e) { console.error(e); }
-    return;
-  }
-  const from = new Date(settings.stockApplyFrom).getTime();
-  applying = true;
-  try {
-    for (const o of orders) {
-      if (o.stock_applied || o.status === 'Cancelled' || o.status === 'WhatsApp Pending') continue;
-      if (new Date(o.created_at || 0).getTime() < from) continue;
-      const r = await db.ref('dhong_orders/' + o._key + '/stock_applied').transaction(c => c ? undefined : true);
-      if (!r.committed) continue;
-      for (const i of parseItems(o) || []) {
-        const p = products.find(x => String(x.id) === String(i.product_id)); if (!p) continue;
-        await adjustStock(p, i, -1);
-      }
-    }
-  } catch (e) { console.error(e); }
-  finally { applying = false; }
-}
-async function restoreStock(key) {
-  const o = orders.find(x => x._key === key); if (!o || !o.stock_applied) return;
-  const r = await db.ref('dhong_orders/' + key + '/stock_applied').transaction(c => c ? false : undefined);
-  if (!r.committed) return;
-  for (const i of parseItems(o) || []) {
-    const p = products.find(x => String(x.id) === String(i.product_id)); if (!p) continue;
-    await adjustStock(p, i, +1);
-  }
-}
-// sign = -1: অর্ডারে স্টক কাটা, +1: ক্যান্সেলে ফেরত। ভেরিয়েন্ট থাকলে ওই রং/সাইজের স্টক এবং মোট স্টক দুটোই বদলায়
-async function adjustStock(p, i, sign) {
-  const q = (Number(i.quantity) || 0) * sign, base = 'dhong_products/' + p._key;
-  const idx = variantsOf(p).findIndex(v => v.color === i.color && v.size === i.size);
-  if (idx >= 0) await db.ref(base + '/variants/' + idx + '/stock').transaction(v => Math.max(0, (Number(v) || 0) + q));
-  await db.ref(base + '/stock').transaction(v => Math.max(0, (Number(v) || 0) + q));
-  await db.ref(base + '/sales').transaction(v => Math.max(0, (Number(v) || 0) - q));
-}
-
-/* ---------- CSV export ---------- */
-$('exportCsv').onclick = () => {
-  const cell = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const rows = [['ID', 'কাস্টমার', 'ফোন', 'ঠিকানা', 'রেফ', 'মোট', 'স্ট্যাটাস', 'তারিখ', 'ক্যাম্পেইন', 'বিজ্ঞাপন', 'সোর্স']];
-  filteredOrders().forEach(o => rows.push([o.id, o.customer_name, o.phone, o.address, o.affiliate_ref, o.total, o.status, o.created_at, (o.utm || {}).utm_campaign, (o.utm || {}).utm_content, (o.utm || {}).utm_source]));
-  const blob = new Blob(['\ufeff' + rows.map(r => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'dhong-orders-' + new Date().toISOString().slice(0, 10) + '.csv';
-  a.click(); URL.revokeObjectURL(a.href);
-};
-
-/* ---------- Tracking sync ----------
-   ট্র্যাকিং নোডের কী = hash(অর্ডার নম্বর + ফোনের শেষ ৪ ডিজিট)। দুটো না জানলে কেউ খুঁজে পাবে না। */
-async function sha(t) {
-  if (!(window.crypto && crypto.subtle)) return t.replace(/[^a-zA-Z0-9]/g, '-');
-  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
-  return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-const trackHash = (id, p4) => sha('dhong-track:' + id + ':' + p4);
-const phone4 = o => String(o.phone || '').replace(/\D/g, '').slice(-4).replace(/^(.{0,3})$/, 'wa');
-async function trackKey(o) { return trackHash(o.id, phone4(o)); }
-async function syncTrack(key, extra = {}) {
-  const o = Object.assign({}, orders.find(x => x._key === key) || {}, extra);
-  if (!o.id) return;
-  const data = { status: o.status || 'Pending', items_json: o.items_json || '[]', total: Number(o.total) || 0,
-    discount: Number(o.discount) || 0, delivery_fee: Number(o.delivery_fee) || 0, created_at: o.created_at || '',
-    tracking_code: o.tracking_code || null, courier_status: o.courier_status || null };
-  await db.ref('dhong_track/' + await trackKey(o)).update(data);
-  await db.ref('dhong_track/' + o.id).remove().catch(() => {});   // পুরনো খোলা নোড মুছে ফেলা
-}
-$('syncTrackBtn').onclick = async () => {
-  try { for (const o of orders) await syncTrack(o._key); toast('✅ ' + orders.length + ' টি অর্ডারের ট্র্যাকিং সিঙ্ক হয়েছে'); } catch (e) { fail(e); }
-};
-
-/* ---------- Actions (event delegation) ---------- */
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'SELECT') return;
-  const { act, key } = b.dataset;
-  if (act === 'delOrder' && confirm('এই অর্ডার ডিলিট করবেন?')) {
-    const o = orders.find(x => x._key === key);
-    Promise.all([db.ref('dhong_orders/' + key).remove(), o && o.id ? trackKey(o).then(k => db.ref('dhong_track/' + k).remove()) : null, o && o.id ? db.ref('dhong_track/' + o.id).remove() : null])
-      .then(() => toast('✅ অর্ডার মুছে গেছে')).catch(fail);
-  }
-  if (act === 'pay') approveWithdrawal(key);
-  if (act === 'rejectW') rejectWithdrawal(key);
-  if (act === 'sendCourier') sendCourier(key, b);
-  if (act === 'trackCourier') trackCourier(key, b);
-  if (act === 'copy') navigator.clipboard.writeText(b.dataset.link).then(() => toast('✅ লিংক কপি হয়েছে'));
-  if (act === 'editProduct') editProduct(key);
-  if (act === 'delProduct') deleteProduct(key);
-  if (act === 'toggleMod') db.ref('dhong_moderators/' + key + '/status').set(b.dataset.blocked === 'true' ? 'Active' : 'Blocked').then(() => { toast('✅ আপডেট হয়েছে'); loadModerators(); }).catch(fail);
-  if (act === 'delMod' && confirm(`মডারেটর (${key}) ডিলিট করবেন?`)) db.ref('dhong_moderators/' + key).remove().then(loadModerators).catch(fail);
-  if (act === 'apprC') {
-    const c = pendingComments.find(x => x.pid === b.dataset.pid && x.cid === b.dataset.cid); if (!c) return;
-    db.ref().update({
-      ['dhong_comments/' + c.pid + '/' + c.cid]: { name: c.name, text: c.text, created_at: c.created_at },
-      ['dhong_comments_pending/' + c.pid + '/' + c.cid]: null
-    }).then(() => toast('✅ রিভিউ প্রকাশিত হয়েছে')).catch(fail);
-  }
-  if (act === 'delC' && confirm('এই রিভিউ মুছে ফেলবেন?')) db.ref('dhong_comments_pending/' + b.dataset.pid + '/' + b.dataset.cid).remove().then(() => toast('রিভিউ মুছে গেছে')).catch(fail);
-});
-document.addEventListener('change', async e => {
-  const s = e.target.closest('select[data-act="status"]'); if (!s) return;
-  const key = s.dataset.key, o = orders.find(x => x._key === key);
-  if (s.value === 'Delivered' && o) {
-    const iss = orderIssue(o);
-    if (iss && !confirm('⚠️ এই অর্ডারে সমস্যা: ' + iss + '\nতবুও Delivered করবেন? (কমিশনও যোগ হবে)')) { render(); return; }
-  }
-  try {
-    await db.ref('dhong_orders/' + key + '/status').set(s.value);
-    await settleCommission(key, s.value);
-    if (s.value === 'Cancelled') await restoreStock(key);
-    await syncTrack(key, { status: s.value });
-    toast('✅ স্ট্যাটাস আপডেট হয়েছে');
-  } catch (err) { fail(err); }
-});
-
-async function approveWithdrawal(key) {
-  const w = withdrawals.find(v => v._key === key); if (!w) return;
-  if (!confirm(`${w.affiliate} কে ৳${w.amount} পেমেন্ট করেছেন?`)) return;
-  const amt = Number(w.amount), cref = db.ref('dhong_affiliates/' + w.affiliate + '/commission');
-  try {
-    if (!w.reserved) {
-      const r = await cref.transaction(v => { v = Number(v) || 0; return v < amt ? undefined : v - amt; });
-      if (!r.committed) return toast('ব্যালেন্স অপর্যাপ্ত, কমিশন কম আছে।', true);
-    }
-    const res = await db.ref('dhong_withdrawals/' + key).transaction(cur => {
-      if (!cur || cur.status === 'Paid' || cur.status === 'Rejected') return;
-      cur.status = 'Paid'; return cur;
-    });
-    if (!res.committed) {
-      if (!w.reserved) await cref.transaction(v => (Number(v) || 0) + amt);
-      return toast('এটি আগেই প্রসেস করা হয়েছে।', true);
-    }
-    toast('✅ পেমেন্ট সম্পন্ন হয়েছে');
-  } catch (e) { fail(e); }
-}
-function rejectWithdrawal(key) {
-  const w = withdrawals.find(v => v._key === key); if (!w) return;
-  if (!confirm(`${w.affiliate} এর ৳${w.amount} উইথড্রল বাতিল করবেন? টাকা তার ব্যালেন্সে ফেরত যাবে।`)) return;
-  db.ref('dhong_withdrawals/' + key).transaction(cur => {
-    if (!cur || cur.status === 'Paid' || cur.status === 'Rejected') return;
-    cur.status = 'Rejected'; return cur;
-  }).then(res => {
-    if (!res.committed) return toast('এটি আগেই প্রসেস করা হয়েছে।', true);
-    if (w.reserved) return db.ref('dhong_affiliates/' + w.affiliate + '/commission').transaction(v => (Number(v) || 0) + Number(w.amount));
-  }).then(() => toast('উইথড্রল বাতিল ও ব্যালেন্স ফেরত দেওয়া হয়েছে')).catch(fail);
-}
-
-// অর্ডার Delivered হলে একবারই কমিশন যোগ হয়; Delivered থেকে সরলে (ক্যান্সেল/রিটার্ন) কমিশন ফেরত কাটা হয়।
-// কমিশনের অঙ্ক এখানে নিজে হিসাব করা হয় (কাস্টমারের পাঠানো commission_amount বিশ্বাস করা হয় না)।
-async function settleCommission(key, status) {
-  const o = orders.find(x => x._key === key); if (!o) return;
-  const ref = o.affiliate_ref;
-  if (!ref || ref === 'None') return;
-  const amt = Math.max(0, Math.round((Number(o.total || 0) - Number(o.delivery_fee || 0)) * 0.05));
-  if (!amt) return;
-  const want = status === 'Delivered';
-  if (want && !(await db.ref('dhong_affiliates/' + ref).once('value')).exists()) return;
-  const r = await db.ref('dhong_orders/' + key + '/commission_paid').transaction(cur => (!!cur === want) ? undefined : want);
-  if (!r.committed) return;
-  const sign = want ? 1 : -1;
-  await db.ref('dhong_affiliates/' + ref).transaction(a => {
-    a = a || { sales: 0, commission: 0 };
-    a.commission = Math.max(0, (Number(a.commission) || 0) + sign * amt);
-    a.sales = Math.max(0, (Number(a.sales) || 0) + sign);
-    return a;
+  document.querySelector('[data-page="comments"]').insertAdjacentHTML('beforebegin', '<button data-page="store" data-title="Storefront Manager"><span>🏬</span><span>Storefront</span></button>');
+  const sb = document.querySelector('[data-page="store"]'), sp = document.getElementById('store');
+  document.getElementById('comments').parentNode.insertBefore(sp, document.getElementById('comments'));
+  sb.addEventListener('click', () => {
+    document.querySelectorAll('.nav button').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+    sb.classList.add('active'); sp.classList.add('active');
+    $('pageTitle').textContent = 'Storefront Manager'; renderStore();
   });
-}
 
-/* ---------- Navigation ---------- */
-document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => {
-  document.querySelectorAll('.nav button').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-  btn.classList.add('active'); $(btn.dataset.page).classList.add('active');
-  $('pageTitle').textContent = btn.dataset.title;
-  if (btn.dataset.page === 'moderators') loadModerators();
-}));
+  let approved = [];
+  const _sl = window.startListeners;
+  window.startListeners = function () {
+    _sl();
+    listen('dhong_comments', s => {
+      approved = [];
+      s.forEach(ps => ps.forEach(cs => { const v = cs.val(); if (v && typeof v === 'object') approved.push(Object.assign({}, v, { pid: ps.key, cid: cs.key })); }));
+      renderStore();
+    });
+  };
+  const _r = window.render;
+  window.render = function () { _r(); try { extra(); renderStore(); } catch (e) { console.error(e); } };
 
-/* ---------- Images ---------- */
-const loadImage = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
-const fileToDataUrl = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
-async function shrink(src, max, q) {
-  const img = await loadImage(src), r = Math.min(1, max / Math.max(img.width, img.height));
-  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.width * r)); c.height = Math.max(1, Math.round(img.height * r));
-  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
-  return c.toDataURL('image/jpeg', q);
-}
-let mainFull = '', colorsFull = [], existing = { main: '', colors: [] }, pendingUploads = Promise.resolve();
-function showPreview(src) { const el = $('previewImage'); if (src) { el.src = src; el.style.display = 'block'; } else el.style.display = 'none'; }
-$('pImg').addEventListener('input', e => showPreview(e.target.value));
-$('pImgFile').addEventListener('change', e => {
-  const f = e.target.files[0]; if (!f) return;
-  pendingUploads = pendingUploads.then(async () => { mainFull = await shrink(await fileToDataUrl(f), FULL_MAX, FULL_Q); showPreview(mainFull); }).catch(() => toast('❌ ছবিটি পড়া যায়নি', true));
-});
-$('pColorFiles').addEventListener('change', e => {
-  const files = Array.from(e.target.files); colorsFull = []; if (!files.length) return;
-  pendingUploads = pendingUploads.then(async () => { const out = []; for (const f of files) out.push(await shrink(await fileToDataUrl(f), FULL_MAX, FULL_Q)); colorsFull = out; }).catch(() => toast('❌ কিছু ছবি পড়া যায়নি', true));
-});
+  function extra() {
+    document.querySelectorAll('#orderRows [data-act="delOrder"]').forEach(b => {
+      if (b.parentElement.querySelector('[data-act="editOrder"]')) return;
+      b.insertAdjacentHTML('beforebegin', '<button class="btn sm amber" data-act="editOrder" data-key="' + esc(b.dataset.key) + '">এডিট</button> ');
+    });
+    const ah = $('affiliateRows').closest('table').querySelector('thead tr');
+    if (ah && ah.children.length === 3) ah.insertAdjacentHTML('beforeend', '<th></th>');
+    document.querySelectorAll('#affiliateRows tr').forEach((tr, i) => {
+      if (tr.children.length === 3 && affiliates[i]) tr.insertAdjacentHTML('beforeend', '<td><button class="btn sm red" data-act="delAff" data-key="' + esc(affiliates[i]._key) + '">ডিলিট</button></td>');
+    });
+    document.querySelectorAll('#withdrawRows tr').forEach((tr, i) => {
+      const td = tr.lastElementChild;
+      if (withdrawals[i] && td && !td.querySelector('[data-act="delW"]')) td.insertAdjacentHTML('beforeend', ' <button class="btn sm red" data-act="delW" data-key="' + esc(withdrawals[i]._key) + '">ডিলিট</button>');
+    });
+  }
+  function renderStore() {
+    const cats = {}; products.forEach(p => { if (p.cat) cats[p.cat] = (cats[p.cat] || 0) + 1; });
+    $('catMgr').innerHTML = Object.keys(cats).map(c => `<div class="row"><div><b>🏷️ ${esc(c)}</b> <small>(${cats[c]}টি পণ্য)</small></div>
+      <div><button class="btn sm blue" data-act="renCat" data-cat="${esc(c)}">নাম বদলান</button> <button class="btn sm red" data-act="delCat" data-cat="${esc(c)}">ক্যাটাগরিসহ পণ্য ডিলিট</button></div></div>`).join('') || '<div class="empty">কোনো ক্যাটাগরি নেই।</div>';
+    $('revMgr').innerHTML = approved.map(c => {
+      const p = products.find(x => String(x.id) === String(c.pid));
+      return `<div class="row"><div style="flex:1;min-width:200px"><b>${esc(c.name)}</b> → ${esc(p ? p.name : c.pid)}<br><small>${esc(c.text)}</small></div>
+      <div><button class="btn sm blue" data-act="editRev" data-pid="${esc(c.pid)}" data-cid="${esc(c.cid)}">এডিট</button> <button class="btn sm red" data-act="delRev" data-pid="${esc(c.pid)}" data-cid="${esc(c.cid)}">ডিলিট</button></div></div>`;
+    }).join('') || '<div class="empty">কোনো প্রকাশিত রিভিউ নেই।</div>';
+  }
 
-/* ---------- Products ---------- */
-const variantsOf = p => p && p.variants ? (Array.isArray(p.variants) ? p.variants : Object.values(p.variants)).filter(v => v && v.color) : [];
-let variants = [];
-function syncTotal() {
-  const el = $('pStock');
-  if (variants.length) { el.value = variants.reduce((s, v) => s + Math.max(0, Number(v.stock) || 0), 0); el.readOnly = true; }
-  else el.readOnly = false;
-}
-function renderVariants() {
-  $('vList').innerHTML = variants.length
-    ? `<div class="table-wrap"><table style="min-width:300px"><thead><tr><th>রং</th><th>সাইজ</th><th>স্টক</th><th></th></tr></thead><tbody>${variants.map((v, i) =>
-      `<tr><td><input data-vi="${i}" data-vf="color" value="${esc(v.color)}" style="margin:0"></td><td><input data-vi="${i}" data-vf="size" value="${esc(v.size)}" style="margin:0"></td><td><input type="number" min="0" data-vi="${i}" data-vf="stock" value="${esc(v.stock)}" style="margin:0"></td><td><button type="button" class="btn sm red" data-vdel="${i}">✕</button></td></tr>`).join('')}</tbody></table></div>`
-    : '<div class="muted">কোনো ভেরিয়েন্ট নেই (সাধারণ স্টক ব্যবহার হবে)।</div>';
-  syncTotal();
-}
-$('vList').addEventListener('input', e => {
-  const t = e.target; if (t.dataset.vi === undefined) return;
-  variants[+t.dataset.vi][t.dataset.vf] = t.dataset.vf === 'stock' ? Number(t.value) : t.value; syncTotal();
-});
-$('vList').addEventListener('click', e => {
-  const b = e.target.closest('[data-vdel]'); if (!b) return;
-  variants.splice(+b.dataset.vdel, 1); renderVariants();
-});
-$('vAdd').onclick = () => { variants.push({ color: '', size: '', stock: 0 }); renderVariants(); };
-$('vGen').onclick = () => {
-  const cs = $('vColors').value.split(',').map(s => s.trim()).filter(Boolean), ss = $('vSizes').value.split(',').map(s => s.trim()).filter(Boolean);
-  if (!cs.length || !ss.length) return toast('রং ও সাইজ দুটোই লিখুন।', true);
-  cs.forEach(c => ss.forEach(s => { if (!variants.some(v => v.color === c && v.size === s)) variants.push({ color: c, size: s, stock: 0 }); }));
-  renderVariants();
-};
-function resetProductForm() {
-  $('productForm').reset(); $('editKey').value = ''; showPreview(''); variants = []; renderVariants();
-  mainFull = ''; colorsFull = []; existing = { main: '', colors: [] };
-  $('formTitle').textContent = 'নতুন পণ্য যোগ করুন'; $('cancelEdit').style.display = 'none';
-}
-$('cancelEdit').onclick = resetProductForm;
-
-/* ---------- Cloudinary ছবি আপলোড ---------- */
-const cloudReady = () => !!((settings.cloudName || '').trim() && (settings.cloudPreset || '').trim());
-const isCloud = u => /res\.cloudinary\.com/.test(String(u || ''));
-const cloudThumb = u => isCloud(u) ? String(u).replace('/upload/', '/upload/w_400,c_limit,q_auto/') : u;
-const colorsOf = p => p.colors ? (Array.isArray(p.colors) ? p.colors : Object.values(p.colors)) : [];
-async function cloudUpload(src) {
-  const fd = new FormData();
-  fd.append('file', src);
-  fd.append('upload_preset', settings.cloudPreset.trim());
-  fd.append('folder', 'dhong');
-  const r = await fetch('https://api.cloudinary.com/v1_1/' + encodeURIComponent(settings.cloudName.trim()) + '/image/upload', { method: 'POST', body: fd });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok || !j.secure_url) throw new Error((j.error && j.error.message) || 'Cloudinary আপলোড হয়নি');
-  return j.secure_url;
-}
-$('migrateBtn').onclick = async () => {
-  if (!cloudReady()) return toast('আগে Settings-এ Cloudinary-র Cloud name ও preset দিন।', true);
-  const targets = products.filter(p => String(p.img || '').startsWith('data:') || colorsOf(p).some(c => String(c).startsWith('data:')));
-  if (!targets.length) return toast('সরানোর মতো পুরনো ছবি নেই।');
-  if (!confirm(targets.length + 'টি পণ্যের ছবি Cloudinary-তে আপলোড হবে। চালাবেন?')) return;
-  const b = $('migrateBtn'); b.disabled = true;
-  let done = 0;
-  for (const p of targets) {
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'SELECT') return;
+    const d = b.dataset;
     try {
-      const im = (await db.ref('dhong_images/' + p.id).once('value')).val() || {};
-      const mainSrc = (String(im.main || '').startsWith('data:') || isUrl(im.main)) ? im.main : p.img;
-      const mainUrl = isUrl(mainSrc) ? mainSrc : await cloudUpload(mainSrc);
-      const cols = [];
-      for (const c of colorsOf(p)) cols.push(String(c).startsWith('data:') ? await cloudUpload(c) : c);
-      await db.ref('dhong_products/' + p._key).update({ img: cloudThumb(mainUrl), imgMain: mainUrl, colors: cols });
-      await db.ref('dhong_images/' + p.id).set({ main: mainUrl, colors: cols });
-      toast('☁️ ' + (++done) + '/' + targets.length + ' সম্পন্ন: ' + p.name);
+      if (d.act === 'renCat') {
+        const n = (prompt('ক্যাটাগরির নতুন নাম:', d.cat) || '').trim(); if (!n || n === d.cat) return;
+        const u = {}; products.filter(p => p.cat === d.cat).forEach(p => u['dhong_products/' + p._key + '/cat'] = n);
+        if (catImgs[d.cat]) { catImgs[n] = catImgs[d.cat]; delete catImgs[d.cat]; u['dhong_settings/catImagesJson'] = JSON.stringify(catImgs); }
+        await db.ref().update(u); toast('✅ ক্যাটাগরির নাম বদলেছে');
+      }
+      if (d.act === 'delCat') {
+        const list = products.filter(p => p.cat === d.cat);
+        if (!confirm('"' + d.cat + '" ক্যাটাগরির ' + list.length + 'টি পণ্যসহ সব মুছে যাবে। নিশ্চিত?')) return;
+        const u = {}; list.forEach(p => { u['dhong_products/' + p._key] = null; u['dhong_images/' + p.id] = null; });
+        if (catImgs[d.cat]) { delete catImgs[d.cat]; u['dhong_settings/catImagesJson'] = JSON.stringify(catImgs); }
+        await db.ref().update(u); toast('✅ ক্যাটাগরি মুছে গেছে');
+      }
+      if (d.act === 'editRev') {
+        const c = approved.find(x => x.pid === d.pid && x.cid === d.cid); if (!c) return;
+        const t = prompt('রিভিউ এডিট করুন:', c.text); if (t === null || !t.trim()) return;
+        await db.ref('dhong_comments/' + d.pid + '/' + d.cid + '/text').set(t.trim().slice(0, 500)); toast('✅ রিভিউ আপডেট হয়েছে');
+      }
+      if (d.act === 'delRev' && confirm('এই রিভিউ সাইট থেকে মুছে ফেলবেন?')) { await db.ref('dhong_comments/' + d.pid + '/' + d.cid).remove(); toast('✅ রিভিউ মুছে গেছে'); }
+      if (d.act === 'delAff' && confirm('এফিলিয়েট "' + d.key + '" ডিলিট করবেন? তার ব্যালেন্সও মুছে যাবে।')) { await db.ref('dhong_affiliates/' + d.key).remove(); toast('✅ এফিলিয়েট মুছে গেছে'); }
+      if (d.act === 'delW' && confirm('এই উইথড্রল রেকর্ড মুছবেন?')) { await db.ref('dhong_withdrawals/' + d.key).remove(); toast('✅ মুছে গেছে'); }
+      if (d.act === 'editOrder') {
+        const o = orders.find(x => x._key === d.key); if (!o) return;
+        const name = prompt('কাস্টমারের নাম:', o.customer_name || ''); if (name === null) return;
+        const phone = prompt('মোবাইল নম্বর:', o.phone || ''); if (phone === null) return;
+        const addr = prompt('ঠিকানা:', o.address || ''); if (addr === null) return;
+        const oldKey = await trackKey(o);
+        await db.ref('dhong_orders/' + d.key).update({ customer_name: name.trim(), phone: phone.trim(), address: addr.trim() });
+        if (phone.trim() !== o.phone) await db.ref('dhong_track/' + oldKey).remove().catch(() => {});
+        await syncTrack(d.key, { phone: phone.trim() });
+        toast('✅ অর্ডার আপডেট হয়েছে');
+      }
     } catch (err) { fail(err); }
-  }
-  b.disabled = false;
-  toast('✅ মাইগ্রেশন শেষ: ' + done + '/' + targets.length);
-};
-
-/* ---------- Meta ক্যাটালগ ফিড ---------- */
-function buildFeedCsv(list, base, brand) {
-  const cell = v => '"' + String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
-  const fmt = n => Number(n).toFixed(2) + ' BDT';
-  const rows = [['id', 'title', 'description', 'availability', 'condition', 'price', 'sale_price', 'link', 'image_link', 'additional_image_link', 'brand']];
-  let skipped = 0;
-  list.forEach(p => {
-    const img = p.imgMain || p.img;
-    if (!isUrl(img)) { skipped++; return; }
-    const price = Number(p.price) || 0, old = Number(p.oldPrice) || 0, sale = old > price;
-    rows.push([p.id, String(p.name || '').slice(0, 150), String(p.desc || p.name || '').slice(0, 4000),
-      (Number(p.stock) || 0) > 0 ? 'in stock' : 'out of stock', 'new', fmt(sale ? old : price), sale ? fmt(price) : '',
-      base + '?product=' + encodeURIComponent(p.id) + '&utm_source=facebook&utm_medium=catalog', img,
-      colorsOf(p).filter(isUrl).slice(0, 10).join(','), brand]);
   });
-  return { csv: '\ufeff' + rows.map(r => r.map(cell).join(',')).join('\n'), skipped, count: rows.length - 1 };
-}
-$('feedBtn').onclick = () => {
-  const base = location.origin + location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1) + 'index.html';
-  const r = buildFeedCsv(products, base, settings.siteName || 'DHONG');
-  if (!r.count) return toast('ফিডে দেওয়ার মতো পণ্য নেই। আগে ছবি Cloudinary-তে সরান।', true);
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([r.csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = 'dhong-meta-catalog.csv';
-  a.click(); URL.revokeObjectURL(a.href);
-  toast('✅ ' + r.count + 'টি পণ্যের ফিড ডাউনলোড হয়েছে' + (r.skipped ? ' (' + r.skipped + 'টি ছবির লিংক না থাকায় বাদ)' : ''));
-};
-
-$('productForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const btn = $('saveProductBtn'); btn.disabled = true; btn.textContent = 'সংরক্ষণ হচ্ছে...';
-  try {
-    await pendingUploads;
-    const key = $('editKey').value, old = key ? products.find(p => p._key === key) : null;
-    if (key && !old) throw new Error('পণ্যটি আর নেই, পেজ রিফ্রেশ করুন।');
-    let main = mainFull || $('pImg').value.trim() || existing.main || '';
-    const urlColors = $('pColors').value.split(',').map(s => s.trim()).filter(Boolean);
-    const kept = colorsFull.length ? [] : existing.colors.filter(c => !isUrl(c));
-    let colors = [...kept, ...urlColors, ...colorsFull];
-    let thumb;
-    if (cloudReady()) {
-      toast('☁️ ছবি আপলোড হচ্ছে...');
-      if (String(main).startsWith('data:')) main = await cloudUpload(main);
-      const up = [];
-      for (const c of colors) up.push(String(c).startsWith('data:') ? await cloudUpload(c) : c);
-      colors = up;
-      thumb = cloudThumb(main);
-    } else {
-      thumb = String(main).startsWith('data:') ? await shrink(main, THUMB_MAX, THUMB_Q) : main;
-    }
-    const id = old ? old.id : Date.now(), price = Number($('pPrice').value);
-    const vClean = [], seen = new Set();
-    for (const v of variants) {
-      const color = String(v.color || '').trim() || 'Standard', size = String(v.size || '').trim() || 'Free Size', k = color + '|' + size;
-      if (seen.has(k)) throw new Error('একই ভেরিয়েন্ট দুইবার আছে: ' + color + ' / ' + size);
-      seen.add(k); vClean.push({ color, size, stock: Math.max(0, Math.floor(Number(v.stock) || 0)) });
-    }
-    const totalStock = vClean.length ? vClean.reduce((s, v) => s + v.stock, 0) : Number($('pStock').value) || 0;
-    const data = {
-      id, name: $('pName').value.trim(), cat: $('pCat').value.trim(), price,
-      oldPrice: Number($('pOldPrice').value) || price, stock: totalStock, variants: vClean,
-      rating: $('pRating').value || '5.0', sales: Number($('pSales').value) || 0,
-      quality: $('pQuality').value, img: thumb, imgMain: isUrl(main) ? main : '', colors, hasFull: true,
-      video: $('pVideo').value, desc: $('pDesc').value, comments: old ? (old.comments || []) : []
-    };
-    await db.ref('dhong_images/' + id).set({ main, colors });
-    if (old) await db.ref('dhong_products/' + old._key).set(data); else await db.ref('dhong_products').push(data);
-    toast(old ? '✅ পণ্য আপডেট হয়েছে' : '✅ নতুন পণ্য যোগ হয়েছে');
-    resetProductForm();
-  } catch (err) { console.error(err); fail(err); }
-  finally { btn.disabled = false; btn.textContent = 'পণ্য সংরক্ষণ করুন'; }
-});
-
-function editProduct(key) {
-  const p = products.find(x => x._key === key); if (!p) return;
-  const set = (id, v) => $(id).value = v ?? '';
-  $('editKey').value = key;
-  set('pName', p.name); set('pCat', p.cat); set('pPrice', p.price); set('pOldPrice', p.oldPrice || p.price);
-  set('pStock', p.stock || 0); set('pRating', p.rating || '5.0'); set('pSales', p.sales || 0);
-  set('pQuality', p.quality); set('pVideo', p.video); set('pDesc', p.desc);
-  variants = variantsOf(p).map(v => ({ color: v.color, size: v.size, stock: Number(v.stock) || 0 })); renderVariants();
-  const cols = p.colors ? (Array.isArray(p.colors) ? p.colors : Object.values(p.colors)) : [];
-  mainFull = ''; colorsFull = []; existing = { main: p.imgMain || p.img || '', colors: cols };
-  set('pImg', isUrl(p.imgMain || p.img) ? (p.imgMain || p.img) : ''); set('pColors', cols.filter(isUrl).join(', '));
-  showPreview(p.img);
-  $('formTitle').textContent = 'এডিট করুন: ' + p.name; $('cancelEdit').style.display = 'inline-block';
-  document.querySelector('[data-page="products"]').click();
-  scrollTo({ top: 0, behavior: 'smooth' });
-}
-function deleteProduct(key) {
-  const p = products.find(x => x._key === key); if (!p || !confirm('এই পণ্যটি ডিলিট করবেন? (' + p.name + ')')) return;
-  Promise.all([db.ref('dhong_products/' + key).remove(), db.ref('dhong_images/' + p.id).remove()]).then(() => toast('✅ পণ্য মুছে গেছে')).catch(fail);
-}
-
-/* ---------- Courier (Steadfast, Cloudflare Worker এর মাধ্যমে) ---------- */
-function fillCourierForm() {
-  const v = (id, val) => { const el = $(id); if (el) el.value = val || ''; };
-  v('cProxy', courier.proxyUrl); v('cNote', courier.note);
-}
-$('courierForm').addEventListener('submit', e => {
-  e.preventDefault();
-  // set() পুরো নোড বদলায়, তাই আগের apiKey/secretKey ডাটাবেস থেকে মুছে যায়
-  db.ref('dhong_courier').set({ proxyUrl: $('cProxy').value.trim(), note: $('cNote').value.trim() })
-    .then(() => toast('✅ কুরিয়ার সেটিংস সংরক্ষণ হয়েছে (পুরনো Key মুছে গেছে)')).catch(fail);
-});
-async function courierCall(path, method, body) {
-  const proxy = (courier.proxyUrl || '').replace(/\/$/, '');
-  if (!proxy) throw new Error('Courier ট্যাবে Worker URL দিন।');
-  const token = await auth.currentUser.getIdToken();
-  const headers = { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: 'Bearer ' + token };
-  let r;
-  try { r = await fetch(proxy + path, { method, headers, body: body ? JSON.stringify(body) : undefined }); }
-  catch { throw new Error('Worker-এ পৌঁছানো যায়নি। URL ও ALLOWED_ORIGIN ঠিক আছে কিনা দেখুন।'); }
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.message || 'কুরিয়ার API এরর (' + r.status + ')');
-  return j;
-}
-$('cTest').onclick = () => courierCall('/get_balance', 'GET')
-  .then(j => toast('✅ সংযোগ ঠিক আছে। ব্যালেন্স: ৳' + (j.current_balance ?? '?'))).catch(fail);
-
-async function sendCourier(key, btn) {
-  const o = orders.find(x => x._key === key); if (!o || o.consignment_id) return;
-  let phone = String(o.phone || '').replace(/\D/g, '').replace(/^88/, '');
-  if (!/^01\d{9}$/.test(phone)) return toast('ফোন নম্বর সঠিক নয় (১১ ডিজিট, 01 দিয়ে শুরু)।', true);
-  if (!o.address) return toast('ঠিকানা নেই।', true);
-  if (!confirm(`#DH-${o.id} অর্ডারটি কুরিয়ারে পাঠাবেন? COD: ৳${o.total}`)) return;
-  btn.disabled = true;
-  try {
-    const j = await courierCall('/create_order', 'POST', {
-      invoice: 'DH-' + o.id, recipient_name: o.customer_name || 'Customer', recipient_phone: phone,
-      recipient_address: o.address, cod_amount: Number(o.total || 0), note: courier.note || ''
-    });
-    const c = j.consignment;
-    if (!c || !c.consignment_id) throw new Error(j.message || 'কুরিয়ার অর্ডার তৈরি হয়নি।');
-    await db.ref('dhong_orders/' + key).update({
-      courier: 'Steadfast', consignment_id: String(c.consignment_id), tracking_code: c.tracking_code || '',
-      courier_status: c.status || 'in_review', status: 'Processing'
-    });
-    await syncTrack(key, { status: 'Processing', courier_status: c.status || 'in_review', tracking_code: c.tracking_code || '' });
-    toast('✅ কুরিয়ারে পাঠানো হয়েছে। CID: ' + c.consignment_id);
-  } catch (err) { fail(err); btn.disabled = false; }
-}
-async function trackCourier(key, btn) {
-  const o = orders.find(x => x._key === key); if (!o || !o.consignment_id) return;
-  btn.disabled = true;
-  try {
-    const j = await courierCall('/status_by_cid/' + encodeURIComponent(o.consignment_id), 'GET');
-    const st = j.delivery_status || 'unknown';
-    await db.ref('dhong_orders/' + key + '/courier_status').set(st);
-    await syncTrack(key, { courier_status: st });
-    toast('📦 কুরিয়ার স্ট্যাটাস: ' + st);
-  } catch (err) { fail(err); }
-  btn.disabled = false;
-}
-
-/* ---------- Settings ---------- */
-const toLocalInput = ms => ms ? new Date(ms - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
-$('quickOfferBtn').onclick = () => {
-  const h = Number($('setTimerHours').value);
-  if (!(h > 0)) return toast('ঘণ্টা দিন।', true);
-  $('setOfferEnd').value = toLocalInput(Date.now() + h * 3600 * 1000);
-  toast('সময় বসানো হয়েছে, নিচে "সেটিংস সেভ করুন" চাপুন');
-};
-/* ---------- ক্যাটাগরির ছবি ---------- */
-let catImgs = {}, catSig = '';
-function renderCatImgs(force) {
-  const cats = [...new Set(products.map(p => p.cat).filter(Boolean))];
-  const sig = cats.join('|') + JSON.stringify(catImgs);
-  if (!force && sig === catSig) return;
-  catSig = sig;
-  $('catImgBox').innerHTML = cats.map(c => `<div class="row" style="align-items:flex-start"><div style="display:flex;gap:8px;align-items:center;flex:1;min-width:180px">${safeUrl(catImgs[c]) ? `<img class="thumb" src="${safeUrl(catImgs[c])}" alt="">` : '<div class="thumb" style="display:grid;place-items:center;background:#f1f1f1">🛍️</div>'}<b>${esc(c)}</b></div>
-    <div style="flex:2;min-width:200px"><input placeholder="ছবির লিংক (https://...)" value="${isUrl(catImgs[c]) ? esc(catImgs[c]) : ''}" data-cat="${esc(c)}" style="margin:0 0 4px"><input type="file" accept="image/*" data-catfile="${esc(c)}" style="margin:0"></div></div>`).join('')
-    || '<div class="muted">আগে পণ্য যোগ করুন, তাহলে ক্যাটাগরি এখানে আসবে।</div>';
-}
-$('catImgBox').addEventListener('input', e => {
-  const c = e.target.dataset.cat; if (c === undefined) return;
-  const v = e.target.value.trim(); if (v) catImgs[c] = v; else delete catImgs[c];
-});
-$('catImgBox').addEventListener('change', async e => {
-  const c = e.target.dataset.catfile; if (c === undefined || !e.target.files[0]) return;
-  try {
-    toast('ছবি প্রসেস হচ্ছে...');
-    let u = await shrink(await fileToDataUrl(e.target.files[0]), cloudReady() ? 500 : 160, .8);
-    if (cloudReady()) u = await cloudUpload(u);
-    catImgs[c] = u; renderCatImgs(true);
-    toast('✅ ছবি বসানো হয়েছে, নিচে "সেটিংস সেভ করুন" চাপুন');
-  } catch (err) { fail(err); }
-});
-function fillSettingsForm() {
-  try { catImgs = JSON.parse(settings.catImagesJson || '{}') || {}; } catch (e) { catImgs = {}; }
-  renderCatImgs(true);
-  const v = (id, val) => { const el = $(id); if (el) el.value = val; };
-  v('setSiteName', settings.siteName || 'ঢং DHONG'); v('setThemeColor', settings.themeColor || '#e85d75');
-  v('setDhaka', settings.dhakaFee || '60'); v('setOutsider', settings.outsiderFee || '120'); v('setThreshold', settings.freeThreshold || '3000');
-  v('setWhatsapp', settings.whatsapp || ''); v('setPhone', settings.phone || '');
-  v('setTopBanner', settings.topBannerText || '🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি');
-  v('setHeroBg', settings.heroBg || '#242b49'); v('setTimerStatus', settings.timerStatus || 'show'); v('setTimerHours', settings.timerHours || '24');
-  v('setOfferEnd', toLocalInput(Number(settings.offerEnd) || 0));
-  v('setPixel', settings.fbPixelId || ''); v('setCloudName', settings.cloudName || ''); v('setCloudPreset', settings.cloudPreset || ''); v('setAddress', settings.address || ''); v('setEmail', settings.email || ''); v('setHours', settings.hours || '');
-  v('setFacebook', settings.facebook || ''); v('setInstagram', settings.instagram || ''); v('setYoutube', settings.youtube || ''); v('setTiktok', settings.tiktok || '');
-  v('setAbout', settings.aboutText || ''); v('setReturn', settings.returnPolicy || ''); v('setPrivacy', settings.privacyPolicy || ''); v('setFaq', settings.faqText || '');
-}
-$('settingsForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const endVal = $('setOfferEnd').value;
-  db.ref('dhong_settings').update({
-    catImagesJson: JSON.stringify(catImgs),
-    siteName: $('setSiteName').value, themeColor: $('setThemeColor').value, dhakaFee: $('setDhaka').value,
-    outsiderFee: $('setOutsider').value, freeThreshold: $('setThreshold').value, whatsapp: $('setWhatsapp').value,
-    phone: $('setPhone').value, topBannerText: $('setTopBanner').value, heroBg: $('setHeroBg').value,
-    timerStatus: $('setTimerStatus').value, timerHours: $('setTimerHours').value, offerEnd: endVal ? new Date(endVal).getTime() : 0,
-    fbPixelId: $('setPixel').value.replace(/\D/g, ''), cloudName: $('setCloudName').value.trim(), cloudPreset: $('setCloudPreset').value.trim(), address: $('setAddress').value.trim(), email: $('setEmail').value.trim(), hours: $('setHours').value.trim(),
-    facebook: $('setFacebook').value.trim(), instagram: $('setInstagram').value.trim(), youtube: $('setYoutube').value.trim(), tiktok: $('setTiktok').value.trim(),
-    aboutText: $('setAbout').value.trim(), returnPolicy: $('setReturn').value.trim(), privacyPolicy: $('setPrivacy').value.trim(), faqText: $('setFaq').value.trim()
-  }).then(() => toast('✅ সেটিংস সংরক্ষণ হয়েছে')).catch(fail);
-});
+})();
 </script>
-</body>
-</html>
+<!-- ===== আপডেট শেষ ===== -->
