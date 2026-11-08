@@ -138,18 +138,16 @@ th{color:var(--muted);font-weight:600}
       <div class="field-group">ক্যাটাগরি <input id="pCat" list="categoryList" required><datalist id="categoryList"><option value="পোশাক"><option value="ব্যাগ"><option value="অ্যাক্সেসরিজ"></datalist></div>
       <div class="field-group">অফার মূল্য (৳) <input type="number" id="pPrice" required min="0"></div>
       <div class="field-group">নিয়মিত মূল্য (৳) <input type="number" id="pOldPrice" min="0"></div>
-      <div class="field-group" style="background:#fffaf0;padding:10px;border-radius:8px;border:1px dashed #d69e2e">
-        🎨📏 ভেরিয়েন্ট (রং × সাইজ, প্রতিটার আলাদা স্টক)
-        <div class="muted">কমা দিয়ে লিখুন, "টেবিল তৈরি করুন" চাপুন, তারপর প্রতিটার স্টক বসান। খালি রাখলে নিচের সাধারণ স্টক চলবে।</div>
+      <div class="field-group">স্টক (ভেরিয়েন্ট থাকলে নিজে হিসাব হয়) <input type="number" id="pStock" min="0"></div>
+      <div class="field-group" style="background:#fff8e6;padding:10px;border-radius:8px;border:1px solid #f3dca0">
+        🎨 ভেরিয়েন্ট (রং × সাইজ, প্রতিটির আলাদা স্টক)
+        <div class="muted">রং ও সাইজ কমা দিয়ে লিখে "তৈরি করুন" চাপুন, তারপর প্রতিটির স্টক বসান। ভেরিয়েন্ট না দিলে সাধারণ স্টক ও আগের ড্রপডাউন চলবে।</div>
         <input id="vColors" placeholder="রং: কালো, সাদা, লাল">
-        <input id="vSizes" placeholder="সাইজ: M, L, XL">
-        <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
-          <button type="button" class="btn amber sm" id="vBuild">টেবিল তৈরি করুন</button>
-          <button type="button" class="btn gray sm" id="vClear">ভেরিয়েন্ট মুছুন</button>
-        </div>
-        <div class="table-wrap"><table style="min-width:280px"><tbody id="vRows"></tbody></table></div>
+        <input id="vSizes" placeholder="সাইজ: M, L, XL" style="margin-bottom:6px">
+        <button type="button" class="btn blue sm" id="vGen">তৈরি করুন / যোগ করুন</button>
+        <button type="button" class="btn gray sm" id="vAdd">+ একটি ভেরিয়েন্ট</button>
+        <div id="vList" style="margin-top:8px;font-weight:normal"></div>
       </div>
-      <div class="field-group">স্টক (ভেরিয়েন্ট থাকলে অটো যোগফল) <input type="number" id="pStock" required min="0"></div>
       <div class="field-group">রেটিং (১-৫) <input type="number" step="0.1" min="1" max="5" id="pRating" placeholder="4.8"></div>
       <div class="field-group">মোট সেলস <input type="number" id="pSales" min="0"></div>
       <div class="field-group">পণ্যের মান <input id="pQuality" placeholder="১০০% সুতি কটন"></div>
@@ -243,6 +241,11 @@ th{color:var(--muted);font-weight:600}
       <div class="field-group">ফোন নম্বর <input id="setPhone"></div>
       <div class="field-group">অফার বার টেক্সট <input id="setTopBanner"></div>
       <div class="field-group">ব্যানার ব্যাকগ্রাউন্ড কালার <input type="color" id="setHeroBg" style="height:40px;padding:0"></div>
+      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
+      <h3 class="section-title" style="color:var(--accent)">🗂️ ক্যাটাগরির ছবি</h3>
+      <div class="muted" style="margin:0 0 10px">প্রতিটি ক্যাটাগরির গোল আইকনের ছবি দিন (লিংক বা ফাইল)। না দিলে ইমোজি দেখাবে। বদলের পর নিচে "সেটিংস সেভ করুন" চাপুন।</div>
+      <div id="catImgBox" style="margin-bottom:12px"></div>
+      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
       <div class="field-group">ফ্ল্যাশ সেল টাইমার
         <select id="setTimerStatus"><option value="show">চালু (Show Timer)</option><option value="hide">বন্ধ (Hide Timer, অফার দাম সবসময় চালু)</option></select>
       </div>
@@ -360,7 +363,7 @@ function loadModerators() {
 function listFrom(snap) { const out = []; snap.forEach(ch => { const v = ch.val(); if (v && typeof v === 'object') { v._key = ch.key; out.push(v); } }); return out; }
 const listen = (path, fn) => db.ref(path).on('value', fn, e => { console.error(path, e); toast('❌ ডাটা পড়ার অনুমতি নেই (' + path + ')। Rules ও dhong_admins ঠিক আছে কিনা দেখুন।', true); });
 function startListeners() {
-listen('dhong_products', s => { products = listFrom(s); render(); applyStock(); });
+listen('dhong_products', s => { products = listFrom(s); render(); applyStock(); renderCatImgs(); });
 listen('dhong_orders', s => { orders = listFrom(s).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)); render(); notifyNew(orders); applyStock(); });
 listen('dhong_affiliates', s => { affiliates = listFrom(s); render(); });
 listen('dhong_withdrawals', s => { withdrawals = listFrom(s); render(); });
@@ -432,6 +435,8 @@ function orderIssue(o) {
   for (const i of items) {
     const p = products.find(x => String(x.id) === String(i.product_id));
     if (!p) return 'পণ্য খুঁজে পাওয়া যায়নি';
+    const pv = variantsOf(p);
+    if (pv.length && !pv.some(v => v.color === i.color && v.size === i.size)) return 'রং/সাইজ ভেরিয়েন্ট মেলেনি';
     const pr = Number(i.price), q = Number(i.quantity);
     if (![Number(p.price), Number(p.oldPrice)].includes(pr)) return 'দাম পণ্যের বর্তমান দামের সাথে মেলেনি';
     if (!(q > 0 && q <= 5)) return 'পরিমাণ সন্দেহজনক';
@@ -492,7 +497,7 @@ function render() {
     const low = Number(p.stock || 0) <= LOW_STOCK;
     return `<div class="row"><div style="display:flex;gap:10px;align-items:center">${safeUrl(p.img) ? `<img class="thumb" src="${safeUrl(p.img)}" alt="" style="width:48px;height:48px">` : ''}
       <div><b>${esc(p.name)}</b> (${esc(p.cat)}) - ${money(p.price)}<br>
-      <small style="color:green">স্টক: ${esc(p.stock ?? 0)} | ⭐${esc(p.rating || '5.0')} | আইডি: ${esc(p.id)}</small> ${low ? '<span class="pill bad">কম স্টক</span>' : ''}<br>
+      <small style="color:green">স্টক: ${esc(p.stock ?? 0)}${variantsOf(p).length ? ' (' + variantsOf(p).length + 'টি ভেরিয়েন্ট)' : ''} | ⭐${esc(p.rating || '5.0')} | আইডি: ${esc(p.id)}</small> ${low ? '<span class="pill bad">কম স্টক</span>' : ''}<br>
       <small style="word-break:break-all"><a href="${esc(link)}" target="_blank" rel="noopener">${esc(link)}</a></small></div></div>
       <div><button class="btn sm gray" data-act="copy" data-link="${esc(link)}">লিংক কপি</button>
       <button class="btn sm blue" data-act="editProduct" data-key="${esc(p._key)}">এডিট</button>
@@ -528,31 +533,11 @@ async function applyStock() {
       if (!r.committed) continue;
       for (const i of parseItems(o) || []) {
         const p = products.find(x => String(x.id) === String(i.product_id)); if (!p) continue;
-        const q = Number(i.quantity) || 0;
-        await changeStock(p, i, -q);
-        await db.ref('dhong_products/' + p._key + '/sales').transaction(v => (Number(v) || 0) + q);
+        await adjustStock(p, i, -1);
       }
     }
   } catch (e) { console.error(e); }
   finally { applying = false; }
-}
-// ভেরিয়েন্ট থাকলে ওই রং+সাইজের স্টক বদলায় ও মোট স্টক আবার যোগ করে; না থাকলে শুধু মোট স্টক
-async function changeStock(p, item, delta) {
-  const vs = Array.isArray(p.variants) ? p.variants : Object.values(p.variants || {});
-  if (vs.some(x => x && x.color === item.color && x.size === item.size)) {
-    const r = await db.ref('dhong_products/' + p._key + '/variants').transaction(v => {
-      if (!v) return;
-      const a = (Array.isArray(v) ? v : Object.values(v)).map(x => Object.assign({}, x));
-      const k = a.findIndex(x => x.color === item.color && x.size === item.size); if (k < 0) return;
-      a[k].stock = Math.max(0, (Number(a[k].stock) || 0) + delta); return a;
-    });
-    if (r.committed && r.snapshot.val()) {
-      const val = r.snapshot.val(), list = Array.isArray(val) ? val : Object.values(val);
-      await db.ref('dhong_products/' + p._key + '/stock').set(list.reduce((s, x) => s + (Number(x.stock) || 0), 0));
-      return;
-    }
-  }
-  await db.ref('dhong_products/' + p._key + '/stock').transaction(v => Math.max(0, (Number(v) || 0) + delta));
 }
 async function restoreStock(key) {
   const o = orders.find(x => x._key === key); if (!o || !o.stock_applied) return;
@@ -560,10 +545,16 @@ async function restoreStock(key) {
   if (!r.committed) return;
   for (const i of parseItems(o) || []) {
     const p = products.find(x => String(x.id) === String(i.product_id)); if (!p) continue;
-    const q = Number(i.quantity) || 0;
-    await changeStock(p, i, q);
-    await db.ref('dhong_products/' + p._key + '/sales').transaction(v => Math.max(0, (Number(v) || 0) - q));
+    await adjustStock(p, i, +1);
   }
+}
+// sign = -1: অর্ডারে স্টক কাটা, +1: ক্যান্সেলে ফেরত। ভেরিয়েন্ট থাকলে ওই রং/সাইজের স্টক এবং মোট স্টক দুটোই বদলায়
+async function adjustStock(p, i, sign) {
+  const q = (Number(i.quantity) || 0) * sign, base = 'dhong_products/' + p._key;
+  const idx = variantsOf(p).findIndex(v => v.color === i.color && v.size === i.size);
+  if (idx >= 0) await db.ref(base + '/variants/' + idx + '/stock').transaction(v => Math.max(0, (Number(v) || 0) + q));
+  await db.ref(base + '/stock').transaction(v => Math.max(0, (Number(v) || 0) + q));
+  await db.ref(base + '/sales').transaction(v => Math.max(0, (Number(v) || 0) - q));
 }
 
 /* ---------- CSV export ---------- */
@@ -727,42 +718,39 @@ $('pColorFiles').addEventListener('change', e => {
   pendingUploads = pendingUploads.then(async () => { const out = []; for (const f of files) out.push(await shrink(await fileToDataUrl(f), FULL_MAX, FULL_Q)); colorsFull = out; }).catch(() => toast('❌ কিছু ছবি পড়া যায়নি', true));
 });
 
-/* ---------- ভেরিয়েন্ট টেবিল ---------- */
-let variantRows = [];
-const variantSum = () => variantRows.reduce((s, v) => s + (Number(v.stock) || 0), 0);
-function renderVariants() {
-  $('vRows').innerHTML = variantRows.length
-    ? '<tr><th>রং</th><th>সাইজ</th><th>স্টক</th><th></th></tr>' + variantRows.map((v, i) =>
-        `<tr><td>${esc(v.color)}</td><td>${esc(v.size)}</td><td><input type="number" min="0" value="${esc(v.stock)}" data-vi="${i}" style="width:80px;margin:0"></td><td><button type="button" class="btn sm red" data-vdel="${i}">✕</button></td></tr>`).join('')
-    : '';
-  $('pStock').readOnly = variantRows.length > 0;
-  if (variantRows.length) $('pStock').value = variantSum();
+/* ---------- Products ---------- */
+const variantsOf = p => p && p.variants ? (Array.isArray(p.variants) ? p.variants : Object.values(p.variants)).filter(v => v && v.color) : [];
+let variants = [];
+function syncTotal() {
+  const el = $('pStock');
+  if (variants.length) { el.value = variants.reduce((s, v) => s + Math.max(0, Number(v.stock) || 0), 0); el.readOnly = true; }
+  else el.readOnly = false;
 }
-$('vBuild').onclick = () => {
-  const split = s => [...new Set(s.split(',').map(x => x.trim()).filter(Boolean))];
-  const cols = split($('vColors').value), sizes = split($('vSizes').value);
-  if (!cols.length || !sizes.length) return toast('রং ও সাইজ দুটোই দিন।', true);
-  if (cols.length * sizes.length > 60) return toast('সর্বোচ্চ ৬০টি ভেরিয়েন্ট।', true);
-  const old = variantRows; variantRows = [];
-  cols.forEach(c => sizes.forEach(s => { const f = old.find(x => x.color === c && x.size === s); variantRows.push({ color: c, size: s, stock: f ? f.stock : 0 }); }));
+function renderVariants() {
+  $('vList').innerHTML = variants.length
+    ? `<div class="table-wrap"><table style="min-width:300px"><thead><tr><th>রং</th><th>সাইজ</th><th>স্টক</th><th></th></tr></thead><tbody>${variants.map((v, i) =>
+      `<tr><td><input data-vi="${i}" data-vf="color" value="${esc(v.color)}" style="margin:0"></td><td><input data-vi="${i}" data-vf="size" value="${esc(v.size)}" style="margin:0"></td><td><input type="number" min="0" data-vi="${i}" data-vf="stock" value="${esc(v.stock)}" style="margin:0"></td><td><button type="button" class="btn sm red" data-vdel="${i}">✕</button></td></tr>`).join('')}</tbody></table></div>`
+    : '<div class="muted">কোনো ভেরিয়েন্ট নেই (সাধারণ স্টক ব্যবহার হবে)।</div>';
+  syncTotal();
+}
+$('vList').addEventListener('input', e => {
+  const t = e.target; if (t.dataset.vi === undefined) return;
+  variants[+t.dataset.vi][t.dataset.vf] = t.dataset.vf === 'stock' ? Number(t.value) : t.value; syncTotal();
+});
+$('vList').addEventListener('click', e => {
+  const b = e.target.closest('[data-vdel]'); if (!b) return;
+  variants.splice(+b.dataset.vdel, 1); renderVariants();
+});
+$('vAdd').onclick = () => { variants.push({ color: '', size: '', stock: 0 }); renderVariants(); };
+$('vGen').onclick = () => {
+  const cs = $('vColors').value.split(',').map(s => s.trim()).filter(Boolean), ss = $('vSizes').value.split(',').map(s => s.trim()).filter(Boolean);
+  if (!cs.length || !ss.length) return toast('রং ও সাইজ দুটোই লিখুন।', true);
+  cs.forEach(c => ss.forEach(s => { if (!variants.some(v => v.color === c && v.size === s)) variants.push({ color: c, size: s, stock: 0 }); }));
   renderVariants();
 };
-$('vClear').onclick = () => { variantRows = []; $('vColors').value = ''; $('vSizes').value = ''; renderVariants(); };
-$('vRows').addEventListener('input', e => {
-  const i = e.target.dataset.vi; if (i === undefined) return;
-  variantRows[i].stock = Math.max(0, Math.floor(Number(e.target.value) || 0));
-  $('pStock').value = variantSum();
-});
-$('vRows').addEventListener('click', e => {
-  const i = e.target.dataset.vdel; if (i === undefined) return;
-  variantRows.splice(Number(i), 1); renderVariants();
-});
-
-/* ---------- Products ---------- */
 function resetProductForm() {
-  $('productForm').reset(); $('editKey').value = ''; showPreview('');
+  $('productForm').reset(); $('editKey').value = ''; showPreview(''); variants = []; renderVariants();
   mainFull = ''; colorsFull = []; existing = { main: '', colors: [] };
-  variantRows = []; renderVariants(); $('pStock').readOnly = false;
   $('formTitle').textContent = 'নতুন পণ্য যোগ করুন'; $('cancelEdit').style.display = 'none';
 }
 $('cancelEdit').onclick = resetProductForm;
@@ -856,11 +844,16 @@ $('productForm').addEventListener('submit', async e => {
       thumb = String(main).startsWith('data:') ? await shrink(main, THUMB_MAX, THUMB_Q) : main;
     }
     const id = old ? old.id : Date.now(), price = Number($('pPrice').value);
+    const vClean = [], seen = new Set();
+    for (const v of variants) {
+      const color = String(v.color || '').trim() || 'Standard', size = String(v.size || '').trim() || 'Free Size', k = color + '|' + size;
+      if (seen.has(k)) throw new Error('একই ভেরিয়েন্ট দুইবার আছে: ' + color + ' / ' + size);
+      seen.add(k); vClean.push({ color, size, stock: Math.max(0, Math.floor(Number(v.stock) || 0)) });
+    }
+    const totalStock = vClean.length ? vClean.reduce((s, v) => s + v.stock, 0) : Number($('pStock').value) || 0;
     const data = {
       id, name: $('pName').value.trim(), cat: $('pCat').value.trim(), price,
-      oldPrice: Number($('pOldPrice').value) || price,
-      stock: variantRows.length ? variantSum() : Number($('pStock').value),
-      variants: variantRows.map(v => ({ color: v.color, size: v.size, stock: Number(v.stock) || 0 })),
+      oldPrice: Number($('pOldPrice').value) || price, stock: totalStock, variants: vClean,
       rating: $('pRating').value || '5.0', sales: Number($('pSales').value) || 0,
       quality: $('pQuality').value, img: thumb, imgMain: isUrl(main) ? main : '', colors, hasFull: true,
       video: $('pVideo').value, desc: $('pDesc').value, comments: old ? (old.comments || []) : []
@@ -880,15 +873,11 @@ function editProduct(key) {
   set('pName', p.name); set('pCat', p.cat); set('pPrice', p.price); set('pOldPrice', p.oldPrice || p.price);
   set('pStock', p.stock || 0); set('pRating', p.rating || '5.0'); set('pSales', p.sales || 0);
   set('pQuality', p.quality); set('pVideo', p.video); set('pDesc', p.desc);
+  variants = variantsOf(p).map(v => ({ color: v.color, size: v.size, stock: Number(v.stock) || 0 })); renderVariants();
   const cols = p.colors ? (Array.isArray(p.colors) ? p.colors : Object.values(p.colors)) : [];
   mainFull = ''; colorsFull = []; existing = { main: p.imgMain || p.img || '', colors: cols };
   set('pImg', isUrl(p.imgMain || p.img) ? (p.imgMain || p.img) : ''); set('pColors', cols.filter(isUrl).join(', '));
   showPreview(p.img);
-  variantRows = (p.variants ? (Array.isArray(p.variants) ? p.variants : Object.values(p.variants)) : [])
-    .filter(v => v && v.color != null).map(v => ({ color: String(v.color), size: String(v.size), stock: Number(v.stock) || 0 }));
-  $('vColors').value = [...new Set(variantRows.map(v => v.color))].join(', ');
-  $('vSizes').value = [...new Set(variantRows.map(v => v.size))].join(', ');
-  renderVariants();
   $('formTitle').textContent = 'এডিট করুন: ' + p.name; $('cancelEdit').style.display = 'inline-block';
   document.querySelector('[data-page="products"]').click();
   scrollTo({ top: 0, behavior: 'smooth' });
@@ -967,7 +956,34 @@ $('quickOfferBtn').onclick = () => {
   $('setOfferEnd').value = toLocalInput(Date.now() + h * 3600 * 1000);
   toast('সময় বসানো হয়েছে, নিচে "সেটিংস সেভ করুন" চাপুন');
 };
+/* ---------- ক্যাটাগরির ছবি ---------- */
+let catImgs = {}, catSig = '';
+function renderCatImgs(force) {
+  const cats = [...new Set(products.map(p => p.cat).filter(Boolean))];
+  const sig = cats.join('|') + JSON.stringify(catImgs);
+  if (!force && sig === catSig) return;
+  catSig = sig;
+  $('catImgBox').innerHTML = cats.map(c => `<div class="row" style="align-items:flex-start"><div style="display:flex;gap:8px;align-items:center;flex:1;min-width:180px">${safeUrl(catImgs[c]) ? `<img class="thumb" src="${safeUrl(catImgs[c])}" alt="">` : '<div class="thumb" style="display:grid;place-items:center;background:#f1f1f1">🛍️</div>'}<b>${esc(c)}</b></div>
+    <div style="flex:2;min-width:200px"><input placeholder="ছবির লিংক (https://...)" value="${isUrl(catImgs[c]) ? esc(catImgs[c]) : ''}" data-cat="${esc(c)}" style="margin:0 0 4px"><input type="file" accept="image/*" data-catfile="${esc(c)}" style="margin:0"></div></div>`).join('')
+    || '<div class="muted">আগে পণ্য যোগ করুন, তাহলে ক্যাটাগরি এখানে আসবে।</div>';
+}
+$('catImgBox').addEventListener('input', e => {
+  const c = e.target.dataset.cat; if (c === undefined) return;
+  const v = e.target.value.trim(); if (v) catImgs[c] = v; else delete catImgs[c];
+});
+$('catImgBox').addEventListener('change', async e => {
+  const c = e.target.dataset.catfile; if (c === undefined || !e.target.files[0]) return;
+  try {
+    toast('ছবি প্রসেস হচ্ছে...');
+    let u = await shrink(await fileToDataUrl(e.target.files[0]), cloudReady() ? 500 : 160, .8);
+    if (cloudReady()) u = await cloudUpload(u);
+    catImgs[c] = u; renderCatImgs(true);
+    toast('✅ ছবি বসানো হয়েছে, নিচে "সেটিংস সেভ করুন" চাপুন');
+  } catch (err) { fail(err); }
+});
 function fillSettingsForm() {
+  try { catImgs = JSON.parse(settings.catImagesJson || '{}') || {}; } catch (e) { catImgs = {}; }
+  renderCatImgs(true);
   const v = (id, val) => { const el = $(id); if (el) el.value = val; };
   v('setSiteName', settings.siteName || 'ঢং DHONG'); v('setThemeColor', settings.themeColor || '#e85d75');
   v('setDhaka', settings.dhakaFee || '60'); v('setOutsider', settings.outsiderFee || '120'); v('setThreshold', settings.freeThreshold || '3000');
@@ -983,6 +999,7 @@ $('settingsForm').addEventListener('submit', e => {
   e.preventDefault();
   const endVal = $('setOfferEnd').value;
   db.ref('dhong_settings').update({
+    catImagesJson: JSON.stringify(catImgs),
     siteName: $('setSiteName').value, themeColor: $('setThemeColor').value, dhakaFee: $('setDhaka').value,
     outsiderFee: $('setOutsider').value, freeThreshold: $('setThreshold').value, whatsapp: $('setWhatsapp').value,
     phone: $('setPhone').value, topBannerText: $('setTopBanner').value, heroBg: $('setHeroBg').value,
