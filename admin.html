@@ -4,280 +4,460 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DHONG Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <style>
-:root{--bg:#f4f6fb;--card:#fff;--text:#182230;--muted:#667085;--dark:#151b2b;--accent:#6558e8;--line:#e7eaf0;--green:#12805c;--red:#e53e3e}
+:root{--bg:#f3f5f9;--card:#fff;--text:#1b2433;--muted:#6b7385;--side:#111827;--side2:#1f2937;--accent:#4f46e5;--accent-soft:#eef0ff;--line:#e6e9f0;--green:#0f9d6b;--red:#e5484d;--amber:#d97706}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--text)}
+body{margin:0;background:var(--bg);font-family:'Hind Siliguri',Arial,sans-serif;color:var(--text);font-size:14px}
 button,input,select,textarea{font:inherit}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .layout{display:flex;min-height:100vh}
-.sidebar{width:240px;background:var(--dark);color:#fff;padding:20px 14px;flex-shrink:0}
-.brand{font-size:22px;font-weight:900;letter-spacing:1px;padding:8px 0}
-.brand small{display:block;font-size:10px;color:#aeb7ca;margin-top:4px}
-.nav{margin-top:15px;display:flex;flex-direction:column;gap:4px}
-.nav button{width:100%;text-align:left;border:0;background:transparent;color:#cbd2e1;padding:11px 12px;border-radius:8px;cursor:pointer;font-size:13px}
-.nav button.active,.nav button:hover{background:#343b54;color:#fff;font-weight:bold}
-.main{flex:1;min-width:0;padding:20px}
-.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
-.top h1{font-size:22px;margin:0}
-.muted{color:var(--muted);font-size:12px;margin-top:5px}
-.live{background:#e8f7ef;color:var(--green);border:1px solid var(--line);padding:8px 12px;border-radius:10px;font-size:12px}
-.page{display:none}.page.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+/* সাইডবার */
+.sidebar{width:252px;background:var(--side);color:#fff;padding:18px 12px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:50}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 16px}
+.brand-ic{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#6366f1,#ec4899);display:grid;place-items:center;font-weight:700;font-size:18px}
+.brand b{font-size:18px;letter-spacing:.5px;display:block;line-height:1.1}
+.brand small{font-size:11px;color:#9ca3af}
+.nav-label{font-size:11px;color:#6b7280;letter-spacing:.8px;text-transform:uppercase;padding:14px 10px 6px;font-weight:600}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:0;background:transparent;color:#cbd5e1;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;transition:background .15s}
+.nav button .ic{width:28px;height:28px;border-radius:8px;background:var(--side2);display:grid;place-items:center;font-size:15px;flex-shrink:0}
+.nav button:hover{background:var(--side2);color:#fff}
+.nav button.active{background:var(--accent);color:#fff;font-weight:600}
+.nav button.active .ic{background:rgba(255,255,255,.2)}
+.nav .bdg{margin-left:auto;background:var(--red);color:#fff;border-radius:10px;font-size:11px;padding:1px 7px;font-weight:700}
+.nav .bdg:empty{display:none}
+.scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:45}
+/* মূল অংশ */
+.main{flex:1;min-width:0;padding:0 22px 40px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 0;position:sticky;top:0;background:var(--bg);z-index:30;flex-wrap:wrap}
+.top-l{display:flex;align-items:center;gap:10px}
+.top h1{font-size:21px;margin:0;font-weight:700}
+.menu-btn{display:none;background:#fff;border:1px solid var(--line);border-radius:10px;width:40px;height:40px;font-size:18px;cursor:pointer}
+.top-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.live{background:#e7f8f0;color:var(--green);border:1px solid #c6eedd;padding:7px 12px;border-radius:20px;font-size:12px;font-weight:600}
+.muted{color:var(--muted);font-size:12px;margin-top:5px;font-weight:400;line-height:1.5}
+.page{display:none}.page.active{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.ph{display:flex;align-items:center;gap:12px;margin:4px 0 16px}
+.ph-ic{width:46px;height:46px;border-radius:14px;background:var(--accent-soft);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+.ph h2{margin:0;font-size:18px}
+.ph p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.stat-card{display:flex;gap:12px;align-items:center;margin:0}
+.stat-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:21px;flex-shrink:0}
 .stat-label{color:var(--muted);font-size:12px}
-.stat{font-size:24px;font-weight:800;margin:10px 0 4px}
-.section-title{font-size:16px;font-weight:700;margin:0 0 12px}
-input,select,textarea{border:1px solid #dce1eb;background:#fff;border-radius:8px;padding:10px;width:100%;margin-top:4px}
-.field-group{margin-bottom:12px;font-size:12px;font-weight:bold}
-.btn{border:0;border-radius:8px;padding:10px 12px;cursor:pointer;font-weight:650;color:#fff}
+.stat{font-size:22px;font-weight:700;margin-top:2px}
+.section-title{font-size:15px;font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.sub-title{font-size:13px;font-weight:700;margin:18px 0 4px;padding-top:14px;border-top:1px dashed var(--line);display:flex;align-items:center;gap:7px}
+input,select,textarea{border:1px solid #d9dee8;background:#fff;border-radius:10px;padding:10px 12px;width:100%;margin-top:5px;color:var(--text)}
+input[type=checkbox]{width:auto}
+input[type=file]{padding:8px;background:#fafbfd}
+.field-group{margin-bottom:14px;font-size:13px;font-weight:600}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.box{padding:12px;border-radius:12px;border:1px solid var(--line);background:#fafbfe;margin-bottom:14px}
+.box.warn{background:#fff8eb;border-color:#f6dfae}
+.box.pink{background:#fff5f6;border-color:#fbd5d8}
+.box.blue{background:#f3f6ff;border-color:#d8e0ff}
+.btn{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;color:#fff;display:inline-flex;align-items:center;gap:6px;justify-content:center;transition:filter .15s}
+.btn:hover{filter:brightness(.94)}
 .btn:disabled{opacity:.6;cursor:not-allowed}
-.btn.sm{padding:5px 8px;font-size:11px}
-.primary{background:var(--accent)}.gray{background:#6c757d}.blue{background:#007bff}.red{background:#ff4d4d}.green{background:#38a169}.amber{background:#d69e2e}
-table{width:100%;border-collapse:collapse;min-width:550px}
-th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:top}
-th{color:var(--muted);font-weight:600}
-.table-wrap{overflow-x:auto}
-.pill{display:inline-block;padding:4px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#e8f7ef;color:#16754e}
-.pill.pending{background:#fff2db;color:#9a5b08}.pill.bad{background:#fed7d7;color:#9b2c2c}
-.empty{padding:20px;text-align:center;color:var(--muted)}
+.btn.sm{padding:6px 10px;font-size:12px;border-radius:8px}
+.primary{background:var(--accent)}.gray{background:#667085}.blue{background:#2563eb}.red{background:var(--red)}.green{background:var(--green)}.amber{background:var(--amber)}
+.btn.ghost{background:#fff;color:var(--text);border:1px solid var(--line)}
+.save-bar{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:16px 0 4px;margin-top:6px}
+.save-bar .btn{width:100%;padding:13px;font-size:15px}
+table{width:100%;border-collapse:collapse;min-width:560px}
+th,td{text-align:left;padding:11px 9px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}
+th{color:var(--muted);font-weight:600;background:#fafbfd;font-size:12px}
+.table-wrap{overflow-x:auto;border-radius:10px}
+.pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#e7f8f0;color:#0b7a53}
+.pill.pending{background:#fff2db;color:#9a5b08}.pill.bad{background:#fee2e2;color:#9b1c1c}
+.empty{padding:26px;text-align:center;color:var(--muted)}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .toolbar input{flex:2;min-width:180px;margin:0}.toolbar select{flex:1;min-width:130px;margin:0}
-.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;flex-wrap:wrap;gap:8px}
-.item{display:flex;align-items:center;gap:8px;margin-bottom:6px;background:#f9f9f9;padding:4px;border-radius:6px}
-.item img,.thumb{width:45px;height:45px;object-fit:cover;border-radius:4px;border:1px solid #ddd;flex-shrink:0}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:8px}
+.row:last-child{border:0}
+.item{display:flex;align-items:center;gap:8px;margin-bottom:6px;background:#f6f7fb;padding:5px;border-radius:8px}
+.item img,.thumb{width:46px;height:46px;object-fit:cover;border-radius:8px;border:1px solid var(--line);flex-shrink:0}
+.tabs{display:flex;gap:6px;margin-bottom:14px;background:#e9ecf3;padding:4px;border-radius:12px;width:max-content;max-width:100%;overflow-x:auto}
+.tabs button{border:0;background:transparent;padding:8px 16px;border-radius:9px;cursor:pointer;font-weight:600;color:var(--muted);white-space:nowrap}
+.tabs button.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.ed-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fff}
+.ed-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700;gap:8px}
+.ed-prev{width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--line);margin-top:6px}
+.help{background:var(--accent-soft);color:#3730a3;border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:14px;line-height:1.6}
 #toasts{position:fixed;bottom:16px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:100000}
-.toast{background:#151b2b;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.toast{background:#111827;color:#fff;padding:11px 15px;border-radius:10px;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 .toast.err{background:#c53030}
-#loginModal{position:fixed;inset:0;background:var(--dark);display:flex;align-items:center;justify-content:center;z-index:99999}
-.login-box{background:#fff;padding:30px;border-radius:14px;width:100%;max-width:380px;text-align:center}
-@media(max-width:768px){
-  .layout{flex-direction:column}
-  .sidebar{width:100%;padding:15px;text-align:center}
-  .nav{display:grid;grid-template-columns:repeat(3,1fr);margin-top:10px}
-  .nav button{padding:8px 4px;font-size:11px;text-align:center;border:1px solid #2d364f}
-  .main{padding:12px}
+#loginModal{position:fixed;inset:0;background:linear-gradient(135deg,#111827,#312e81);display:flex;align-items:center;justify-content:center;z-index:99999;padding:14px}
+.login-box{background:#fff;padding:30px;border-radius:18px;width:100%;max-width:390px;text-align:center}
+@media(max-width:900px){
+  .sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);transition:transform .25s;box-shadow:0 0 30px rgba(0,0,0,.4)}
+  .sidebar.open{transform:none}
+  .scrim.show{display:block}
+  .menu-btn{display:grid;place-items:center}
+  .main{padding:0 12px 40px}
+  .two{grid-template-columns:1fr}
+  .live{display:none}
 }
-@media(max-width:480px){.nav{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 
 <div id="loginModal">
   <div class="login-box">
-    <h2 style="margin-top:0">DHONG Super Admin</h2>
-    <p class="muted" style="margin-bottom:20px">প্যানেলে প্রবেশ করতে ইমেইল ও পাসওয়ার্ড দিন</p>
-    <input type="email" id="adminEmailInput" placeholder="অ্যাডমিন ইমেইল" autocomplete="username" style="margin-bottom:8px">
-    <input type="password" id="adminPassInput" placeholder="পাসওয়ার্ড লিখুন..." autocomplete="current-password">
-    <button class="btn primary" id="loginBtn" style="width:100%;margin-top:12px">লগইন করুন</button>
-    <div id="loginError" style="color:red;font-size:12px;margin-top:10px;word-break:break-all"></div>
+    <div class="brand-ic" style="margin:0 auto 10px;width:52px;height:52px;font-size:24px;color:#fff">D</div>
+    <h2 style="margin:0 0 4px">DHONG Admin</h2>
+    <p class="muted" style="margin:0 0 18px">প্যানেলে প্রবেশ করতে ইমেইল ও পাসওয়ার্ড দিন</p>
+    <input type="email" id="adminEmailInput" placeholder="📧 অ্যাডমিন ইমেইল" autocomplete="username" style="margin-bottom:8px">
+    <input type="password" id="adminPassInput" placeholder="🔑 পাসওয়ার্ড" autocomplete="current-password">
+    <button class="btn primary" id="loginBtn" style="width:100%;margin-top:12px;padding:12px">লগইন করুন</button>
+    <div id="loginError" style="color:#c53030;font-size:12px;margin-top:10px;word-break:break-all"></div>
   </div>
 </div>
 <div id="toasts" aria-live="polite"></div>
+<div class="scrim" id="scrim"></div>
 
 <div class="layout">
-<aside class="sidebar">
-  <div class="brand">DHONG<small>SUPER ADMIN</small></div>
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><div class="brand-ic">D</div><div><b>DHONG</b><small>অ্যাডমিন প্যানেল</small></div></div>
   <nav class="nav">
-    <button class="active" data-page="dashboard" data-title="Dashboard">▦ Dashboard</button>
-    <button data-page="orders" data-title="Orders">▤ Orders</button>
-    <button data-page="products" data-title="Products">◈ Products</button>
-    <button data-page="comments" data-title="Reviews">💬 Reviews <span id="pendingCommentBadge"></span></button>
-    <button data-page="affiliates" data-title="Affiliates & Withdraws">🤝 Affiliates</button>
-    <button data-page="moderators" data-title="Moderators & Security">🛡️ Moderators</button>
-    <button data-page="profit" data-title="Profit Report">৳ Profit</button>
-    <button data-page="courier" data-title="Courier API">🚚 Courier</button>
-    <button data-page="api" data-title="Settings">⚙ Settings</button>
+    <button class="active" data-page="dashboard" data-title="ড্যাশবোর্ড"><span class="ic">📊</span>ড্যাশবোর্ড</button>
+
+    <div class="nav-label">বিক্রি</div>
+    <button data-page="orders" data-title="অর্ডার"><span class="ic">🛒</span>অর্ডার</button>
+    <button data-page="courier" data-title="কুরিয়ার"><span class="ic">🚚</span>কুরিয়ার</button>
+    <button data-page="comments" data-title="রিভিউ"><span class="ic">💬</span>রিভিউ<span class="bdg" id="pendingCommentBadge"></span></button>
+    <button data-page="profit" data-title="প্রফিট রিপোর্ট"><span class="ic">💰</span>প্রফিট</button>
+
+    <div class="nav-label">পণ্য</div>
+    <button data-page="products" data-title="পণ্য"><span class="ic">📦</span>পণ্য ও স্টক</button>
+
+    <div class="nav-label">ওয়েবসাইট</div>
+    <button data-page="site" data-title="সাইট সাজান"><span class="ic">🎨</span>সাইট সাজান</button>
+    <button data-page="pages" data-title="পেজ ও যোগাযোগ"><span class="ic">📝</span>পেজ ও যোগাযোগ</button>
+
+    <div class="nav-label">মার্কেটিং</div>
+    <button data-page="marketing" data-title="অফার ও মার্কেটিং"><span class="ic">📣</span>অফার ও মার্কেটিং</button>
+    <button data-page="affiliates" data-title="এফিলিয়েট ও উইথড্র"><span class="ic">🤝</span>এফিলিয়েট</button>
+
+    <div class="nav-label">সিস্টেম</div>
+    <button data-page="api" data-title="সেটিংস"><span class="ic">⚙️</span>সেটিংস</button>
+    <button data-page="moderators" data-title="মডারেটর ও নিরাপত্তা"><span class="ic">🛡️</span>মডারেটর</button>
   </nav>
 </aside>
 
 <main class="main">
 <header class="top">
-  <div><h1 id="pageTitle">Dashboard</h1><div class="muted">DHONG স্টোরের লাইভ এডমিন প্যানেল</div></div>
-  <div style="display:flex;gap:8px;align-items:center"><div class="live">● Super Admin Live</div><button class="btn sm primary" id="notifBtn">🔔 নোটিফিকেশন চালু করুন</button><button class="btn sm gray" id="logoutBtn">লগআউট</button></div>
+  <div class="top-l"><button class="menu-btn" id="menuBtn" aria-label="মেনু">☰</button><h1 id="pageTitle">ড্যাশবোর্ড</h1></div>
+  <div class="top-r"><div class="live">● লাইভ</div><button class="btn sm primary" id="notifBtn">🔔 নোটিফিকেশন চালু করুন</button><button class="btn sm ghost" id="logoutBtn">🚪 লগআউট</button></div>
 </header>
 
+<!-- ড্যাশবোর্ড -->
 <section class="page active" id="dashboard">
   <div class="grid">
-    <div class="card"><div class="stat-label">মোট অর্ডার</div><div class="stat" id="totalOrdersCount">0</div></div>
-    <div class="card"><div class="stat-label">নতুন অর্ডার</div><div class="stat" id="newOrdersCount">0</div></div>
-    <div class="card"><div class="stat-label">মোট বিক্রি</div><div class="stat" id="totalSalesAmount">৳ 0</div></div>
-    <div class="card"><div class="stat-label">কম স্টকের পণ্য</div><div class="stat" id="lowStockCount" style="color:var(--red)">0</div></div>
+    <div class="card stat-card"><div class="stat-ic" style="background:#eef0ff">🛒</div><div><div class="stat-label">মোট অর্ডার</div><div class="stat" id="totalOrdersCount">0</div></div></div>
+    <div class="card stat-card"><div class="stat-ic" style="background:#fff2db">🆕</div><div><div class="stat-label">নতুন অর্ডার</div><div class="stat" id="newOrdersCount">0</div></div></div>
+    <div class="card stat-card"><div class="stat-ic" style="background:#e7f8f0">💵</div><div><div class="stat-label">মোট বিক্রি</div><div class="stat" id="totalSalesAmount">৳ 0</div></div></div>
+    <div class="card stat-card"><div class="stat-ic" style="background:#fee2e2">⚠️</div><div><div class="stat-label">কম স্টকের পণ্য</div><div class="stat" id="lowStockCount" style="color:var(--red)">0</div></div></div>
   </div>
   <div class="card">
-    <h3 class="section-title">সাম্প্রতিক অর্ডার</h3>
+    <h3 class="section-title">🕒 সাম্প্রতিক অর্ডার</h3>
     <div class="table-wrap"><table><thead><tr><th>আইডি</th><th>কাস্টমার</th><th>টাকা</th><th>স্ট্যাটাস</th></tr></thead>
     <tbody id="recentOrders"></tbody></table></div>
   </div>
 </section>
 
+<!-- অর্ডার -->
 <section class="page" id="orders">
+  <div class="ph"><div class="ph-ic">🛒</div><div><h2>অর্ডার ম্যানেজমেন্ট</h2><p>অর্ডার দেখুন, স্ট্যাটাস বদলান, কুরিয়ারে পাঠান</p></div></div>
   <div class="card">
-    <h3 class="section-title">অর্ডার ম্যানেজমেন্ট</h3>
     <div class="toolbar">
       <input type="search" id="orderSearch" placeholder="🔍 নাম, ফোন বা অর্ডার নম্বর...">
       <select id="statusFilter"></select>
-      <button class="btn gray" id="exportCsv">CSV এক্সপোর্ট</button>
-      <button class="btn gray" id="syncTrackBtn">ট্র্যাকিং সিঙ্ক</button>
+      <button class="btn ghost" id="exportCsv">📥 CSV</button>
+      <button class="btn ghost" id="syncTrackBtn">🔄 ট্র্যাকিং সিঙ্ক</button>
     </div>
     <div class="table-wrap"><table><thead><tr><th>ID</th><th>কাস্টমার</th><th>ফোন</th><th>ঠিকানা</th><th>পণ্য</th><th>রেফ</th><th>মোট</th><th>স্ট্যাটাস</th><th>তারিখ</th><th></th></tr></thead>
     <tbody id="orderRows"></tbody></table></div>
   </div>
 </section>
 
+<!-- পণ্য -->
 <section class="page" id="products">
-  <div class="card">
-    <h3 class="section-title" id="formTitle">নতুন পণ্য যোগ করুন</h3>
+  <div class="ph"><div class="ph-ic">📦</div><div><h2>পণ্য ও স্টক</h2><p>পণ্য যোগ, এডিট, ছবি ও ভেরিয়েন্ট</p></div></div>
+  <div class="tabs"><button class="on" id="tabList">📋 পণ্য তালিকা</button><button id="tabForm">➕ নতুন পণ্য / এডিট</button></div>
+
+  <div class="card" id="prodFormCard" style="display:none">
+    <h3 class="section-title" id="formTitle">➕ নতুন পণ্য যোগ করুন</h3>
     <form id="productForm">
       <input type="hidden" id="editKey">
-      <div style="text-align:center;margin-bottom:12px"><img id="previewImage" alt="" style="max-height:120px;max-width:100%;border-radius:8px;display:none;margin:0 auto"></div>
-      <div class="field-group">পণ্যের নাম <input id="pName" required></div>
-      <div class="field-group">ক্যাটাগরি <input id="pCat" list="categoryList" required><datalist id="categoryList"><option value="পোশাক"><option value="ব্যাগ"><option value="অ্যাক্সেসরিজ"></datalist></div>
-      <div class="field-group">অফার মূল্য (৳) <input type="number" id="pPrice" required min="0"></div>
-      <div class="field-group">নিয়মিত মূল্য (৳) <input type="number" id="pOldPrice" min="0"></div>
-      <div class="field-group">স্টক (ভেরিয়েন্ট থাকলে নিজে হিসাব হয়) <input type="number" id="pStock" min="0"></div>
-      <div class="field-group" style="background:#fff8e6;padding:10px;border-radius:8px;border:1px solid #f3dca0">
-        🎨 ভেরিয়েন্ট (রং × সাইজ, প্রতিটির আলাদা স্টক)
-        <div class="muted">রং ও সাইজ কমা দিয়ে লিখে "তৈরি করুন" চাপুন, তারপর প্রতিটির স্টক বসান। ভেরিয়েন্ট না দিলে সাধারণ স্টক ও আগের ড্রপডাউন চলবে।</div>
-        <input id="vColors" placeholder="রং: কালো, সাদা, লাল">
-        <input id="vSizes" placeholder="সাইজ: M, L, XL" style="margin-bottom:6px">
-        <button type="button" class="btn blue sm" id="vGen">তৈরি করুন / যোগ করুন</button>
-        <button type="button" class="btn gray sm" id="vAdd">+ একটি ভেরিয়েন্ট</button>
-        <div id="vList" style="margin-top:8px;font-weight:normal"></div>
+      <div style="text-align:center;margin-bottom:12px"><img id="previewImage" alt="" style="max-height:130px;max-width:100%;border-radius:10px;display:none;margin:0 auto"></div>
+      <div class="two">
+        <div class="field-group">🏷️ পণ্যের নাম <input id="pName" required></div>
+        <div class="field-group">🗂️ ক্যাটাগরি <input id="pCat" list="categoryList" required><datalist id="categoryList"><option value="পোশাক"><option value="ব্যাগ"><option value="অ্যাক্সেসরিজ"></datalist></div>
+        <div class="field-group">💰 অফার মূল্য (৳) <input type="number" id="pPrice" required min="0"></div>
+        <div class="field-group">🏷️ নিয়মিত মূল্য (৳) <input type="number" id="pOldPrice" min="0"></div>
+        <div class="field-group">📦 স্টক (ভেরিয়েন্ট থাকলে নিজে হিসাব হয়) <input type="number" id="pStock" min="0"></div>
+        <div class="field-group">⭐ রেটিং (১-৫) <input type="number" step="0.1" min="1" max="5" id="pRating" placeholder="4.8"></div>
+        <div class="field-group">🔥 মোট সেলস <input type="number" id="pSales" min="0"></div>
+        <div class="field-group">✅ পণ্যের মান <input id="pQuality" placeholder="১০০% সুতি কটন"></div>
       </div>
-      <div class="field-group">রেটিং (১-৫) <input type="number" step="0.1" min="1" max="5" id="pRating" placeholder="4.8"></div>
-      <div class="field-group">মোট সেলস <input type="number" id="pSales" min="0"></div>
-      <div class="field-group">পণ্যের মান <input id="pQuality" placeholder="১০০% সুতি কটন"></div>
-      <div class="field-group" style="background:#f0f4ff;padding:10px;border-radius:8px;border:1px dashed var(--accent)">
-        📸 প্রধান ছবি আপলোড:
+      <div class="box warn">
+        <b>🎨 ভেরিয়েন্ট (রং × সাইজ, প্রতিটির আলাদা স্টক)</b>
+        <div class="muted">রং ও সাইজ কমা দিয়ে লিখে "তৈরি করুন" চাপুন, তারপর প্রতিটির স্টক বসান। ভেরিয়েন্ট না দিলে সাধারণ স্টক চলবে।</div>
+        <input id="vColors" placeholder="রং: কালো, সাদা, লাল">
+        <input id="vSizes" placeholder="সাইজ: M, L, XL" style="margin-bottom:8px">
+        <button type="button" class="btn blue sm" id="vGen">⚡ তৈরি করুন</button>
+        <button type="button" class="btn gray sm" id="vAdd">➕ একটি ভেরিয়েন্ট</button>
+        <div id="vList" style="margin-top:8px;font-weight:400"></div>
+      </div>
+      <div class="box blue">
+        <b>📸 প্রধান ছবি</b>
         <input type="file" id="pImgFile" accept="image/*">
         <div class="muted">অথবা সরাসরি লিংক:</div>
         <input id="pImg" placeholder="https://...">
       </div>
-      <div class="field-group" style="background:#f9f9f9;padding:10px;border-radius:8px;border:1px solid #ddd">
-        🎨 একাধিক থাম্বনেইল (৭-৮টি পর্যন্ত):
+      <div class="box">
+        <b>🖼️ আরও ছবি (৭-৮টি পর্যন্ত)</b>
         <input type="file" id="pColorFiles" accept="image/*" multiple>
         <div class="muted">অথবা লিংকসমূহ (কমা দিয়ে):</div>
         <input id="pColors" placeholder="https://img1..., https://img2...">
       </div>
-      <div class="field-group">ইউটিউব রিভিউ লিংক <input id="pVideo" placeholder="https://www.youtube.com/watch?v=..."></div>
-      <div class="field-group">বিবরণ <textarea id="pDesc" rows="2"></textarea></div>
-      <button class="btn primary" type="submit" id="saveProductBtn">পণ্য সংরক্ষণ করুন</button>
-      <button class="btn gray" type="button" id="cancelEdit" style="display:none">বাতিল</button>
+      <div class="field-group">▶️ ইউটিউব রিভিউ লিংক <input id="pVideo" placeholder="https://www.youtube.com/watch?v=..."></div>
+      <div class="field-group">📄 বিবরণ <textarea id="pDesc" rows="3"></textarea></div>
+      <button class="btn primary" type="submit" id="saveProductBtn">💾 পণ্য সংরক্ষণ করুন</button>
+      <button class="btn ghost" type="button" id="cancelEdit" style="display:none">✖ বাতিল</button>
     </form>
   </div>
-  <div class="card"><h3 class="section-title">পণ্য তালিকা</h3><div class="toolbar"><button class="btn gray" id="migrateBtn">☁️ পুরনো ছবি Cloudinary-তে সরান</button>
-    <button class="btn primary" id="feedBtn">📤 Meta ক্যাটালগ ফিড (CSV)</button></div><div id="productList"></div></div>
+
+  <div class="card" id="prodListCard">
+    <div class="toolbar"><button class="btn ghost" id="migrateBtn">☁️ পুরনো ছবি Cloudinary-তে সরান</button>
+      <button class="btn ghost" id="feedBtn">📤 Meta ক্যাটালগ ফিড (CSV)</button></div>
+    <div id="productList"></div>
+  </div>
 </section>
 
+<!-- রিভিউ -->
 <section class="page" id="comments">
+  <div class="ph"><div class="ph-ic">💬</div><div><h2>রিভিউ অনুমোদন</h2><p>আপনি অনুমোদন করলে তবেই কাস্টমারের রিভিউ সাইটে দেখা যাবে</p></div></div>
   <div class="card">
-    <h3 class="section-title">💬 অনুমোদনের অপেক্ষায় রিভিউ</h3>
-    <div class="muted" style="margin-bottom:12px">কাস্টমারের রিভিউ আপনি অনুমোদন করলে তবেই সাইটে দেখা যাবে।</div>
     <div class="table-wrap"><table><thead><tr><th>পণ্য</th><th>নাম</th><th>মতামত</th><th>তারিখ</th><th></th></tr></thead><tbody id="commentRows"></tbody></table></div>
   </div>
 </section>
 
+<!-- প্রফিট -->
+<section class="page" id="profit">
+  <div class="ph"><div class="ph-ic">💰</div><div><h2>প্রফিট রিপোর্ট</h2><p>বিক্রির ওপর আনুমানিক লাভ</p></div></div>
+  <div class="card">
+    <div class="field-group" style="max-width:260px">📈 প্রফিট মার্জিন (%) <input type="number" id="profitMargin" min="0" max="100" value="35"></div>
+    <div class="grid" style="margin:0">
+      <div class="card stat-card" style="margin:0"><div class="stat-ic" style="background:#eef0ff">💵</div><div><div class="stat-label">মোট সেলস</div><div class="stat" id="profitTotalSales">৳ 0</div></div></div>
+      <div class="card stat-card" style="margin:0"><div class="stat-ic" style="background:#e7f8f0">📈</div><div><div class="stat-label">আনুমানিক প্রফিট</div><div class="stat" id="netProfitAmount" style="color:var(--green)">৳ 0</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- কুরিয়ার -->
+<section class="page" id="courier">
+  <div class="ph"><div class="ph-ic">🚚</div><div><h2>কুরিয়ার (Steadfast)</h2><p>Worker URL ও ডিফল্ট নোট</p></div></div>
+  <div class="card">
+    <div class="box warn"><div class="muted" style="margin:0;color:#8a5a06">🔒 Steadfast API Key/Secret এখন Cloudflare Worker-এ থাকে। শুধু Worker-এর URL দিয়ে "সেভ করুন" চাপুন। সেভ করলে ডাটাবেস থেকে পুরনো Key/Secret মুছে যাবে।</div></div>
+    <form id="courierForm">
+      <div class="field-group">🔗 Worker URL <input id="cProxy" placeholder="https://dhong-courier.yourname.workers.dev"></div>
+      <div class="field-group">📝 ডিফল্ট নোট (কুরিয়ারের জন্য) <input id="cNote" placeholder="Handle with care"></div>
+      <button class="btn primary" type="submit">💾 সেভ করুন</button>
+      <button class="btn ghost" type="button" id="cTest">🧪 ব্যালেন্স চেক (টেস্ট)</button>
+    </form>
+  </div>
+</section>
+
+<!-- সাইট সাজান -->
+<section class="page" id="site">
+  <div class="ph"><div class="ph-ic">🎨</div><div><h2>সাইট সাজান</h2><p>লোগো, ব্যানার, রং ও হোম পেজের সবকিছু এখান থেকে বদলান</p></div></div>
+
+  <div class="card">
+    <h3 class="section-title">🏷️ ব্র্যান্ড ও রং</h3>
+    <div class="two">
+      <div class="field-group">✏️ ওয়েবসাইটের নাম <input id="setSiteName"></div>
+      <div class="field-group">🎨 থিম কালার (বাটন, দাম, ব্যাজ) <input type="color" id="setThemeColor" style="height:42px;padding:3px"></div>
+    </div>
+    <div class="box">
+      <b>🖼️ লোগো (ঐচ্ছিক)</b>
+      <div class="muted">লোগো দিলে সাইটে নামের বদলে ছবি দেখাবে। খালি রাখলে নামই দেখাবে।</div>
+      <input type="file" id="logoFile" accept="image/*">
+      <input id="setLogoUrl" placeholder="অথবা লোগোর লিংক https://...">
+      <img id="logoPrev" class="ed-prev" alt="" style="display:none;max-height:60px;width:auto;object-fit:contain">
+      <button type="button" class="btn ghost sm" id="logoClear" style="margin-top:6px">🗑️ লোগো মুছুন</button>
+    </div>
+    <div class="field-group">📢 ওপরের অফার বার টেক্সট <input id="setTopBanner"></div>
+  </div>
+
+  <div class="card">
+    <h3 class="section-title">🖼️ হোম পেজের ব্যানার স্লাইডার</h3>
+    <div class="help">ছবি দিলে ব্যানারে ছবি আসবে। শুধু ছবি দিন (লেখা খালি) → পুরো ব্যানার ছবি হবে। লেখা ও ছবি দুটোই দিলে লেখার পাশে ছোট ছবি আসবে। লেখায় নতুন লাইনের জন্য <b>|</b> দিন।</div>
+    <div class="field-group">🤖 পণ্য থেকে অটো স্লাইড
+      <select id="setHeroAuto"><option value="on">চালু (জনপ্রিয় ৪টি পণ্য স্লাইডে যোগ হবে)</option><option value="off">বন্ধ (শুধু আমার বানানো স্লাইড)</option></select>
+    </div>
+    <div class="field-group">🌅 ব্যানারের ব্যাকগ্রাউন্ড কালার <input type="color" id="setHeroBg" style="height:42px;padding:3px"></div>
+    <div id="heroEditor"></div>
+    <button type="button" class="btn blue" id="heroAdd">➕ নতুন স্লাইড</button>
+  </div>
+
+  <div class="card">
+    <h3 class="section-title">✅ ব্যানারের নিচের ৪টা ট্রাস্ট বক্স</h3>
+    <div class="help">আইকন হিসেবে একটা ইমোজি দিন (যেমন 🚚 🛡️ 🔄 🎁)। লেখায় নতুন লাইনের জন্য <b>|</b> দিন।</div>
+    <div id="trustEditor"></div>
+  </div>
+
+  <div class="card">
+    <h3 class="section-title">🛍️ নিচের প্রিমিয়াম ব্যানার (পণ্য তালিকার পরে)</h3>
+    <div class="field-group">দেখাবে?
+      <select id="setPromoOn"><option value="on">হ্যাঁ</option><option value="off">না (লুকানো থাকবে)</option></select>
+    </div>
+    <div class="two">
+      <div class="field-group">ছোট লেখা <input id="setPromoSmall" placeholder="PREMIUM COLLECTION"></div>
+      <div class="field-group">বড় লেখা <input id="setPromoTitle" placeholder="স্টাইলের নতুন মাত্রা"></div>
+      <div class="field-group">বাটনের লেখা <input id="setPromoBtn" placeholder="আরও দেখুন →"></div>
+    </div>
+    <div class="box">
+      <b>🖼️ ব্যানারের ছবি (ঐচ্ছিক)</b>
+      <input type="file" id="promoFile" accept="image/*">
+      <input id="setPromoImg" placeholder="অথবা ছবির লিংক https://...">
+      <img id="promoPrev" class="ed-prev" alt="" style="display:none">
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="section-title">🗂️ ক্যাটাগরির ছবি</h3>
+    <div class="muted" style="margin:0 0 10px">প্রতিটি ক্যাটাগরির গোল আইকনের ছবি দিন। না দিলে ইমোজি দেখাবে।</div>
+    <div id="catImgBox"></div>
+  </div>
+
+  <div class="save-bar"><button class="btn primary" data-save>💾 সাইটের পরিবর্তন সেভ করুন</button></div>
+</section>
+
+<!-- পেজ ও যোগাযোগ -->
+<section class="page" id="pages">
+  <div class="ph"><div class="ph-ic">📝</div><div><h2>পেজ ও যোগাযোগ</h2><p>ফুটার, যোগাযোগ, সোশ্যাল লিংক ও নীতিমালার লেখা</p></div></div>
+  <div class="card">
+    <h3 class="section-title">📞 যোগাযোগের তথ্য</h3>
+    <div class="two">
+      <div class="field-group">📍 ঠিকানা <input id="setAddress" placeholder="যেমন: মিরপুর, ঢাকা"></div>
+      <div class="field-group">✉️ ইমেইল <input id="setEmail" type="email" placeholder="info@yourshop.com"></div>
+      <div class="field-group">🕒 কাজের সময় <input id="setHours" placeholder="সকাল ১০টা - রাত ১০টা (প্রতিদিন)"></div>
+    </div>
+    <h3 class="sub-title">🔗 সোশ্যাল লিংক</h3>
+    <div class="two">
+      <div class="field-group">📘 Facebook <input id="setFacebook" placeholder="https://facebook.com/..."></div>
+      <div class="field-group">📸 Instagram <input id="setInstagram" placeholder="https://instagram.com/..."></div>
+      <div class="field-group">▶️ YouTube <input id="setYoutube" placeholder="https://youtube.com/..."></div>
+      <div class="field-group">🎵 TikTok <input id="setTiktok" placeholder="https://tiktok.com/@..."></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3 class="section-title">📄 পেজের লেখা</h3>
+    <div class="muted" style="margin:0 0 12px">ঘর খালি রাখলে সাইটে ডিফল্ট লেখা দেখাবে।</div>
+    <div class="field-group">ℹ️ আমাদের সম্পর্কে <textarea id="setAbout" rows="4"></textarea></div>
+    <div class="field-group">🔄 রিটার্ন ও রিফান্ড নীতি <textarea id="setReturn" rows="4"></textarea></div>
+    <div class="field-group">🔒 গোপনীয়তা নীতি <textarea id="setPrivacy" rows="4"></textarea></div>
+    <div class="field-group">❓ সাধারণ প্রশ্নোত্তর (প্রতি লাইনে একটি: প্রশ্ন | উত্তর) <textarea id="setFaq" rows="5" placeholder="ডেলিভারি কতদিনে পাবো? | ঢাকায় ১-২ দিন"></textarea></div>
+  </div>
+  <div class="save-bar"><button class="btn primary" data-save>💾 সেভ করুন</button></div>
+</section>
+
+<!-- অফার ও মার্কেটিং -->
+<section class="page" id="marketing">
+  <div class="ph"><div class="ph-ic">📣</div><div><h2>অফার ও মার্কেটিং</h2><p>প্রথম অর্ডারের ছাড়, ফ্ল্যাশ সেল টাইমার ও বিজ্ঞাপন ট্র্যাকিং</p></div></div>
+  <div class="card">
+    <h3 class="section-title">🎁 প্রথম অর্ডারে ছাড়</h3>
+    <div class="box pink">
+      <div class="two">
+        <div class="field-group" style="margin:0">অবস্থা <select id="setFirstOn"><option value="on">✅ চালু</option><option value="off">⛔ বন্ধ</option></select></div>
+        <div class="field-group" style="margin:0">ছাড়ের শতাংশ (%) <input type="number" id="setFirstPct" min="1" max="90" placeholder="10"></div>
+      </div>
+      <div class="muted">যে মোবাইল নম্বরে আগে অর্ডার নেই, শুধু তার প্রথম অর্ডারে ছাড় হবে। শতাংশ বদলালে "সাইট সাজান"-এ অফার বারের লেখাও বদলে নিন।</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3 class="section-title">⏳ ফ্ল্যাশ সেল টাইমার</h3>
+    <div class="field-group">টাইমার
+      <select id="setTimerStatus"><option value="show">✅ চালু</option><option value="hide">⛔ বন্ধ (অফার দাম সবসময় চালু)</option></select>
+    </div>
+    <div class="field-group">📅 অফার শেষের আসল সময় (সবার জন্য একই)
+      <input type="datetime-local" id="setOfferEnd">
+      <div class="muted">এই সময় পার হলে অফার শেষ, নিয়মিত মূল্য চালু হবে। খালি রাখলে টাইমার দেখাবে না।</div>
+    </div>
+    <div class="field-group">⚡ দ্রুত সেট: এখন থেকে কত ঘণ্টা
+      <div style="display:flex;gap:8px"><input type="number" id="setTimerHours" min="1" style="margin-top:5px"><button type="button" class="btn blue" id="quickOfferBtn" style="margin-top:5px;white-space:nowrap">সেট করুন</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3 class="section-title">📊 Facebook Pixel</h3>
+    <div class="field-group">Pixel ID (শুধু সংখ্যা) <input id="setPixel" inputmode="numeric" placeholder="123456789012345"></div>
+  </div>
+  <div class="save-bar"><button class="btn primary" data-save>💾 সেভ করুন</button></div>
+</section>
+
+<!-- এফিলিয়েট -->
 <section class="page" id="affiliates">
+  <div class="ph"><div class="ph-ic">🤝</div><div><h2>এফিলিয়েট ও উইথড্র</h2><p>কমিশন ব্যালেন্স ও পেমেন্ট রিকোয়েস্ট</p></div></div>
   <div class="card">
     <h3 class="section-title">💸 উইথড্রল রিকোয়েস্ট</h3>
     <div class="table-wrap"><table><thead><tr><th>মার্কেটার</th><th>টাকা</th><th>মেথড</th><th>নম্বর</th><th>স্ট্যাটাস</th><th></th></tr></thead><tbody id="withdrawRows"></tbody></table></div>
   </div>
   <div class="card">
-    <h3 class="section-title">🤝 এফিলিয়েট তালিকা</h3>
+    <h3 class="section-title">👥 এফিলিয়েট তালিকা</h3>
     <div class="table-wrap"><table><thead><tr><th>আইডি</th><th>মোট সেলস</th><th>কমিশন ব্যালেন্স</th></tr></thead><tbody id="affiliateRows"></tbody></table></div>
   </div>
 </section>
 
-<section class="page" id="moderators">
+<!-- সেটিংস -->
+<section class="page" id="api">
+  <div class="ph"><div class="ph-ic">⚙️</div><div><h2>সেটিংস</h2><p>ডেলিভারি চার্জ, যোগাযোগ নম্বর ও ছবি হোস্টিং</p></div></div>
   <div class="card">
-    <h3 class="section-title">🛡️ সিকিউরিটি ও মডারেটর</h3>
-    <div class="muted" style="margin-bottom:14px">অ্যাডমিন পাসওয়ার্ড বদলাতে Firebase Console → Authentication → Users থেকে করুন। নতুন অ্যাডমিন যোগ করতে Realtime Database-এ dhong_admins/&lt;UID&gt; = true বসান।<br><b>নোট:</b> এই তালিকা এখনো শুধু নাম সংরক্ষণ করে, আলাদা লগইন বা পারমিশন দেয় না (পরের ধাপে রোল সিস্টেম হবে)।</div>
-    <h4 style="margin:0 0 10px">নতুন মডারেটর</h4>
-    <div class="field-group">ইউজারনেম <input id="modUser"></div>
-    <button class="btn primary" id="addModBtn">মডারেটর যুক্ত করুন</button>
-    <h4 style="margin:20px 0 10px">মডারেটর তালিকা</h4>
-    <div id="moderatorList"></div>
-  </div>
-</section>
-
-<section class="page" id="profit">
-  <div class="card">
-    <h3 class="section-title">প্রফিট রিপোর্ট</h3>
-    <div class="field-group" style="max-width:240px">প্রফিট মার্জিন (%) <input type="number" id="profitMargin" min="0" max="100" value="35"></div>
-    <div class="grid">
-      <div class="card" style="margin:0"><div class="stat-label">মোট সেলস</div><div class="stat" id="profitTotalSales">৳ 0</div></div>
-      <div class="card" style="margin:0"><div class="stat-label">আনুমানিক প্রফিট</div><div class="stat" id="netProfitAmount" style="color:var(--green)">৳ 0</div></div>
+    <h3 class="section-title">🚚 ডেলিভারি চার্জ</h3>
+    <div class="two">
+      <div class="field-group">🏙️ ঢাকার ভেতরে (৳) <input type="number" id="setDhaka"></div>
+      <div class="field-group">🛣️ ঢাকার বাইরে (৳) <input type="number" id="setOutsider"></div>
+      <div class="field-group">🆓 ফ্রি ডেলিভারি থ্রেশহোল্ড (৳) <input type="number" id="setThreshold"></div>
     </div>
   </div>
-</section>
-
-<section class="page" id="courier">
   <div class="card">
-    <h3 class="section-title">🚚 কুরিয়ার সেটিংস (Steadfast)</h3>
-    <div class="muted" style="margin:0 0 12px;color:#9a5b08">🔒 নিরাপত্তা: Steadfast API Key/Secret এখন আর এখানে বা ডাটাবেসে থাকে না, Cloudflare Worker-এ থাকে। শুধু Worker-এর URL দিন, তারপর "সেভ করুন" চাপুন। সেভ করলে ডাটাবেস থেকে পুরনো Key/Secret মুছে যাবে।</div>
-    <form id="courierForm">
-      <div class="field-group">Worker URL <input id="cProxy" placeholder="https://dhong-courier.yourname.workers.dev"></div>
-      <div class="field-group">ডিফল্ট নোট (কুরিয়ারের জন্য) <input id="cNote" placeholder="Handle with care"></div>
-      <button class="btn primary" type="submit">সেভ করুন</button>
-      <button class="btn gray" type="button" id="cTest">ব্যালেন্স চেক (টেস্ট)</button>
-    </form>
+    <h3 class="section-title">☎️ সাপোর্ট নম্বর</h3>
+    <div class="two">
+      <div class="field-group">💬 WhatsApp নম্বর (দেশের কোডসহ, যেমন 8801XXXXXXXXX) <input id="setWhatsapp"></div>
+      <div class="field-group">📞 ফোন নম্বর <input id="setPhone"></div>
+    </div>
   </div>
+  <div class="card">
+    <h3 class="section-title">☁️ ছবি হোস্টিং (Cloudinary)</h3>
+    <div class="muted" style="margin:0 0 10px">দুটো ঘর পূরণ করলে ছবি Cloudinary-তে সেভ হবে (সাইট দ্রুত হবে, Meta ক্যাটালগেও লাগবে)। খালি থাকলে ডাটাবেসে সেভ হবে।</div>
+    <div class="two">
+      <div class="field-group">Cloud name <input id="setCloudName" placeholder="dxxxxxxxx" autocomplete="off"></div>
+      <div class="field-group">Unsigned upload preset <input id="setCloudPreset" placeholder="dhong_unsigned" autocomplete="off"></div>
+    </div>
+  </div>
+  <div class="save-bar"><button class="btn primary" data-save>💾 সেটিংস সেভ করুন</button></div>
 </section>
 
-<section class="page" id="api">
+<!-- মডারেটর -->
+<section class="page" id="moderators">
+  <div class="ph"><div class="ph-ic">🛡️</div><div><h2>মডারেটর ও নিরাপত্তা</h2><p>অ্যাডমিন ও স্টাফ ব্যবস্থাপনা</p></div></div>
   <div class="card">
-    <h3 class="section-title">ওয়েবসাইট ও নোটিফিকেশন সেটিংস</h3>
-    <form id="settingsForm">
-      <div class="field-group">ওয়েবসাইটের নাম <input id="setSiteName"></div>
-      <div class="field-group">থিম কালার <input type="color" id="setThemeColor" style="height:40px;padding:0"></div>
-      <div class="field-group">ঢাকার ভেতরে ডেলিভারি (৳) <input type="number" id="setDhaka"></div>
-      <div class="field-group">ঢাকার বাইরে ডেলিভারি (৳) <input type="number" id="setOutsider"></div>
-      <div class="field-group">ফ্রি ডেলিভারি থ্রেশহোল্ড (৳) <input type="number" id="setThreshold"></div>
-      <div class="field-group">WhatsApp নম্বর <input id="setWhatsapp"></div>
-      <div class="field-group">ফোন নম্বর <input id="setPhone"></div>
-      <div class="field-group">অফার বার টেক্সট <input id="setTopBanner"></div>
-      <div class="field-group">ব্যানার ব্যাকগ্রাউন্ড কালার <input type="color" id="setHeroBg" style="height:40px;padding:0"></div>
-      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
-      <h3 class="section-title" style="color:var(--accent)">🗂️ ক্যাটাগরির ছবি</h3>
-      <div class="muted" style="margin:0 0 10px">প্রতিটি ক্যাটাগরির গোল আইকনের ছবি দিন (লিংক বা ফাইল)। না দিলে ইমোজি দেখাবে। বদলের পর নিচে "সেটিংস সেভ করুন" চাপুন।</div>
-      <div id="catImgBox" style="margin-bottom:12px"></div>
-      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
-      <div class="field-group">ফ্ল্যাশ সেল টাইমার
-        <select id="setTimerStatus"><option value="show">চালু (Show Timer)</option><option value="hide">বন্ধ (Hide Timer, অফার দাম সবসময় চালু)</option></select>
-      </div>
-      <div class="field-group">অফার শেষের আসল সময় (সব কাস্টমারের জন্য একই)
-        <input type="datetime-local" id="setOfferEnd">
-        <div class="muted">এই সময় পার হলে অফার শেষ, নিয়মিত মূল্য চালু হবে। খালি রাখলে টাইমার দেখাবে না।</div>
-      </div>
-      <div class="field-group">দ্রুত সেট: এখন থেকে কত ঘণ্টা
-        <div style="display:flex;gap:8px"><input type="number" id="setTimerHours" min="1" style="margin-top:4px"><button type="button" class="btn blue" id="quickOfferBtn" style="margin-top:4px;white-space:nowrap">সেট করুন</button></div>
-      </div>
-      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
-      <h3 class="section-title" style="color:var(--accent)">☁️ ছবি হোস্টিং (Cloudinary)</h3>
-      <div class="muted" style="margin:0 0 10px">দুটো ঘর পূরণ করলে নতুন পণ্যের ছবি Cloudinary-তে সেভ হবে (সাইট দ্রুত হবে, Meta ক্যাটালগেও লাগবে)। খালি থাকলে আগের মতো ডাটাবেসে সেভ হবে।</div>
-      <div class="field-group">Cloud name <input id="setCloudName" placeholder="যেমন: dxxxxxxxx" autocomplete="off"></div>
-      <div class="field-group">Unsigned upload preset নাম <input id="setCloudPreset" placeholder="যেমন: dhong_unsigned" autocomplete="off"></div>
-      <hr style="margin:15px 0;border:0;border-top:1px dashed #ccc">
-      <h3 class="section-title" style="color:var(--accent)">🏷️ ব্র্যান্ড পেজ ও সোশ্যাল</h3>
-      <div class="muted" style="margin:0 0 10px">লেখার ঘর খালি রাখলে সাইটে ডিফল্ট লেখা দেখাবে। নিজের নিয়ম অনুযায়ী বদলে নিন।</div>
-      <div class="field-group">Facebook Pixel ID (শুধু সংখ্যা) <input id="setPixel" inputmode="numeric" placeholder="যেমন: 123456789012345"></div>
-      <div class="field-group">ঠিকানা <input id="setAddress" placeholder="যেমন: মিরপুর, ঢাকা"></div>
-      <div class="field-group">ইমেইল <input id="setEmail" type="email" placeholder="info@yourshop.com"></div>
-      <div class="field-group">কাজের সময় <input id="setHours" placeholder="যেমন: সকাল ১০টা - রাত ১০টা (প্রতিদিন)"></div>
-      <div class="field-group">Facebook পেজ লিংক <input id="setFacebook" placeholder="https://facebook.com/..."></div>
-      <div class="field-group">Instagram লিংক <input id="setInstagram" placeholder="https://instagram.com/..."></div>
-      <div class="field-group">YouTube লিংক <input id="setYoutube" placeholder="https://youtube.com/..."></div>
-      <div class="field-group">TikTok লিংক <input id="setTiktok" placeholder="https://tiktok.com/@..."></div>
-      <div class="field-group">আমাদের সম্পর্কে <textarea id="setAbout" rows="4"></textarea></div>
-      <div class="field-group">রিটার্ন ও রিফান্ড নীতি <textarea id="setReturn" rows="4"></textarea></div>
-      <div class="field-group">গোপনীয়তা নীতি <textarea id="setPrivacy" rows="4"></textarea></div>
-      <div class="field-group">সাধারণ প্রশ্নোত্তর (প্রতি লাইনে একটি: প্রশ্ন | উত্তর) <textarea id="setFaq" rows="5" placeholder="ডেলিভারি কতদিনে পাবো? | ঢাকায় ১-২ দিন"></textarea></div>
-      <button class="btn primary" type="submit" style="width:100%;padding:12px">সেটিংস সেভ করুন</button>
-    </form>
+    <div class="help">অ্যাডমিন পাসওয়ার্ড বদলাতে Firebase Console → Authentication → Users থেকে করুন। নতুন অ্যাডমিন যোগ করতে Realtime Database-এ <b>dhong_admins/&lt;UID&gt; = true</b> বসান।<br><b>নোট:</b> এই তালিকা এখনো শুধু নাম সংরক্ষণ করে, আলাদা লগইন বা পারমিশন দেয় না।</div>
+    <h4 style="margin:0 0 6px">➕ নতুন মডারেটর</h4>
+    <div class="field-group">ইউজারনেম <input id="modUser"></div>
+    <button class="btn primary" id="addModBtn">➕ যুক্ত করুন</button>
+    <h4 style="margin:20px 0 6px">👥 মডারেটর তালিকা</h4>
+    <div id="moderatorList"></div>
   </div>
 </section>
 </main>
@@ -352,8 +532,8 @@ function loadModerators() {
     snap.forEach(ch => {
       const blocked = ch.val().status === 'Blocked';
       html += `<div class="row"><div><b>👤 ${esc(ch.key)}</b> <span class="pill ${blocked ? 'bad' : ''}">${blocked ? 'Blocked' : 'Active'}</span></div>
-        <div><button class="btn sm ${blocked ? 'green' : 'amber'}" data-act="toggleMod" data-key="${esc(ch.key)}" data-blocked="${blocked}">${blocked ? 'আনব্লক' : 'ব্লক'}</button>
-        <button class="btn sm red" data-act="delMod" data-key="${esc(ch.key)}">ডিলিট</button></div></div>`;
+        <div><button class="btn sm ${blocked ? 'green' : 'amber'}" data-act="toggleMod" data-key="${esc(ch.key)}" data-blocked="${blocked}">${blocked ? '✅ আনব্লক' : '⛔ ব্লক'}</button>
+        <button class="btn sm red" data-act="delMod" data-key="${esc(ch.key)}">🗑️ ডিলিট</button></div></div>`;
     });
     $('moderatorList').innerHTML = html;
   }).catch(fail);
@@ -443,7 +623,8 @@ function orderIssue(o) {
     sub += pr * q;
   }
   const d = Number(o.discount) || 0, f = Number(o.delivery_fee) || 0, thr = Number(settings.freeThreshold) || 0;
-  if (d > Math.round(sub * 0.1)) return 'ছাড় ১০% এর বেশি';
+  const fdp = settings.firstDiscOn === 'off' ? 0 : (Number(settings.firstDiscPct) || 10);
+  if (d > Math.round(sub * Math.max(fdp, 10) / 100)) return 'ছাড় নির্ধারিত শতাংশের বেশি';
   if (![0, Number(settings.dhakaFee) || 60, Number(settings.outsiderFee) || 120].includes(f)) return 'ডেলিভারি চার্জ মেলেনি';
   if (f === 0 && thr && sub < thr) return 'ফ্রি ডেলিভারির শর্ত পূরণ হয়নি';
   if (Math.abs(sub - d + f - Number(o.total)) > 1) return 'মোট হিসাব মেলেনি';
@@ -474,13 +655,13 @@ function render() {
       <td><b>${esc(o.affiliate_ref || 'None')}</b>${o.commission_amount ? `<br><small>৳${esc(o.commission_amount)} ${o.commission_paid ? '✅ যোগ হয়েছে' : '⏳ ডেলিভারির অপেক্ষায়'}</small>` : ''}${o.utm && o.utm.utm_campaign ? `<br><small>📣 ${esc(o.utm.utm_campaign)}</small>` : ''}</td><td>${money(o.total)}${issue ? `<br><span class="pill bad" title="${esc(issue)}">⚠️ ${esc(issue)}</span>` : ''}</td>
       <td><select data-act="status" data-key="${esc(o._key)}">${STATUSES.map(s => `<option ${o.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
       <td>${o.created_at ? esc(new Date(o.created_at).toLocaleString()) : ''}</td>
-      <td>${o.consignment_id ? `<small>CID: ${esc(o.consignment_id)}<br>${esc(o.courier_status || '')}</small><br><button class="btn sm gray" data-act="trackCourier" data-key="${esc(o._key)}">স্ট্যাটাস</button>` : `<button class="btn sm blue" data-act="sendCourier" data-key="${esc(o._key)}">🚚 কুরিয়ারে পাঠান</button>`}
-      <button class="btn sm red" data-act="delOrder" data-key="${esc(o._key)}">ডিলিট</button></td></tr>`;
+      <td>${o.consignment_id ? `<small>CID: ${esc(o.consignment_id)}<br>${esc(o.courier_status || '')}</small><br><button class="btn sm gray" data-act="trackCourier" data-key="${esc(o._key)}">📍 স্ট্যাটাস</button>` : `<button class="btn sm blue" data-act="sendCourier" data-key="${esc(o._key)}">🚚 কুরিয়ারে পাঠান</button>`}
+      <button class="btn sm red" data-act="delOrder" data-key="${esc(o._key)}">🗑️</button></td></tr>`;
   }).join('') || '<tr><td colspan="10" class="empty">কোনো অর্ডার পাওয়া যায়নি।</td></tr>';
 
   $('withdrawRows').innerHTML = withdrawals.map(w => `<tr><td><b>${esc(w.affiliate)}</b></td><td>${money(w.amount)}</td><td>${esc(w.method)}</td><td><b>${esc(w.phone)}</b></td>
     <td><span class="pill ${w.status === 'Paid' ? '' : 'pending'}">${esc(w.status || 'Pending')}</span></td>
-    <td>${w.status === 'Paid' ? '✅' : w.status === 'Rejected' ? '❌' : `<button class="btn sm blue" data-act="pay" data-key="${esc(w._key)}">পেমেন্ট কমপ্লিট</button> <button class="btn sm red" data-act="rejectW" data-key="${esc(w._key)}">বাতিল</button>`}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">কোনো উইথড্রল রিকোয়েস্ট নেই।</td></tr>';
+    <td>${w.status === 'Paid' ? '✅' : w.status === 'Rejected' ? '❌' : `<button class="btn sm blue" data-act="pay" data-key="${esc(w._key)}">✅ পেমেন্ট কমপ্লিট</button> <button class="btn sm red" data-act="rejectW" data-key="${esc(w._key)}">✖ বাতিল</button>`}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">কোনো উইথড্রল রিকোয়েস্ট নেই।</td></tr>';
 
   $('affiliateRows').innerHTML = affiliates.map(a => `<tr><td><b>${esc(a._key)}</b></td><td>${esc(a.sales || 0)} টি</td><td>${money(a.commission)}</td></tr>`).join('') || '<tr><td colspan="3" class="empty">কোনো এফিলিয়েট নেই।</td></tr>';
 
@@ -488,7 +669,7 @@ function render() {
   $('commentRows').innerHTML = pendingComments.map(c => {
     const p = products.find(x => String(x.id) === String(c.pid));
     return `<tr><td>${esc(p ? p.name : c.pid)}</td><td><b>${esc(c.name)}</b></td><td style="max-width:320px;word-break:break-word">${esc(c.text)}</td><td>${c.created_at ? esc(new Date(c.created_at).toLocaleString()) : ''}</td>
-      <td><button class="btn sm green" data-act="apprC" data-pid="${esc(c.pid)}" data-cid="${esc(c.cid)}">অনুমোদন</button> <button class="btn sm red" data-act="delC" data-pid="${esc(c.pid)}" data-cid="${esc(c.cid)}">মুছুন</button></td></tr>`;
+      <td><button class="btn sm green" data-act="apprC" data-pid="${esc(c.pid)}" data-cid="${esc(c.cid)}">✅ অনুমোদন</button> <button class="btn sm red" data-act="delC" data-pid="${esc(c.pid)}" data-cid="${esc(c.cid)}">🗑️ মুছুন</button></td></tr>`;
   }).join('') || '<tr><td colspan="5" class="empty">অনুমোদনের অপেক্ষায় কোনো রিভিউ নেই।</td></tr>';
 
   const base = location.origin + location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
@@ -499,9 +680,9 @@ function render() {
       <div><b>${esc(p.name)}</b> (${esc(p.cat)}) - ${money(p.price)}<br>
       <small style="color:green">স্টক: ${esc(p.stock ?? 0)}${variantsOf(p).length ? ' (' + variantsOf(p).length + 'টি ভেরিয়েন্ট)' : ''} | ⭐${esc(p.rating || '5.0')} | আইডি: ${esc(p.id)}</small> ${low ? '<span class="pill bad">কম স্টক</span>' : ''}<br>
       <small style="word-break:break-all"><a href="${esc(link)}" target="_blank" rel="noopener">${esc(link)}</a></small></div></div>
-      <div><button class="btn sm gray" data-act="copy" data-link="${esc(link)}">লিংক কপি</button>
-      <button class="btn sm blue" data-act="editProduct" data-key="${esc(p._key)}">এডিট</button>
-      <button class="btn sm red" data-act="delProduct" data-key="${esc(p._key)}">ডিলিট</button></div></div>`;
+      <div><button class="btn sm gray" data-act="copy" data-link="${esc(link)}">🔗 কপি</button>
+      <button class="btn sm blue" data-act="editProduct" data-key="${esc(p._key)}">✏️ এডিট</button>
+      <button class="btn sm red" data-act="delProduct" data-key="${esc(p._key)}">🗑️ ডিলিট</button></div></div>`;
   }).join('') || '<div class="empty">কোনো পণ্য নেই।</div>';
 }
 function renderProfit(total) {
@@ -695,6 +876,7 @@ document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('cl
   btn.classList.add('active'); $(btn.dataset.page).classList.add('active');
   $('pageTitle').textContent = btn.dataset.title;
   if (btn.dataset.page === 'moderators') loadModerators();
+  toggleMenu(false); window.scrollTo(0, 0);
 }));
 
 /* ---------- Images ---------- */
@@ -751,7 +933,7 @@ $('vGen').onclick = () => {
 function resetProductForm() {
   $('productForm').reset(); $('editKey').value = ''; showPreview(''); variants = []; renderVariants();
   mainFull = ''; colorsFull = []; existing = { main: '', colors: [] };
-  $('formTitle').textContent = 'নতুন পণ্য যোগ করুন'; $('cancelEdit').style.display = 'none';
+  $('formTitle').textContent = '➕ নতুন পণ্য যোগ করুন'; $('cancelEdit').style.display = 'none'; prodTab('list');
 }
 $('cancelEdit').onclick = resetProductForm;
 
@@ -863,7 +1045,7 @@ $('productForm').addEventListener('submit', async e => {
     toast(old ? '✅ পণ্য আপডেট হয়েছে' : '✅ নতুন পণ্য যোগ হয়েছে');
     resetProductForm();
   } catch (err) { console.error(err); fail(err); }
-  finally { btn.disabled = false; btn.textContent = 'পণ্য সংরক্ষণ করুন'; }
+  finally { btn.disabled = false; btn.textContent = '💾 পণ্য সংরক্ষণ করুন'; }
 });
 
 function editProduct(key) {
@@ -878,7 +1060,7 @@ function editProduct(key) {
   mainFull = ''; colorsFull = []; existing = { main: p.imgMain || p.img || '', colors: cols };
   set('pImg', isUrl(p.imgMain || p.img) ? (p.imgMain || p.img) : ''); set('pColors', cols.filter(isUrl).join(', '));
   showPreview(p.img);
-  $('formTitle').textContent = 'এডিট করুন: ' + p.name; $('cancelEdit').style.display = 'inline-block';
+  $('formTitle').textContent = '✏️ এডিট করুন: ' + p.name; $('cancelEdit').style.display = 'inline-flex'; prodTab('form');
   document.querySelector('[data-page="products"]').click();
   scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -981,25 +1163,115 @@ $('catImgBox').addEventListener('change', async e => {
     toast('✅ ছবি বসানো হয়েছে, নিচে "সেটিংস সেভ করুন" চাপুন');
   } catch (err) { fail(err); }
 });
+/* ---------- ছবি বাছাই (Cloudinary থাকলে সেখানে, নইলে ছোট করে ডাটাবেসে) ---------- */
+async function pickImg(file, maxPx) {
+  toast('ছবি প্রসেস হচ্ছে...');
+  let u = await shrink(await fileToDataUrl(file), cloudReady() ? maxPx : Math.min(maxPx, 700), .8);
+  if (cloudReady()) u = await cloudUpload(u);
+  return u;
+}
+
+/* ---------- হিরো স্লাইড এডিটর ---------- */
+let heroSlides = [], trustItems = [];
+const TRUST_DEF = [
+  { icon: '🚚', text: 'সারা বাংলাদেশে|ফাস্ট ডেলিভারি' }, { icon: '🛡️', text: 'নিরাপদ লেনদেন|ক্যাশ অন ডেলিভারি' },
+  { icon: '🔄', text: 'সহজ রিটার্ন|ও এক্সচেঞ্জ' }, { icon: '🎁', text: 'বিশেষ অফার|সাথে থাকুন' }
+];
+function renderHeroEditor() {
+  $('heroEditor').innerHTML = heroSlides.map((s, i) => `<div class="ed-item">
+    <div class="ed-head"><span>🖼️ স্লাইড ${i + 1}</span><span>
+      <button type="button" class="btn ghost sm" data-hmv="${i}" data-d="-1" ${i === 0 ? 'disabled' : ''}>⬆️</button>
+      <button type="button" class="btn ghost sm" data-hmv="${i}" data-d="1" ${i === heroSlides.length - 1 ? 'disabled' : ''}>⬇️</button>
+      <button type="button" class="btn red sm" data-hdel="${i}">🗑️ মুছুন</button></span></div>
+    <input data-hi="${i}" data-hf="title" placeholder="বড় লেখা (যেমন: স্টাইলেই আলাদা,|সবসময় সবার আগে!)" value="${esc(s.title)}">
+    <input data-hi="${i}" data-hf="sub" placeholder="ছোট লেখা (ঐচ্ছিক)" value="${esc(s.sub)}">
+    <input data-hi="${i}" data-hf="btn" placeholder="বাটনের লেখা (ঐচ্ছিক, যেমন: অর্ডার করুন →)" value="${esc(s.btn)}">
+    <input type="file" accept="image/*" data-hfile="${i}">
+    <input data-hi="${i}" data-hf="img" placeholder="অথবা ছবির লিংক https://..." value="${isUrl(s.img) ? esc(s.img) : ''}">
+    ${safeUrl(s.img) ? `<img class="ed-prev" src="${safeUrl(s.img)}" alt="">` : ''}</div>`).join('')
+    || '<div class="muted" style="margin-bottom:10px">কোনো কাস্টম স্লাইড নেই। সাইটে ডিফল্ট ব্র্যান্ড স্লাইড দেখাবে।</div>';
+}
+$('heroEditor').addEventListener('input', e => {
+  const t = e.target; if (t.dataset.hi === undefined) return;
+  heroSlides[+t.dataset.hi][t.dataset.hf] = t.value;
+});
+$('heroEditor').addEventListener('change', async e => {
+  const t = e.target;
+  if (t.dataset.hf === 'img') return renderHeroEditor();
+  if (t.dataset.hfile !== undefined && t.files[0]) {
+    try { heroSlides[+t.dataset.hfile].img = await pickImg(t.files[0], 1200); renderHeroEditor(); toast('✅ ছবি বসানো হয়েছে, নিচে সেভ চাপুন'); } catch (err) { fail(err); }
+  }
+});
+$('heroEditor').addEventListener('click', e => {
+  const del = e.target.closest('[data-hdel]'), mv = e.target.closest('[data-hmv]');
+  if (del) { heroSlides.splice(+del.dataset.hdel, 1); renderHeroEditor(); }
+  if (mv) {
+    const i = +mv.dataset.hmv, j = i + Number(mv.dataset.d);
+    if (heroSlides[j]) { [heroSlides[i], heroSlides[j]] = [heroSlides[j], heroSlides[i]]; renderHeroEditor(); }
+  }
+});
+$('heroAdd').onclick = () => {
+  if (heroSlides.length >= 6) return toast('সর্বোচ্চ ৬টি স্লাইড।', true);
+  heroSlides.push({ title: '', sub: '', btn: '', img: '' }); renderHeroEditor();
+};
+
+/* ---------- ট্রাস্ট বক্স এডিটর ---------- */
+function renderTrustEditor() {
+  $('trustEditor').innerHTML = trustItems.map((t, i) => `<div class="ed-item"><div style="display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:end">
+    <div class="field-group" style="margin:0">আইকন<input data-ti="${i}" data-tf="icon" value="${esc(t.icon)}" maxlength="4" style="text-align:center;font-size:20px"></div>
+    <div class="field-group" style="margin:0">লেখা (নতুন লাইনে | দিন)<input data-ti="${i}" data-tf="text" value="${esc(t.text)}"></div></div></div>`).join('');
+}
+$('trustEditor').addEventListener('input', e => { const t = e.target; if (t.dataset.ti !== undefined) trustItems[+t.dataset.ti][t.dataset.tf] = t.value; });
+
+/* ---------- লোগো ও প্রমো ছবি ---------- */
+function prevImg(imgId, url) { const el = $(imgId); if (safeUrl(url)) { el.src = safeUrl(url); el.style.display = 'block'; } else el.style.display = 'none'; }
+$('setLogoUrl').addEventListener('input', e => prevImg('logoPrev', e.target.value));
+$('setPromoImg').addEventListener('input', e => prevImg('promoPrev', e.target.value));
+$('logoFile').addEventListener('change', async e => {
+  if (!e.target.files[0]) return;
+  try { const u = await pickImg(e.target.files[0], 400); $('setLogoUrl').value = u; prevImg('logoPrev', u); toast('✅ লোগো বসানো হয়েছে, নিচে সেভ চাপুন'); } catch (err) { fail(err); }
+});
+$('promoFile').addEventListener('change', async e => {
+  if (!e.target.files[0]) return;
+  try { const u = await pickImg(e.target.files[0], 1200); $('setPromoImg').value = u; prevImg('promoPrev', u); toast('✅ ছবি বসানো হয়েছে, নিচে সেভ চাপুন'); } catch (err) { fail(err); }
+});
+$('logoClear').onclick = () => { $('setLogoUrl').value = ''; prevImg('logoPrev', ''); };
+
+/* ---------- সেটিংস ফর্ম ভরা ও সেভ ---------- */
 function fillSettingsForm() {
   try { catImgs = JSON.parse(settings.catImagesJson || '{}') || {}; } catch (e) { catImgs = {}; }
   renderCatImgs(true);
+  try { heroSlides = JSON.parse(settings.heroSlidesJson || '[]') || []; } catch (e) { heroSlides = []; }
+  try { trustItems = JSON.parse(settings.trustJson || 'null') || []; } catch (e) { trustItems = []; }
+  trustItems = TRUST_DEF.map((d, i) => Object.assign({}, d, trustItems[i] || {}));
+  renderHeroEditor(); renderTrustEditor();
   const v = (id, val) => { const el = $(id); if (el) el.value = val; };
-  v('setSiteName', settings.siteName || 'ঢং DHONG'); v('setThemeColor', settings.themeColor || '#e85d75');
+  v('setSiteName', settings.siteName || 'ঢং DHONG'); v('setThemeColor', settings.themeColor || '#d90f1f');
+  v('setLogoUrl', settings.logoUrl || ''); prevImg('logoPrev', settings.logoUrl || '');
+  v('setHeroAuto', settings.heroAuto || 'on');
+  v('setPromoOn', settings.promoOn || 'on'); v('setPromoSmall', settings.promoSmall != null ? settings.promoSmall : 'PREMIUM COLLECTION');
+  v('setPromoTitle', settings.promoTitle != null ? settings.promoTitle : 'স্টাইলের নতুন মাত্রা'); v('setPromoBtn', settings.promoBtn != null ? settings.promoBtn : 'আরও দেখুন →');
+  v('setPromoImg', settings.promoImg || ''); prevImg('promoPrev', settings.promoImg || '');
   v('setDhaka', settings.dhakaFee || '60'); v('setOutsider', settings.outsiderFee || '120'); v('setThreshold', settings.freeThreshold || '3000');
+  v('setFirstOn', settings.firstDiscOn || 'on'); v('setFirstPct', settings.firstDiscPct || '10');
   v('setWhatsapp', settings.whatsapp || ''); v('setPhone', settings.phone || '');
   v('setTopBanner', settings.topBannerText || '🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি');
-  v('setHeroBg', settings.heroBg || '#242b49'); v('setTimerStatus', settings.timerStatus || 'show'); v('setTimerHours', settings.timerHours || '24');
+  v('setHeroBg', settings.heroBg || '#17080c'); v('setTimerStatus', settings.timerStatus || 'show'); v('setTimerHours', settings.timerHours || '24');
   v('setOfferEnd', toLocalInput(Number(settings.offerEnd) || 0));
   v('setPixel', settings.fbPixelId || ''); v('setCloudName', settings.cloudName || ''); v('setCloudPreset', settings.cloudPreset || ''); v('setAddress', settings.address || ''); v('setEmail', settings.email || ''); v('setHours', settings.hours || '');
   v('setFacebook', settings.facebook || ''); v('setInstagram', settings.instagram || ''); v('setYoutube', settings.youtube || ''); v('setTiktok', settings.tiktok || '');
   v('setAbout', settings.aboutText || ''); v('setReturn', settings.returnPolicy || ''); v('setPrivacy', settings.privacyPolicy || ''); v('setFaq', settings.faqText || '');
 }
-$('settingsForm').addEventListener('submit', e => {
-  e.preventDefault();
+function saveSettings(btn) {
   const endVal = $('setOfferEnd').value;
-  db.ref('dhong_settings').update({
-    catImagesJson: JSON.stringify(catImgs),
+  const slides = heroSlides.map(s => ({ title: (s.title || '').trim(), sub: (s.sub || '').trim(), btn: (s.btn || '').trim(), img: (s.img || '').trim() })).filter(s => s.title || s.img);
+  const trust = trustItems.map(t => ({ icon: (t.icon || '').trim().slice(0, 4), text: (t.text || '').trim().slice(0, 60) }));
+  const payload = {
+    catImagesJson: JSON.stringify(catImgs), heroSlidesJson: JSON.stringify(slides), trustJson: JSON.stringify(trust),
+    heroAuto: $('setHeroAuto').value, logoUrl: $('setLogoUrl').value.trim(),
+    promoOn: $('setPromoOn').value, promoSmall: $('setPromoSmall').value.trim(), promoTitle: $('setPromoTitle').value.trim(),
+    promoBtn: $('setPromoBtn').value.trim(), promoImg: $('setPromoImg').value.trim(),
+    firstDiscOn: $('setFirstOn').value, firstDiscPct: String(Math.min(90, Math.max(1, Number($('setFirstPct').value) || 10))),
     siteName: $('setSiteName').value, themeColor: $('setThemeColor').value, dhakaFee: $('setDhaka').value,
     outsiderFee: $('setOutsider').value, freeThreshold: $('setThreshold').value, whatsapp: $('setWhatsapp').value,
     phone: $('setPhone').value, topBannerText: $('setTopBanner').value, heroBg: $('setHeroBg').value,
@@ -1007,8 +1279,25 @@ $('settingsForm').addEventListener('submit', e => {
     fbPixelId: $('setPixel').value.replace(/\D/g, ''), cloudName: $('setCloudName').value.trim(), cloudPreset: $('setCloudPreset').value.trim(), address: $('setAddress').value.trim(), email: $('setEmail').value.trim(), hours: $('setHours').value.trim(),
     facebook: $('setFacebook').value.trim(), instagram: $('setInstagram').value.trim(), youtube: $('setYoutube').value.trim(), tiktok: $('setTiktok').value.trim(),
     aboutText: $('setAbout').value.trim(), returnPolicy: $('setReturn').value.trim(), privacyPolicy: $('setPrivacy').value.trim(), faqText: $('setFaq').value.trim()
-  }).then(() => toast('✅ সেটিংস সংরক্ষণ হয়েছে')).catch(fail);
-});
+  };
+  const dataLen = [payload.heroSlidesJson, payload.logoUrl, payload.promoImg, payload.catImagesJson].filter(s => String(s).includes('data:image')).reduce((n, s) => n + s.length, 0);
+  if (dataLen > 350000) toast('⚠️ ছবি বেশি ভারী, সাইট ধীর হতে পারে। Settings-এ Cloudinary দিয়ে ছবি আবার আপলোড করুন।', true, 7000);
+  if (btn) btn.disabled = true;
+  db.ref('dhong_settings').update(payload).then(() => toast('✅ সংরক্ষণ হয়েছে')).catch(fail).finally(() => { if (btn) btn.disabled = false; });
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-save]'); if (b) saveSettings(b); });
+
+/* ---------- পণ্য ট্যাব ও মোবাইল মেনু ---------- */
+function prodTab(t) {
+  const f = t === 'form';
+  $('prodFormCard').style.display = f ? 'block' : 'none'; $('prodListCard').style.display = f ? 'none' : 'block';
+  $('tabForm').classList.toggle('on', f); $('tabList').classList.toggle('on', !f);
+}
+$('tabList').onclick = () => prodTab('list');
+$('tabForm').onclick = () => prodTab('form');
+function toggleMenu(open) { $('sidebar').classList.toggle('open', open); $('scrim').classList.toggle('show', open); }
+$('menuBtn').onclick = () => toggleMenu(!$('sidebar').classList.contains('open'));
+$('scrim').onclick = () => toggleMenu(false);
 </script>
 </body>
 </html>
