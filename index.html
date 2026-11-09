@@ -49,6 +49,11 @@ main{max-width:1100px;margin:0 auto;padding:0 12px}
 .slide h2 span{color:#ff4b57}
 .slide p{margin:0 0 12px;font-size:14px}
 .slide img{width:120px;height:120px;object-fit:contain;background:rgba(255,255,255,.08);border-radius:14px;flex-shrink:0}
+.slide.full{padding:0;min-height:0;cursor:pointer;display:block}
+.slide.full img.full{width:100%;height:auto;min-height:150px;max-height:340px;object-fit:cover;border-radius:0;background:none;display:block}
+.logo img{height:34px;max-width:140px;object-fit:contain;display:block}
+.promo-img{width:120px;height:90px;object-fit:cover;border-radius:12px;flex-shrink:0}
+.promo.has-bg{background-size:cover;background-position:center}
 .btn-w{background:var(--primary-color);color:#fff;font-weight:600;padding:9px 18px;border-radius:24px;font-size:13px}
 .hero-dots{position:absolute;bottom:12px;left:0;right:0;display:flex;gap:7px;justify-content:center}
 .hero-dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer}
@@ -222,7 +227,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
     <div class="hero-dots" id="heroDots"></div>
   </section>
 
-  <div class="trust">
+  <div class="trust" id="trustBox">
     <div><b>🚚</b>সারা বাংলাদেশে<br>ফাস্ট ডেলিভারি</div>
     <div><b>🛡️</b>নিরাপদ লেনদেন<br>ক্যাশ অন ডেলিভারি</div>
     <div><b>🔄</b>সহজ রিটার্ন<br>ও এক্সচেঞ্জ</div>
@@ -243,9 +248,9 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
   </div>
   <div class="grid" id="grid"></div>
 
-  <div class="promo">
-    <div><small>PREMIUM COLLECTION</small><h3>স্টাইলের নতুন মাত্রা</h3><button class="btn-w" onclick="scrollToProducts()">আরও দেখুন →</button></div>
-    <div style="font-size:54px">🛍️</div>
+  <div class="promo" id="promoBox">
+    <div><small id="promoSmall">PREMIUM COLLECTION</small><h3 id="promoTitle">স্টাইলের নতুন মাত্রা</h3><button class="btn-w" id="promoBtn" onclick="scrollToProducts()">আরও দেখুন →</button></div>
+    <div id="promoArt" style="font-size:54px">🛍️</div>
   </div>
 </main>
 
@@ -575,8 +580,12 @@ let settings = {
   siteName: "ঢং DHONG", themeColor: "#d90f1f", dhakaFee: "60", outsiderFee: "120",
   whatsapp: "8801700000000", phone: "01700000000", freeThreshold: "3000",
   topBannerText: "🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি",
-  heroBg: "#17080c", timerStatus: "show", timerHours: "24", timerText: "⏳ অফার শেষ:", offerEnd: 0
+  heroBg: "#17080c", timerStatus: "show", timerHours: "24", timerText: "⏳ অফার শেষ:", offerEnd: 0,
+  firstDiscOn: "on", firstDiscPct: "10"
 };
+// প্রথম অর্ডারের ছাড় (অ্যাডমিন সেটিংস থেকে চালু/বন্ধ ও শতাংশ)
+const discPct = () => settings.firstDiscOn === 'off' ? 0 : Math.min(90, Math.max(0, Number(settings.firstDiscPct) || 0));
+const discOf = sub => Math.round(sub * discPct() / 100);
 const refAffId = getUrlParameter('ref');
 if (refAffId) localStorage.setItem('dhong_ref_id', refAffId.replace(/[^a-zA-Z0-9_]/g, ''));
 const prod = id => products.find(p => String(p.id) === String(id));
@@ -662,8 +671,10 @@ function makeThumb(src) {
 
 function applySettings() {
   document.documentElement.style.setProperty('--primary-color', settings.themeColor);
-  $('logoText').textContent = settings.siteName;
+  if (safeImg(settings.logoUrl)) $('logoText').innerHTML = `<img src="${safeImg(settings.logoUrl)}" alt="${E(settings.siteName)}">`;
+  else $('logoText').textContent = settings.siteName;
   $('footerLogo').textContent = settings.siteName;
+  renderTrust(); renderPromo();
   $('siteTitle').textContent = settings.siteName;
   $('topBanner').textContent = settings.topBannerText || '🎉 ঢং-এ স্বাগতম';
   $('heroBox').style.background = `linear-gradient(135deg,${settings.heroBg || '#17080c'},#5a0a14)`;
@@ -727,15 +738,37 @@ function openInfo(key) {
   openModal('infoModal');
 }
 
+/* ---------- ট্রাস্ট বক্স ও প্রমো ব্যানার (অ্যাডমিন থেকে) ---------- */
+const brLines = t => E(t).replace(/\|/g, '<br>');
+function renderTrust() {
+  let items = null; try { items = JSON.parse(settings.trustJson || 'null'); } catch (e) {}
+  if (!Array.isArray(items) || !items.length) return;
+  $('trustBox').innerHTML = items.slice(0, 4).map(t => `<div><b>${E(t.icon || '')}</b>${brLines(t.text || '')}</div>`).join('');
+}
+function renderPromo() {
+  const box = $('promoBox'); if (!box) return;
+  if (settings.promoOn === 'off') { box.style.display = 'none'; return; }
+  box.style.display = '';
+  if (settings.promoSmall != null) $('promoSmall').textContent = settings.promoSmall;
+  if (settings.promoTitle != null) $('promoTitle').textContent = settings.promoTitle;
+  if (settings.promoBtn != null) $('promoBtn').textContent = settings.promoBtn;
+  $('promoArt').innerHTML = safeImg(settings.promoImg) ? `<img class="promo-img" src="${safeImg(settings.promoImg)}" alt="">` : '🛍️';
+}
+
 /* ---------- হিরো স্লাইডার ---------- */
 let heroIdx = 0, heroTimer = null, heroCount = 1;
 function renderHero() {
-  const tops = [...products].sort((a, b) => (Number(b.sales) || 0) - (Number(a.sales) || 0)).slice(0, 4);
-  const first = `<div class="slide"><div class="s-txt"><div class="brand-big">${E(settings.siteName)}</div><div class="brand-sub">Fashion • Lifestyle • More</div>
+  const tops = settings.heroAuto === 'off' ? [] : [...products].sort((a, b) => (Number(b.sales) || 0) - (Number(a.sales) || 0)).slice(0, 4);
+  let custom = []; try { custom = JSON.parse(settings.heroSlidesJson || '[]') || []; } catch (e) {}
+  const customHtml = custom.map(s => {
+    if (!s.title && safeImg(s.img)) return `<div class="slide full" onclick="scrollToProducts()"><img class="full" src="${safeImg(s.img)}" alt=""></div>`;
+    return `<div class="slide"><div class="s-txt"><h2>${brLines(s.title)}</h2>${s.sub ? `<p>${E(s.sub)}</p>` : ''}${s.btn ? `<button class="btn-w" onclick="scrollToProducts()">${E(s.btn)}</button>` : ''}</div>${safeImg(s.img) ? `<img src="${safeImg(s.img)}" alt="">` : ''}</div>`;
+  }).join('');
+  const first = custom.length ? customHtml : `<div class="slide"><div class="s-txt"><div class="brand-big">${E(settings.siteName)}</div><div class="brand-sub">Fashion • Lifestyle • More</div>
     <h2>স্টাইলেই আলাদা,<br><span>সবসময় সবার আগে!</span></h2><button class="btn-w" onclick="scrollToProducts()">অর্ডার করুন →</button></div></div>`;
   const rest = tops.map(p => { const pi = priceInfo(p); return `<div class="slide"><div class="s-txt"><h2 style="font-size:20px">${E(p.name)}</h2>
     <p><b>৳${pi.active}</b>${pi.showOld ? ` <s style="opacity:.6">৳${pi.showOld}</s>` : ''}</p><button class="btn-w" onclick="openProduct('${E(p.id)}')">পণ্য দেখুন →</button></div>${p.img ? `<img src="${E(p.img)}" alt="">` : ''}</div>`; }).join('');
-  heroCount = 1 + tops.length; if (heroIdx >= heroCount) heroIdx = 0;
+  heroCount = (custom.length || 1) + tops.length; if (heroIdx >= heroCount) heroIdx = 0;
   $('heroTrack').innerHTML = first + rest;
   heroGo(heroIdx);
   if (heroTimer) clearInterval(heroTimer);
@@ -1014,10 +1047,10 @@ function updateTotal() {
   const qty = Number($('quantity').value) || 1;
   let delivery = Number($('deliveryFee').value) || 0;
   const subtotal = unit(selectedProduct) * qty;
-  const discount = localStorage.getItem('dhong_ordered_before') ? 0 : Math.round(subtotal * 0.1);
+  const discount = localStorage.getItem('dhong_ordered_before') ? 0 : discOf(subtotal);
   if (settings.freeThreshold && subtotal >= Number(settings.freeThreshold)) delivery = 0;
   let t = `মূল্য: ৳${subtotal}`;
-  if (discount > 0) t += ` | ডিসকাউন্ট (১০%): -৳${discount}`;
+  if (discount > 0) t += ` | ডিসকাউন্ট (${discPct()}%): -৳${discount}`;
   t += delivery === 0 ? ' | ডেলিভারি: ফ্রি' : ` | ডেলিভারি: ৳${delivery}`;
   t += ` | মোট: ৳${(subtotal - discount) + delivery}`;
   $('summary').textContent = t;
@@ -1034,10 +1067,10 @@ $('orderForm').addEventListener('submit', async function (e) {
   submitBtn.disabled = true;
   const unitPrice = unit(selectedProduct), subtotal = unitPrice * qty;
   if (settings.freeThreshold && subtotal >= Number(settings.freeThreshold)) delivery = 0;
-  const shown = localStorage.getItem('dhong_ordered_before') ? 0 : Math.round(subtotal * 0.1);
+  const shown = localStorage.getItem('dhong_ordered_before') ? 0 : discOf(subtotal);
   const chk = await checkFirst(fd.get('phone'));
-  const discount = chk.eligible ? Math.round(subtotal * 0.1) : 0, total = subtotal - discount + delivery;
-  if (discount < shown && !confirm('এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ১০% ছাড় প্রযোজ্য নয়।\nনতুন মোট: ৳' + total + '\nঅর্ডার করবেন?')) { submitBtn.disabled = false; return; }
+  const discount = chk.eligible ? discOf(subtotal) : 0, total = subtotal - discount + delivery;
+  if (discount < shown && !confirm('এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ' + discPct() + '% ছাড় প্রযোজ্য নয়।\nনতুন মোট: ৳' + total + '\nঅর্ডার করবেন?')) { submitBtn.disabled = false; return; }
   const thumb = await makeThumb(currentSelectedImg || selectedProduct.img), ref = getRef();
   const order = {
     id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: fd.get('name'), phone: fd.get('phone'),
@@ -1075,7 +1108,7 @@ window.addToCart = async function (pid, opt) {
 };
 function totals() {
   let sub = 0; cart.forEach(c => { const p = prod(c.pid); if (p) sub += unit(p) * c.qty; });
-  const disc = localStorage.getItem('dhong_ordered_before') ? 0 : Math.round(sub * 0.1);
+  const disc = localStorage.getItem('dhong_ordered_before') ? 0 : discOf(sub);
   let fee = Number(F.division === 'Outside' ? settings.outsiderFee : settings.dhakaFee) || 0;
   if (settings.freeThreshold && sub >= Number(settings.freeThreshold)) fee = 0;
   return { sub, disc, fee, total: sub - disc + fee };
@@ -1083,7 +1116,7 @@ function totals() {
 function sumUpdate() {
   const el = $('ckSum'); if (!el) return; const t = totals();
   const left = Number(settings.freeThreshold) - t.sub;
-  el.innerHTML = `মূল্য: ${bd(t.sub)}${t.disc ? ` | ডিসকাউন্ট (১০%): -${bd(t.disc)}` : ''} | ডেলিভারি: ${t.fee ? bd(t.fee) : 'ফ্রি'}<br><b>মোট: ${bd(t.total)}</b>${Number(settings.freeThreshold) > 0 && left > 0 && t.sub > 0 ? `<br><small style="color:#047857">আর ${bd(left)} কিনলে ডেলিভারি ফ্রি!</small>` : ''}`;
+  el.innerHTML = `মূল্য: ${bd(t.sub)}${t.disc ? ` | ডিসকাউন্ট (${discPct()}%): -${bd(t.disc)}` : ''} | ডেলিভারি: ${t.fee ? bd(t.fee) : 'ফ্রি'}<br><b>মোট: ${bd(t.total)}</b>${Number(settings.freeThreshold) > 0 && left > 0 && t.sub > 0 ? `<br><small style="color:#047857">আর ${bd(left)} কিনলে ডেলিভারি ফ্রি!</small>` : ''}`;
 }
 window.cartSet = function (i, k, v) { if (!cart[i]) return; cart[i][k] = k === 'qty' ? Number(v) : v; saveCart(); updateBadge(); sumUpdate(); };
 window.cartVar = function (i, k, v) {
@@ -1178,9 +1211,9 @@ window.placeCartOrder = async function () {
   }
   const btn = $('ckBtn'); btn.disabled = true;
   const shown = totals(), chk = await checkFirst(phone);
-  const disc = chk.eligible ? Math.round(shown.sub * 0.1) : 0;
+  const disc = chk.eligible ? discOf(shown.sub) : 0;
   const t = { sub: shown.sub, disc, fee: shown.fee, total: shown.sub - disc + shown.fee };
-  if (disc < shown.disc && !confirm('এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ১০% ছাড় প্রযোজ্য নয়।\nনতুন মোট: ' + bd(t.total) + '\nঅর্ডার করবেন?')) { btn.disabled = false; return; }
+  if (disc < shown.disc && !confirm('এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ' + discPct() + '% ছাড় প্রযোজ্য নয়।\nনতুন মোট: ' + bd(t.total) + '\nঅর্ডার করবেন?')) { btn.disabled = false; return; }
   const items = lines.map(({ c, p }) => ({ product_id: p.id, name: p.name, price: unit(p), quantity: c.qty, color: c.color, size: c.size, img: c.img || p.img || '' }));
   const ref = getRef();
   const order = { id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: name, phone,
