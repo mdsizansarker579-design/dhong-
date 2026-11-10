@@ -92,6 +92,13 @@ th{color:var(--muted);font-weight:600;background:#fafbfd;font-size:12px}
 .ed-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fff}
 .ed-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700;gap:8px}
 .ed-prev{width:100%;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--line);margin-top:6px}
+.integ{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;background:#fff}
+.integ-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.integ-h b{font-size:15px}
+.sw{margin-left:auto;display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px}
+.sw button{width:46px;height:26px;border-radius:20px;border:0;background:#cbd2dc;position:relative;cursor:pointer;padding:0}
+.sw button::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+.sw button.on{background:var(--green)}.sw button.on::after{left:23px}
 .help{background:var(--accent-soft);color:#3730a3;border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:14px;line-height:1.6}
 #toasts{position:fixed;bottom:16px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:100000}
 .toast{background:#111827;color:#fff;padding:11px 15px;border-radius:10px;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
@@ -99,8 +106,8 @@ th{color:var(--muted);font-weight:600;background:#fafbfd;font-size:12px}
 #loginModal{position:fixed;inset:0;background:linear-gradient(135deg,#111827,#312e81);display:flex;align-items:center;justify-content:center;z-index:99999;padding:14px}
 .login-box{background:#fff;padding:30px;border-radius:18px;width:100%;max-width:390px;text-align:center}
 @media(max-width:900px){
-  .sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);transition:transform .25s;box-shadow:0 0 30px rgba(0,0,0,.4)}
-  .sidebar.open{transform:none}
+  .sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);transition:transform .25s}
+  .sidebar.open{transform:none;box-shadow:0 0 30px rgba(0,0,0,.4)}
   .scrim.show{display:block}
   .menu-btn{display:grid;place-items:center}
   .main{padding:0 12px 40px}
@@ -150,6 +157,7 @@ th{color:var(--muted);font-weight:600;background:#fafbfd;font-size:12px}
 
     <div class="nav-label">সিস্টেম</div>
     <button data-page="api" data-title="সেটিংস"><span class="ic">⚙️</span>সেটিংস</button>
+    <button data-page="integrations" data-title="API সংযোগ"><span class="ic">🔌</span>API সংযোগ</button>
     <button data-page="moderators" data-title="মডারেটর ও নিরাপত্তা"><span class="ic">🛡️</span>মডারেটর</button>
   </nav>
 </aside>
@@ -446,6 +454,21 @@ th{color:var(--muted);font-weight:600;background:#fafbfd;font-size:12px}
     </div>
   </div>
   <div class="save-bar"><button class="btn primary" data-save>💾 সেটিংস সেভ করুন</button></div>
+</section>
+
+<!-- API সংযোগ -->
+<section class="page" id="integrations">
+  <div class="ph"><div class="ph-ic">🔌</div><div><h2>API সংযোগ</h2><p>অন্য ওয়েবসাইটের API Key এখানে বসান</p></div></div>
+  <div class="card">
+    <div class="integ-h"><span style="font-size:22px">🌐</span><b>অন্য ওয়েবসাইটের API</b>
+      <div class="sw"><span id="iOnTxt">বন্ধ</span><button type="button" id="iToggle" aria-label="চালু/বন্ধ"></button></div></div>
+    <div class="field-group">📛 নাম (নিজের চেনার জন্য) <input id="iName" placeholder="যেমন: ABC সাপ্লায়ার"></div>
+    <div class="field-group">🔗 API Base URL <input id="iUrl" placeholder="https://..."></div>
+    <div class="field-group">🔑 API Key
+      <div style="display:flex;gap:8px"><input type="password" id="iKey" autocomplete="new-password" style="margin-top:5px"><button type="button" class="btn ghost" id="iShow" style="margin-top:5px;white-space:nowrap">👁️ দেখান</button></div></div>
+    <button class="btn primary" id="iSave">💾 সেভ করুন</button>
+    <div class="muted" style="margin-top:10px">Key এই ডাটাবেসে শুধু অ্যাডমিনের জন্য সেভ হয়, কাস্টমার বা সাইটের ভিজিটর পড়তে পারে না (Rules-এ বন্ধ করা আছে)।</div>
+  </div>
 </section>
 
 <!-- মডারেটর -->
@@ -876,6 +899,7 @@ document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('cl
   btn.classList.add('active'); $(btn.dataset.page).classList.add('active');
   $('pageTitle').textContent = btn.dataset.title;
   if (btn.dataset.page === 'moderators') loadModerators();
+  if (btn.dataset.page === 'integrations') loadIntegrations();
   toggleMenu(false); window.scrollTo(0, 0);
 }));
 
@@ -1298,6 +1322,28 @@ $('tabForm').onclick = () => prodTab('form');
 function toggleMenu(open) { $('sidebar').classList.toggle('open', open); $('scrim').classList.toggle('show', open); }
 $('menuBtn').onclick = () => toggleMenu(!$('sidebar').classList.contains('open'));
 $('scrim').onclick = () => toggleMenu(false);
+
+/* ---------- API সংযোগ (অন্য ওয়েবসাইটের Key, শুধু অ্যাডমিন পড়তে পারে) ---------- */
+let integ = {}, integListening = false;
+function fillInteg() {
+  $('iName').value = integ.name || ''; $('iUrl').value = integ.url || ''; $('iKey').value = integ.key || '';
+  $('iToggle').classList.toggle('on', !!integ.on); $('iOnTxt').textContent = integ.on ? 'চালু' : 'বন্ধ';
+}
+function loadIntegrations() {
+  if (integListening) return; integListening = true;
+  db.ref('dhong_integrations/supplier').on('value', s => { integ = s.val() || {}; fillInteg(); }, e => { integListening = false; fail(e); });
+}
+$('iShow').onclick = () => { const k = $('iKey'); k.type = k.type === 'password' ? 'text' : 'password'; $('iShow').textContent = k.type === 'password' ? '👁️ দেখান' : '🙈 লুকান'; };
+$('iToggle').onclick = () => {
+  const on = !integ.on;
+  db.ref('dhong_integrations/supplier/on').set(on).then(() => toast(on ? '✅ চালু করা হয়েছে' : '⛔ বন্ধ করা হয়েছে')).catch(fail);
+};
+$('iSave').onclick = () => {
+  const url = $('iUrl').value.trim();
+  if (url && !/^https:\/\/[^\s]+$/i.test(url)) return toast('URL অবশ্যই https:// দিয়ে শুরু হতে হবে।', true);
+  db.ref('dhong_integrations/supplier').update({ name: $('iName').value.trim(), url, key: $('iKey').value.trim(), on: !!integ.on })
+    .then(() => toast('✅ সেভ হয়েছে')).catch(fail);
+};
 </script>
 </body>
 </html>
