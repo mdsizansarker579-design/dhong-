@@ -221,8 +221,11 @@ th{color:var(--muted);font-weight:600;background:#fafbfd;font-size:12px}
       <div class="box warn">
         <b>🎨 ভেরিয়েন্ট (রং × সাইজ, প্রতিটির আলাদা স্টক)</b>
         <div class="muted">রং ও সাইজ কমা দিয়ে লিখে "তৈরি করুন" চাপুন, তারপর প্রতিটির স্টক বসান। ভেরিয়েন্ট না দিলে সাধারণ স্টক চলবে।</div>
-        <input id="vColors" placeholder="রং: কালো, সাদা, লাল">
-        <input id="vSizes" placeholder="সাইজ: M, L, XL" style="margin-bottom:8px">
+        <div class="two"><div class="field-group" style="margin:0">১ম অপশনের নাম <input id="vL1" placeholder="রং (যেমন: রং, ওয়াট, ধরন)"></div>
+          <div class="field-group" style="margin:0">২য় অপশনের নাম <input id="vL2" placeholder="সাইজ (যেমন: সাইজ, ওজন, ভোল্ট)"></div></div>
+        <div class="two"><input id="vColors" placeholder="১ম অপশনের মান: কালো, সাদা, লাল">
+        <input id="vSizes" placeholder="২য় অপশনের মান: M, L, XL"></div>
+        <div class="muted" style="margin:0 0 8px">যেকোনো একটা ঘর খালি রাখতে পারেন। যেমন চার্জারে শুধু "ওয়াট" দিলে: ১ম নাম = ওয়াট, মান = 20W, 33W, 65W, আর ২য় ঘর খালি।</div>
         <button type="button" class="btn blue sm" id="vGen">⚡ তৈরি করুন</button>
         <button type="button" class="btn gray sm" id="vAdd">➕ একটি ভেরিয়েন্ট</button>
         <div id="vList" style="margin-top:8px;font-weight:400"></div>
@@ -344,8 +347,9 @@ th{color:var(--muted);font-weight:600;background:#fafbfd;font-size:12px}
   </div>
 
   <div class="card">
-    <h3 class="section-title">🗂️ ক্যাটাগরির ছবি</h3>
-    <div class="muted" style="margin:0 0 10px">প্রতিটি ক্যাটাগরির গোল আইকনের ছবি দিন। না দিলে ইমোজি দেখাবে।</div>
+    <h3 class="section-title">🗂️ ক্যাটাগরি (ছবি ও অপশনের নাম)</h3>
+    <div class="help">ক্যাটাগরি যত খুশি বানাতে পারেন। প্রতিটির জন্য অপশনের নাম একবার ঠিক করে দিন (যেমন চার্জার → ওয়াট, জুতা → সাইজ)। এরপর পণ্য যোগের সময় ওই ক্যাটাগরি বাছলে নাম নিজে বসে যাবে। না দিলে সাধারণ ভেরিয়েন্ট ঘর ফাঁকা থাকবে।</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px"><input id="catNew" placeholder="নতুন ক্যাটাগরির নাম (যেমন: চার্জার, হেডফোন)" style="margin-top:0"><button type="button" class="btn blue" id="catAddBtn" style="white-space:nowrap">➕ যোগ করুন</button></div>
     <div id="catImgBox"></div>
   </div>
 
@@ -673,7 +677,7 @@ function render() {
   $('orderRows').innerHTML = list.map(o => {
     const items = parseItems(o);
     const issue = orderIssue(o);
-    const itemsHtml = items === null ? esc(o.items_json) : items.map(i => `<div class="item">${safeUrl(i.img) ? `<img src="${safeUrl(i.img)}" alt="">` : ''}<div><b>${esc(i.name)}</b><br><small>রং: ${esc(i.color || '-')} | সাইজ: ${esc(i.size || '-')} | পিস: ${esc(i.quantity)}</small></div></div>`).join('');
+    const itemsHtml = items === null ? esc(o.items_json) : items.map(i => `<div class="item">${safeUrl(i.img) ? `<img src="${safeUrl(i.img)}" alt="">` : ''}<div><b>${esc(i.name)}</b><br><small>${esc([i.color && i.color !== 'Standard' ? (i.o1 || 'রং') + ': ' + i.color : '', i.size && i.size !== 'Free Size' ? (i.o2 || 'সাইজ') + ': ' + i.size : ''].filter(Boolean).join(' | '))}${(i.color && i.color !== 'Standard') || (i.size && i.size !== 'Free Size') ? ' | ' : ''}পিস: ${esc(i.quantity)}</small></div></div>`).join('');
     return `<tr><td>#DH-${esc(o.id)}</td><td><b>${esc(o.customer_name)}</b></td><td>${esc(o.phone)}</td><td>${esc(o.address)}</td><td>${itemsHtml}</td>
       <td><b>${esc(o.affiliate_ref || 'None')}</b>${o.commission_amount ? `<br><small>৳${esc(o.commission_amount)} ${o.commission_paid ? '✅ যোগ হয়েছে' : '⏳ ডেলিভারির অপেক্ষায়'}</small>` : ''}${o.utm && o.utm.utm_campaign ? `<br><small>📣 ${esc(o.utm.utm_campaign)}</small>` : ''}</td><td>${money(o.total)}${issue ? `<br><span class="pill bad" title="${esc(issue)}">⚠️ ${esc(issue)}</span>` : ''}</td>
       <td><select data-act="status" data-key="${esc(o._key)}">${STATUSES.map(s => `<option ${o.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
@@ -934,7 +938,7 @@ function syncTotal() {
 }
 function renderVariants() {
   $('vList').innerHTML = variants.length
-    ? `<div class="table-wrap"><table style="min-width:300px"><thead><tr><th>রং</th><th>সাইজ</th><th>স্টক</th><th></th></tr></thead><tbody>${variants.map((v, i) =>
+    ? `<div class="table-wrap"><table style="min-width:300px"><thead><tr><th>${esc($('vL1').value.trim() || 'রং')}</th><th>${esc($('vL2').value.trim() || 'সাইজ')}</th><th>স্টক</th><th></th></tr></thead><tbody>${variants.map((v, i) =>
       `<tr><td><input data-vi="${i}" data-vf="color" value="${esc(v.color)}" style="margin:0"></td><td><input data-vi="${i}" data-vf="size" value="${esc(v.size)}" style="margin:0"></td><td><input type="number" min="0" data-vi="${i}" data-vf="stock" value="${esc(v.stock)}" style="margin:0"></td><td><button type="button" class="btn sm red" data-vdel="${i}">✕</button></td></tr>`).join('')}</tbody></table></div>`
     : '<div class="muted">কোনো ভেরিয়েন্ট নেই (সাধারণ স্টক ব্যবহার হবে)।</div>';
   syncTotal();
@@ -947,10 +951,12 @@ $('vList').addEventListener('click', e => {
   const b = e.target.closest('[data-vdel]'); if (!b) return;
   variants.splice(+b.dataset.vdel, 1); renderVariants();
 });
+['vL1', 'vL2'].forEach(id => $(id).addEventListener('input', () => renderVariants()));
 $('vAdd').onclick = () => { variants.push({ color: '', size: '', stock: 0 }); renderVariants(); };
 $('vGen').onclick = () => {
   const cs = $('vColors').value.split(',').map(s => s.trim()).filter(Boolean), ss = $('vSizes').value.split(',').map(s => s.trim()).filter(Boolean);
-  if (!cs.length || !ss.length) return toast('রং ও সাইজ দুটোই লিখুন।', true);
+  if (!cs.length && !ss.length) return toast('অন্তত একটা অপশনের মান লিখুন।', true);
+  if (!cs.length) cs.push('Standard'); if (!ss.length) ss.push('Free Size');
   cs.forEach(c => ss.forEach(s => { if (!variants.some(v => v.color === c && v.size === s)) variants.push({ color: c, size: s, stock: 0 }); }));
   renderVariants();
 };
@@ -1060,6 +1066,7 @@ $('productForm').addEventListener('submit', async e => {
     const data = {
       id, name: $('pName').value.trim(), cat: $('pCat').value.trim(), price,
       oldPrice: Number($('pOldPrice').value) || price, stock: totalStock, variants: vClean,
+      opt1Label: $('vL1').value.trim(), opt2Label: $('vL2').value.trim(),
       rating: $('pRating').value || '5.0', sales: Number($('pSales').value) || 0,
       quality: $('pQuality').value, img: thumb, imgMain: isUrl(main) ? main : '', colors, hasFull: true,
       video: $('pVideo').value, desc: $('pDesc').value, comments: old ? (old.comments || []) : []
@@ -1079,6 +1086,7 @@ function editProduct(key) {
   set('pName', p.name); set('pCat', p.cat); set('pPrice', p.price); set('pOldPrice', p.oldPrice || p.price);
   set('pStock', p.stock || 0); set('pRating', p.rating || '5.0'); set('pSales', p.sales || 0);
   set('pQuality', p.quality); set('pVideo', p.video); set('pDesc', p.desc);
+  $('vL1').value = p.opt1Label || ''; $('vL2').value = p.opt2Label || '';
   variants = variantsOf(p).map(v => ({ color: v.color, size: v.size, stock: Number(v.stock) || 0 })); renderVariants();
   const cols = p.colors ? (Array.isArray(p.colors) ? p.colors : Object.values(p.colors)) : [];
   mainFull = ''; colorsFull = []; existing = { main: p.imgMain || p.img || '', colors: cols };
@@ -1162,20 +1170,37 @@ $('quickOfferBtn').onclick = () => {
   $('setOfferEnd').value = toLocalInput(Date.now() + h * 3600 * 1000);
   toast('সময় বসানো হয়েছে, নিচে "সেটিংস সেভ করুন" চাপুন');
 };
-/* ---------- ক্যাটাগরির ছবি ---------- */
-let catImgs = {}, catSig = '';
+/* ---------- ক্যাটাগরি: ছবি ও অপশনের নাম ---------- */
+let catImgs = {}, catOpts = {}, catExtra = [], catSig = '';
+const allCats = () => [...new Set([...products.map(p => p.cat), ...catExtra].filter(Boolean))];
 function renderCatImgs(force) {
-  const cats = [...new Set(products.map(p => p.cat).filter(Boolean))];
-  const sig = cats.join('|') + JSON.stringify(catImgs);
+  const cats = allCats();
+  const sig = cats.join('|') + JSON.stringify(catImgs) + JSON.stringify(catOpts);
   if (!force && sig === catSig) return;
   catSig = sig;
-  $('catImgBox').innerHTML = cats.map(c => `<div class="row" style="align-items:flex-start"><div style="display:flex;gap:8px;align-items:center;flex:1;min-width:180px">${safeUrl(catImgs[c]) ? `<img class="thumb" src="${safeUrl(catImgs[c])}" alt="">` : '<div class="thumb" style="display:grid;place-items:center;background:#f1f1f1">🛍️</div>'}<b>${esc(c)}</b></div>
-    <div style="flex:2;min-width:200px"><input placeholder="ছবির লিংক (https://...)" value="${isUrl(catImgs[c]) ? esc(catImgs[c]) : ''}" data-cat="${esc(c)}" style="margin:0 0 4px"><input type="file" accept="image/*" data-catfile="${esc(c)}" style="margin:0"></div></div>`).join('')
-    || '<div class="muted">আগে পণ্য যোগ করুন, তাহলে ক্যাটাগরি এখানে আসবে।</div>';
+  $('categoryList').innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('');
+  $('catImgBox').innerHTML = cats.map(c => { const o = catOpts[c] || {}, hasProd = products.some(p => p.cat === c);
+    return `<div class="ed-item"><div class="ed-head"><span style="display:flex;gap:8px;align-items:center">${safeUrl(catImgs[c]) ? `<img class="thumb" src="${safeUrl(catImgs[c])}" alt="">` : '<span class="thumb" style="display:grid;place-items:center;background:#f1f1f1">🛍️</span>'}${esc(c)}</span>
+      ${hasProd ? '' : `<button type="button" class="btn red sm" data-cdel="${esc(c)}">🗑️ মুছুন</button>`}</div>
+      <div class="two"><div class="field-group" style="margin:0">১ম অপশনের নাম<input data-ccat="${esc(c)}" data-copt="l1" value="${esc(o.l1 || '')}" placeholder="যেমন: রং"></div>
+      <div class="field-group" style="margin:0">২য় অপশনের নাম<input data-ccat="${esc(c)}" data-copt="l2" value="${esc(o.l2 || '')}" placeholder="যেমন: সাইজ"></div></div>
+      <input placeholder="ক্যাটাগরির ছবির লিংক (https://...)" value="${isUrl(catImgs[c]) ? esc(catImgs[c]) : ''}" data-cat="${esc(c)}"><input type="file" accept="image/*" data-catfile="${esc(c)}"></div>`; }).join('')
+    || '<div class="muted">উপরে নতুন ক্যাটাগরি যোগ করুন, অথবা পণ্য যোগ করলে ক্যাটাগরি এখানে আসবে।</div>';
 }
+$('catAddBtn').onclick = () => {
+  const n = $('catNew').value.trim().slice(0, 40); if (!n) return;
+  if (!allCats().includes(n)) catExtra.push(n);
+  $('catNew').value = ''; renderCatImgs(true); toast('✅ ক্যাটাগরি যোগ হয়েছে, নিচে সেভ চাপুন');
+};
+$('catImgBox').addEventListener('click', e => {
+  const b = e.target.closest('[data-cdel]'); if (!b) return;
+  catExtra = catExtra.filter(x => x !== b.dataset.cdel); delete catOpts[b.dataset.cdel]; delete catImgs[b.dataset.cdel]; renderCatImgs(true);
+});
 $('catImgBox').addEventListener('input', e => {
-  const c = e.target.dataset.cat; if (c === undefined) return;
-  const v = e.target.value.trim(); if (v) catImgs[c] = v; else delete catImgs[c];
+  const t = e.target;
+  if (t.dataset.copt !== undefined) { const c = t.dataset.ccat; catOpts[c] = catOpts[c] || {}; catOpts[c][t.dataset.copt] = t.value.trim().slice(0, 30); return; }
+  const c = t.dataset.cat; if (c === undefined) return;
+  const v = t.value.trim(); if (v) catImgs[c] = v; else delete catImgs[c];
 });
 $('catImgBox').addEventListener('change', async e => {
   const c = e.target.dataset.catfile; if (c === undefined || !e.target.files[0]) return;
@@ -1184,9 +1209,20 @@ $('catImgBox').addEventListener('change', async e => {
     let u = await shrink(await fileToDataUrl(e.target.files[0]), cloudReady() ? 500 : 160, .8);
     if (cloudReady()) u = await cloudUpload(u);
     catImgs[c] = u; renderCatImgs(true);
-    toast('✅ ছবি বসানো হয়েছে, নিচে "সেটিংস সেভ করুন" চাপুন');
+    toast('✅ ছবি বসানো হয়েছে, নিচে সেভ চাপুন');
   } catch (err) { fail(err); }
 });
+// পণ্য ফর্মে ক্যাটাগরি বাছলে অপশনের নাম নিজে বসে
+function updatePh() {
+  $('vColors').placeholder = ($('vL1').value.trim() || '১ম অপশন') + '-এর মান: কালো, সাদা (কমা দিয়ে)';
+  $('vSizes').placeholder = ($('vL2').value.trim() || '২য় অপশন') + '-এর মান: M, L, XL (কমা দিয়ে)';
+}
+['vL1', 'vL2'].forEach(id => $(id).addEventListener('input', updatePh));
+$('pCat').addEventListener('change', () => {
+  const o = catOpts[$('pCat').value.trim()];
+  if (o && (o.l1 || o.l2)) { $('vL1').value = o.l1 || ''; $('vL2').value = o.l2 || ''; renderVariants(); updatePh(); toast('✅ এই ক্যাটাগরির অপশনের নাম বসানো হয়েছে'); }
+});
+
 /* ---------- ছবি বাছাই (Cloudinary থাকলে সেখানে, নইলে ছোট করে ডাটাবেসে) ---------- */
 async function pickImg(file, maxPx) {
   toast('ছবি প্রসেস হচ্ছে...');
@@ -1265,10 +1301,12 @@ $('logoClear').onclick = () => { $('setLogoUrl').value = ''; prevImg('logoPrev',
 function fillSettingsForm() {
   try { catImgs = JSON.parse(settings.catImagesJson || '{}') || {}; } catch (e) { catImgs = {}; }
   renderCatImgs(true);
+  try { catOpts = JSON.parse(settings.catOptsJson || '{}') || {}; } catch (e) { catOpts = {}; }
+  try { catExtra = JSON.parse(settings.catExtraJson || '[]') || []; } catch (e) { catExtra = []; }
   try { heroSlides = JSON.parse(settings.heroSlidesJson || '[]') || []; } catch (e) { heroSlides = []; }
   try { trustItems = JSON.parse(settings.trustJson || 'null') || []; } catch (e) { trustItems = []; }
   trustItems = TRUST_DEF.map((d, i) => Object.assign({}, d, trustItems[i] || {}));
-  renderHeroEditor(); renderTrustEditor();
+  renderCatImgs(true); renderHeroEditor(); renderTrustEditor();
   const v = (id, val) => { const el = $(id); if (el) el.value = val; };
   v('setSiteName', settings.siteName || 'ঢং DHONG'); v('setThemeColor', settings.themeColor || '#d90f1f');
   v('setLogoUrl', settings.logoUrl || ''); prevImg('logoPrev', settings.logoUrl || '');
@@ -1291,7 +1329,7 @@ function saveSettings(btn) {
   const slides = heroSlides.map(s => ({ title: (s.title || '').trim(), sub: (s.sub || '').trim(), btn: (s.btn || '').trim(), img: (s.img || '').trim() })).filter(s => s.title || s.img);
   const trust = trustItems.map(t => ({ icon: (t.icon || '').trim().slice(0, 4), text: (t.text || '').trim().slice(0, 60) }));
   const payload = {
-    catImagesJson: JSON.stringify(catImgs), heroSlidesJson: JSON.stringify(slides), trustJson: JSON.stringify(trust),
+    catImagesJson: JSON.stringify(catImgs), catOptsJson: JSON.stringify(Object.fromEntries(Object.entries(catOpts).filter(([k, o]) => o && (o.l1 || o.l2)))), catExtraJson: JSON.stringify(catExtra), heroSlidesJson: JSON.stringify(slides), trustJson: JSON.stringify(trust),
     heroAuto: $('setHeroAuto').value, logoUrl: $('setLogoUrl').value.trim(),
     promoOn: $('setPromoOn').value, promoSmall: $('setPromoSmall').value.trim(), promoTitle: $('setPromoTitle').value.trim(),
     promoBtn: $('setPromoBtn').value.trim(), promoImg: $('setPromoImg').value.trim(),
