@@ -320,7 +320,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
       <label class="field">মোবাইল নম্বর
         <input name="phone" required inputmode="tel" pattern="01[3-9][0-9]{8}" placeholder="01XXXXXXXXX">
       </label>
-      <label class="field">কালার / ডিজাইন ভ্যারিয়েন্ট
+      <label class="field" id="lblColor"><span id="lblColorT">কালার / ডিজাইন ভ্যারিয়েন্ট</span>
         <select name="color" id="productColor" onchange="fillSizes()">
           <option value="Standard">স্ট্যান্ডার্ড</option>
           <option value="Black">কালো (Black)</option>
@@ -329,7 +329,7 @@ details.faq div{margin-top:6px;color:#4a5568;line-height:1.6}
           <option value="Blue">নীল (Blue)</option>
         </select>
       </label>
-      <label class="field">সাইজ / পরিমাপ
+      <label class="field" id="lblSize"><span id="lblSizeT">সাইজ / পরিমাপ</span>
         <select name="size" id="productSize" onchange="fillQty()">
           <option value="Free Size">Free Size</option>
           <option value="M">M</option>
@@ -571,6 +571,9 @@ const vColors = p => [...new Set(variantsOf(p).filter(v => Number(v.stock) > 0).
 const vSizes = (p, color) => variantsOf(p).filter(v => v.color === color && Number(v.stock) > 0).map(v => v.size);
 const maxQtyFor = (p, color, size) => Math.min(5, variantsOf(p).length ? vStock(p, color, size) : (Number(p.stock) || 0));
 const COLOR_MAP = {'কালো':'#111','black':'#111','সাদা':'#fff','white':'#fff','লাল':'#d90f1f','red':'#d90f1f','নীল':'#1d4ed8','blue':'#1d4ed8','সবুজ':'#16a34a','green':'#16a34a','হলুদ':'#facc15','yellow':'#facc15','গোলাপি':'#ec4899','pink':'#ec4899','ধূসর':'#9ca3af','grey':'#9ca3af','gray':'#9ca3af','বাদামী':'#8b5a2b','brown':'#8b5a2b','বেগুনি':'#7c3aed','purple':'#7c3aed','কমলা':'#f97316','orange':'#f97316','নেভি':'#1e3a8a','navy':'#1e3a8a','বেজ':'#d6c3a5','beige':'#d6c3a5'};
+const lab1 = p => (p && p.opt1Label) || 'রং', lab2 = p => (p && p.opt2Label) || 'সাইজ';
+const showG1 = p => variantsOf(p).some(v => v.color !== 'Standard'), showG2 = p => variantsOf(p).some(v => v.size !== 'Free Size');
+const itemOpts = i => { const a = []; if (i.color && i.color !== 'Standard' && i.color !== '-') a.push((i.o1 || 'রং') + ': ' + i.color); if (i.size && i.size !== 'Free Size' && i.size !== '-') a.push((i.o2 || 'সাইজ') + ': ' + i.size); return a.join(' | '); };
 const colorDot = c => { const k = String(c || '').trim().toLowerCase().split(/\s+/)[0]; return COLOR_MAP[k] ? `<i style="background:${COLOR_MAP[k]}"></i>` : ''; };
 
 /* ---------- ডাটা ও অবস্থা ---------- */
@@ -954,11 +957,11 @@ function renderOpts(p) {
   const avail = vStock(p, sel.color, sel.size), max = Math.min(5, avail);
   if (sel.qty > max) sel.qty = Math.max(1, max);
   box.innerHTML = `
-    <div class="opt-label">রং: <span>${E(sel.color)}</span></div>
-    <div class="chips">${colors.map(c => `<button class="chip ${c === sel.color ? 'on' : ''}" data-v="${E(c)}" ${vs.some(v => v.color === c && Number(v.stock) > 0) ? '' : 'disabled'} onclick="ppColor(this.dataset.v)">${colorDot(c)}${E(c)}</button>`).join('')}</div>
-    <div class="opt-label">সাইজ: <span>${E(sel.size)}</span></div>
-    <div class="chips">${sizes.map(s => `<button class="chip ${s === sel.size ? 'on' : ''}" data-v="${E(s)}" ${vStock(p, sel.color, s) > 0 ? '' : 'disabled'} onclick="ppSize(this.dataset.v)">${E(s)}</button>`).join('')}</div>
-    <div class="stock-line ${avail > 0 ? '' : 'bad'}">${avail > 0 ? 'স্টকে আছে: ' + avail + 'টি' : 'এই রং/সাইজের স্টক শেষ'}</div>
+    ${showG1(p) ? `<div class="opt-label">${E(lab1(p))}: <span>${E(sel.color)}</span></div>
+    <div class="chips">${colors.map(c => `<button class="chip ${c === sel.color ? 'on' : ''}" data-v="${E(c)}" ${vs.some(v => v.color === c && Number(v.stock) > 0) ? '' : 'disabled'} onclick="ppColor(this.dataset.v)">${colorDot(c)}${E(c)}</button>`).join('')}</div>` : ''}
+    ${showG2(p) ? `<div class="opt-label">${E(lab2(p))}: <span>${E(sel.size)}</span></div>
+    <div class="chips">${sizes.map(s => `<button class="chip ${s === sel.size ? 'on' : ''}" data-v="${E(s)}" ${vStock(p, sel.color, s) > 0 ? '' : 'disabled'} onclick="ppSize(this.dataset.v)">${E(s)}</button>`).join('')}</div>` : ''}
+    <div class="stock-line ${avail > 0 ? '' : 'bad'}">${avail > 0 ? 'স্টকে আছে: ' + avail + 'টি' : 'এই অপশনের স্টক শেষ'}</div>
     ${avail > 0 ? qtyHtml(max) : ''}`;
 }
 function ppColor(c) {
@@ -972,7 +975,7 @@ function ppQty(d) { const p = prod(ppId); if (!p) return; sel.qty = Math.max(1, 
 function ppAddCart() { const p = prod(ppId); if (p) addToCart(p.id, { color: sel.color, size: sel.size, qty: sel.qty, img: ppImgs[sel.img] }); }
 function ppOrderNow() {
   const p = prod(ppId); if (!p) return;
-  if (variantsOf(p).length && vStock(p, sel.color, sel.size) <= 0) return flash('এই রং/সাইজের স্টক শেষ');
+  if (variantsOf(p).length && vStock(p, sel.color, sel.size) <= 0) return flash('এই অপশনের স্টক শেষ');
   openOrder(p.id, { color: sel.color, size: sel.size, qty: sel.qty, img: ppImgs[sel.img] });
 }
 function addComment(e, prodId) {
@@ -994,12 +997,12 @@ async function waOrder(prodId) {
   const thumb = await makeThumb((ppImgs && ppImgs[sel ? sel.img : 0]) || p.img);
   const newOrder = {
     id: orderId, customer_name: 'WhatsApp Customer', phone: '', address: '', affiliate_ref: affiliateRef,
-    items_json: JSON.stringify([{ product_id: p.id, name: p.name, price, quantity: 1, color, size, img: thumb, deliveryFee: 0 }]),
+    items_json: JSON.stringify([{ product_id: p.id, name: p.name, price, quantity: 1, color, size, o1: lab1(p), o2: lab2(p), img: thumb, deliveryFee: 0 }]),
     total: price, commission_amount: affiliateRef !== 'None' ? Math.round(price * 0.05) : 0, commission_paid: false, status: 'WhatsApp Pending', created_at: new Date().toISOString()
   };
   try { await saveOrder(newOrder); } catch (e) { console.error(e); if (w) w.close(); alert('❌ অর্ডার সেভ হয়নি, আবার চেষ্টা করুন।'); return; }
   track('Lead', { content_name: p.name, value: price, currency: 'BDT' });
-  const text = `আসসালামু আলাইকুম, আমি এই পণ্যটি অর্ডার করতে চাই:\nঅর্ডার নম্বর: #DH-${newOrder.id}\nপণ্য: ${p.name}${color ? `\nরং: ${color}, সাইজ: ${size}` : ''}\nপণ্য আইডি: ${p.id}\nমূল্য: ${bd(price)}\nলিংক: ${link}`;
+  const text = `আসসালামু আলাইকুম, আমি এই পণ্যটি অর্ডার করতে চাই:\nঅর্ডার নম্বর: #DH-${newOrder.id}\nপণ্য: ${p.name}${itemOpts({ color, size, o1: lab1(p), o2: lab2(p) }) ? `\n${itemOpts({ color, size, o1: lab1(p), o2: lab2(p) })}` : ''}\nপণ্য আইডি: ${p.id}\nমূল্য: ${bd(price)}\nলিংক: ${link}`;
   const url = `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(text)}`;
   if (w) w.location.href = url; else window.location.href = url;
 }
@@ -1021,12 +1024,15 @@ function openOrder(id, opt) {
 function setupOrderVariants(p, opt) {
   const c = $('productColor'), s = $('productSize'), q = $('quantity');
   if (!LEG.c) { LEG.c = c.innerHTML; LEG.s = s.innerHTML; LEG.q = q.innerHTML; }
-  if (variantsOf(p).length) {
+  const vv = variantsOf(p).length > 0;
+  $('lblColor').style.display = vv && showG1(p) ? '' : 'none'; $('lblSize').style.display = vv && showG2(p) ? '' : 'none';
+  if (vv) { $('lblColorT').textContent = lab1(p); $('lblSizeT').textContent = lab2(p); }
+  if (vv) {
     const cols = vColors(p);
     c.innerHTML = cols.map(x => `<option value="${E(x)}">${E(x)}</option>`).join('');
     if (opt && cols.includes(opt.color)) c.value = opt.color;
     fillSizes(opt && opt.size, opt && opt.qty);
-  } else { c.innerHTML = LEG.c; s.innerHTML = LEG.s; q.innerHTML = LEG.q; q.value = String((opt && opt.qty) || 1); }
+  } else { c.innerHTML = '<option value="Standard">Standard</option>'; s.innerHTML = '<option value="Free Size">Free Size</option>'; q.innerHTML = LEG.q; q.value = String((opt && opt.qty) || 1); }
 }
 function fillSizes(prefSize, prefQty) {
   const p = selectedProduct; if (!p || !variantsOf(p).length) return;
@@ -1062,7 +1068,7 @@ $('orderForm').addEventListener('submit', async function (e) {
   const color = fd.get('color'), size = fd.get('size');
   if (variantsOf(selectedProduct).length) {
     const vs = vStock(selectedProduct, color, size);
-    if (vs < qty) { alert('এই রং/সাইজের স্টকে মাত্র ' + vs + ' পিস আছে।'); return; }
+    if (vs < qty) { alert('এই অপশনের স্টকে মাত্র ' + vs + ' পিস আছে।'); return; }
   } else if ((Number(selectedProduct.stock) || 0) < qty) { alert('স্টকে মাত্র ' + selectedProduct.stock + ' পিস আছে।'); return; }
   submitBtn.disabled = true;
   const unitPrice = unit(selectedProduct), subtotal = unitPrice * qty;
@@ -1075,7 +1081,7 @@ $('orderForm').addEventListener('submit', async function (e) {
   const order = {
     id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: fd.get('name'), phone: fd.get('phone'),
     address: `${fd.get('division')} - ${fd.get('address')}`, affiliate_ref: ref,
-    items_json: JSON.stringify([{ product_id: selectedProduct.id, name: selectedProduct.name, price: unitPrice, quantity: qty, color, size, img: thumb, deliveryFee: delivery }]),
+    items_json: JSON.stringify([{ product_id: selectedProduct.id, name: selectedProduct.name, price: unitPrice, quantity: qty, color, size, o1: lab1(selectedProduct), o2: lab2(selectedProduct), img: thumb, deliveryFee: delivery }]),
     total, discount, delivery_fee: delivery, commission_amount: ref !== 'None' ? Math.round((total - delivery) * 0.05) : 0, commission_paid: false,
     status: 'Pending', created_at: new Date().toISOString()
   };
@@ -1097,7 +1103,7 @@ window.addToCart = async function (pid, opt) {
   const p = prod(pid); if (!p) return;
   if ((Number(p.stock) || 0) <= 0) return flash('স্টক শেষ');
   const vs = variantsOf(p); let color = 'Standard', size = 'Free Size';
-  if (vs.length) { color = opt && opt.color; size = opt && opt.size; if (vStock(p, color, size) <= 0) return flash('এই রং/সাইজের স্টক শেষ'); }
+  if (vs.length) { color = opt && opt.color; size = opt && opt.size; if (vStock(p, color, size) <= 0) return flash('এই অপশনের স্টক শেষ'); }
   const img = await makeThumb((opt && opt.img) || p.img || '');
   const qty = Math.max(1, (opt && opt.qty) || 1), max = vs.length ? maxQtyFor(p, color, size) : Math.min(5, Number(p.stock) || 0);
   const ex = cart.find(c => String(c.pid) === String(p.id) && c.color === color && c.size === size);
@@ -1145,7 +1151,7 @@ function renderCart() {
     const selHtml = hasV
       ? `<select onchange="cartVar(${i},'color',this.value)">${vColors(p).map(x => `<option value="${E(x)}" ${c.color === x ? 'selected' : ''}>${E(x)}</option>`).join('')}</select>
          <select onchange="cartVar(${i},'size',this.value)">${vSizes(p, c.color).map(x => `<option value="${E(x)}" ${c.size === x ? 'selected' : ''}>${E(x)}</option>`).join('')}</select>`
-      : `<select onchange="cartSet(${i},'size',this.value)">${SIZES.map(v => `<option ${c.size === v ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+      : '';
     return `<div class="cart-row">${c.img ? `<img src="${E(c.img)}" alt="">` : ''}
       <div style="flex:1;min-width:0"><b>${E(p.name)}</b><div style="color:var(--primary-color);font-weight:700">${bd(unit(p))}</div>
       <div class="cart-sel">${selHtml}
@@ -1173,7 +1179,7 @@ window.openCart = function () {
 function itemsHtml(items) {
   return items.map(i => `<div class="cart-row">${i.img ? `<img src="${E(i.img)}" alt="">` : ''}
     <div style="flex:1;min-width:0"><b>${E(i.name)}</b>
-    <div style="font-size:12px;color:#4a5568">রং: ${E(i.color || '-')} | সাইজ: ${E(i.size || '-')} | পরিমাণ: ${E(i.quantity)}টি</div>
+    <div style="font-size:12px;color:#4a5568">${E(itemOpts(i)) ? E(itemOpts(i)) + ' | ' : ''}পরিমাণ: ${E(i.quantity)}টি</div>
     <div style="font-size:12px">${bd(i.price)} × ${E(i.quantity)} = <b>${bd(i.price * i.quantity)}</b></div></div></div>`).join('');
 }
 function totalsHtml(o, items) {
@@ -1181,7 +1187,7 @@ function totalsHtml(o, items) {
   return `<div class="cart-sum">মূল্য: ${bd(sub)}${o.discount ? ` | ডিসকাউন্ট: -${bd(o.discount)}` : ''}${o.delivery_fee !== undefined ? ` | ডেলিভারি: ${o.delivery_fee ? bd(o.delivery_fee) : 'ফ্রি'}` : ''}<br><b>মোট: ${bd(o.total)}</b> (ক্যাশ অন ডেলিভারি)</div>`;
 }
 function waText(o, items) {
-  const lines = items.map(i => '• ' + i.name + ' (' + (i.color || '-') + ', ' + (i.size || '-') + ') × ' + i.quantity).join('\n');
+  const lines = items.map(i => '• ' + i.name + (itemOpts(i) ? ' (' + itemOpts(i) + ')' : '') + ' × ' + i.quantity).join('\n');
   return 'আসসালামু আলাইকুম, আমার অর্ডার কনফার্ম করতে চাই।\nঅর্ডার নম্বর: #DH-' + o.id + '\nনাম: ' + o.customer_name + '\n' + lines + '\nমোট: ' + bd(o.total);
 }
 function showReceipt(o, items) {
@@ -1214,7 +1220,7 @@ window.placeCartOrder = async function () {
   const disc = chk.eligible ? discOf(shown.sub) : 0;
   const t = { sub: shown.sub, disc, fee: shown.fee, total: shown.sub - disc + shown.fee };
   if (disc < shown.disc && !confirm('এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ' + discPct() + '% ছাড় প্রযোজ্য নয়।\nনতুন মোট: ' + bd(t.total) + '\nঅর্ডার করবেন?')) { btn.disabled = false; return; }
-  const items = lines.map(({ c, p }) => ({ product_id: p.id, name: p.name, price: unit(p), quantity: c.qty, color: c.color, size: c.size, img: c.img || p.img || '' }));
+  const items = lines.map(({ c, p }) => ({ product_id: p.id, name: p.name, price: unit(p), quantity: c.qty, color: c.color, size: c.size, o1: lab1(p), o2: lab2(p), img: c.img || p.img || '' }));
   const ref = getRef();
   const order = { id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: name, phone,
     address: `${F.division} - ${address}`, affiliate_ref: ref, items_json: JSON.stringify(items),
