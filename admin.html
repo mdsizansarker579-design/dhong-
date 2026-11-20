@@ -308,7 +308,8 @@ th{color:var(--muted);font-weight:600;background:#fafbfd;font-size:12px}
       <img id="logoPrev" class="ed-prev" alt="" style="display:none;max-height:60px;width:auto;object-fit:contain">
       <button type="button" class="btn ghost sm" id="logoClear" style="margin-top:6px">🗑️ লোগো মুছুন</button>
     </div>
-    <div class="field-group">📢 উপরের ব্র্যান্ড বার লেখা <input id="setTopBanner" maxlength="120" placeholder="আপনার পছন্দ, আপনার ঠিকানায় ✨"><div class="muted">কাস্টমার সাইটের একদম উপরের কালো বারে এই লেখাটি দেখাবে। নিজের মতো লিখে নিচের সংরক্ষণ বাটনে চাপুন।</div></div>
+    <div class="field-group">📢 উপরের ব্র্যান্ড বারের প্রথম লাইন <input id="setTopBanner" maxlength="120" placeholder="আপনার পছন্দ, আপনার ঠিকানায় ✨"><div class="muted">কালো বারের বড় লেখাটি। নিজের মতো লিখুন।</div></div>
+    <div class="field-group">✍️ উপরের ব্র্যান্ড বারের দ্বিতীয় লাইন <input id="setTopBannerSub" maxlength="160" placeholder="পছন্দের পণ্য অর্ডার করুন সহজেই — ঘরে বসেই।"><div class="muted">প্রথম লাইনের নিচে ছোট লেখাটি দেখাবে। খালি রাখলে কোনো দ্বিতীয় লাইন দেখাবে না।</div></div>
   </div>
 
   <div class="card">
@@ -1320,6 +1321,7 @@ function fillSettingsForm() {
   v('setFirstOn', settings.firstDiscOn || 'on'); v('setFirstPct', settings.firstDiscPct || '10');
   v('setWhatsapp', settings.whatsapp || ''); v('setPhone', settings.phone || '');
   v('setTopBanner', settings.topBannerText || 'আপনার পছন্দ, আপনার ঠিকানায় ✨');
+  v('setTopBannerSub', settings.topBannerSubText || 'পছন্দের পণ্য অর্ডার করুন সহজেই — ঘরে বসেই।');
   v('setHeroBg', settings.heroBg || '#17080c'); v('setTimerStatus', settings.timerStatus || 'show'); v('setTimerHours', settings.timerHours || '24');
   v('setOfferEnd', toLocalInput(Number(settings.offerEnd) || 0));
   v('setPixel', settings.fbPixelId || ''); v('setCloudName', settings.cloudName || ''); v('setCloudPreset', settings.cloudPreset || ''); v('setAddress', settings.address || ''); v('setEmail', settings.email || ''); v('setHours', settings.hours || '');
@@ -1338,7 +1340,7 @@ function saveSettings(btn) {
     firstDiscOn: $('setFirstOn').value, firstDiscPct: String(Math.min(90, Math.max(1, Number($('setFirstPct').value) || 10))),
     siteName: $('setSiteName').value, themeColor: $('setThemeColor').value, dhakaFee: $('setDhaka').value,
     outsiderFee: $('setOutsider').value, freeThreshold: $('setThreshold').value, whatsapp: $('setWhatsapp').value,
-    phone: $('setPhone').value, topBannerText: $('setTopBanner').value, heroBg: $('setHeroBg').value,
+    phone: $('setPhone').value, topBannerText: $('setTopBanner').value.trim(), topBannerSubText: $('setTopBannerSub').value.trim(), heroBg: $('setHeroBg').value,
     timerStatus: $('setTimerStatus').value, timerHours: $('setTimerHours').value, offerEnd: endVal ? new Date(endVal).getTime() : 0,
     fbPixelId: $('setPixel').value.replace(/\D/g, ''), cloudName: $('setCloudName').value.trim(), cloudPreset: $('setCloudPreset').value.trim(), address: $('setAddress').value.trim(), email: $('setEmail').value.trim(), hours: $('setHours').value.trim(),
     facebook: $('setFacebook').value.trim(), instagram: $('setInstagram').value.trim(), youtube: $('setYoutube').value.trim(), tiktok: $('setTiktok').value.trim(),
