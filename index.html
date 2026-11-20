@@ -352,11 +352,13 @@ footer button,.social-a{background:#1b1b1b;border-color:#4c4437}
 .modal a{color:#e6c77d}
 @media(max-width:600px){.modal{padding:19px;border-radius:19px}.modal h2{font-size:19px}.modalbg{padding:10px}}
 
+.top{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 14px;background:#111;color:#f7f4ec;line-height:1.35}.top-main{font-size:14px;font-weight:700;letter-spacing:.15px}.top-sub{font-size:11px;font-weight:400;color:#c9c1b2;opacity:.95}
+@media(max-width:600px){.top{padding:8px 10px}.top-main{font-size:13px}.top-sub{font-size:10px}}
 </style>
 </head>
 <body>
 
-<div class="top" id="topBanner">ঢং — আপনার পছন্দের পণ্য, এখন ঘরে বসেই অর্ডার করুন</div>
+<div class="top" id="topBanner"><span class="top-main">আপনার পছন্দ, আপনার ঠিকানায় ✨</span><span class="top-sub">পছন্দের পণ্য অর্ডার করুন সহজেই — ঘরে বসেই।</span></div>
 
 <header>
   <div class="logo" id="logoText">DHONG</div>
@@ -826,7 +828,7 @@ function applySettings() {
   $('siteTitle').textContent = settings.siteName;
   const savedBanner = String(settings.topBannerText || '');
   const legacyBanner = savedBanner.includes('ঢং-এ স্বাগতম') || savedBanner.includes('ক্যাশ অন ডেলিভারি');
-  $('topBanner').textContent = (!savedBanner || legacyBanner) ? 'ঢং — আপনার পছন্দের পণ্য, এখন ঘরে বসেই অর্ডার করুন' : savedBanner;
+  $('topBanner').querySelector('.top-main').textContent = (!savedBanner || legacyBanner) ? 'আপনার পছন্দ, আপনার ঠিকানায় ✨' : savedBanner;
   $('heroBox').style.background = `linear-gradient(135deg,${settings.heroBg || '#17080c'},#5a0a14)`;
   updateDeliveryFeeOption(); renderSupport(); renderFooter(); renderHero(); loadPixel();
 }
