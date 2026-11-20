@@ -635,10 +635,14 @@ const bd = n => '৳' + Number(n || 0).toLocaleString('en-US');
 const money = bd;
 const AFF_DOMAIN = '@aff.dhong.local';
 
-function getRef() {
-  const r = (localStorage.getItem('dhong_ref_id') || '').replace(/[^a-zA-Z0-9_]/g, '');
+async function getRef() {
+  const r = (sessionStorage.getItem('dhong_ref_id') || '').replace(/[^a-zA-Z0-9_]/g, '');
   const me = localStorage.getItem('dhong_logged_aff');
-  return (!r || r === me) ? 'None' : r;
+  if (!r || r === me) return 'None';
+  try {
+    const snap = await db.ref('dhong_affiliates/' + r).once('value');
+    return snap.exists() ? r : 'None';
+  } catch (e) { return 'None'; }
 }
 function getUrlParameter(name) {
   const m = window.location.href.match(new RegExp('[?&#]' + name + '=([^&#]*)'));
@@ -753,8 +757,13 @@ let settings = {
 // প্রথম অর্ডারের ছাড় (অ্যাডমিন সেটিংস থেকে চালু/বন্ধ ও শতাংশ)
 const discPct = () => settings.firstDiscOn === 'off' ? 0 : Math.min(90, Math.max(0, Number(settings.firstDiscPct) || 0));
 const discOf = sub => Math.round(sub * discPct() / 100);
+// Referral attribution lasts only for this browser tab session; discard stale persistent referrals.
+localStorage.removeItem('dhong_ref_id');
 const refAffId = getUrlParameter('ref');
-if (refAffId) localStorage.setItem('dhong_ref_id', refAffId.replace(/[^a-zA-Z0-9_]/g, ''));
+if (refAffId) {
+  const cleanRef = String(refAffId).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 64);
+  if (cleanRef) sessionStorage.setItem('dhong_ref_id', cleanRef);
+}
 const prod = id => products.find(p => String(p.id) === String(id));
 const designs = p => { const a = []; if (p.img) a.push(p.img); const c = p.colors ? (Array.isArray(p.colors) ? p.colors : Object.values(p.colors)) : []; c.forEach(x => { if (x && !a.includes(x)) a.push(x); }); return a; };
 function priceInfo(p) {
@@ -1158,7 +1167,7 @@ function addComment(e, prodId) {
 async function waOrder(prodId) {
   const p = prod(prodId); if (!p) return;
   const w = window.open('', '_blank');
-  const price = unit(p), orderId = String(Math.floor(100000 + Math.random() * 900000)), affiliateRef = getRef();
+  const price = unit(p), orderId = String(Math.floor(100000 + Math.random() * 900000)), affiliateRef = await getRef();
   const link = location.origin + location.pathname + '?product=' + encodeURIComponent(p.id) + '&ref=' + affiliateRef;
   const vs = variantsOf(p), color = vs.length ? sel.color : '', size = vs.length ? sel.size : '';
   const thumb = await makeThumb((ppImgs && ppImgs[sel ? sel.img : 0]) || p.img);
@@ -1220,7 +1229,7 @@ function updateTotal() {
   const qty = Number($('quantity').value) || 1;
   let delivery = Number($('deliveryFee').value) || 0;
   const subtotal = unit(selectedProduct) * qty;
-  const discount = localStorage.getItem('dhong_ordered_before') ? 0 : discOf(subtotal);
+  const discount = discOf(subtotal);
   if (settings.freeThreshold && subtotal >= Number(settings.freeThreshold)) delivery = 0;
   let t = `মূল্য: ৳${subtotal}`;
   if (discount > 0) t += ` | ডিসকাউন্ট (${discPct()}%): -৳${discount}`;
@@ -1240,11 +1249,11 @@ $('orderForm').addEventListener('submit', async function (e) {
   submitBtn.disabled = true;
   const unitPrice = unit(selectedProduct), subtotal = unitPrice * qty;
   if (settings.freeThreshold && subtotal >= Number(settings.freeThreshold)) delivery = 0;
-  const shown = localStorage.getItem('dhong_ordered_before') ? 0 : discOf(subtotal);
+  const shown = discOf(subtotal);
   const chk = await checkFirst(fd.get('phone'));
   const discount = chk.eligible ? discOf(subtotal) : 0, total = subtotal - discount + delivery;
   if (discount < shown && !confirm('এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ' + discPct() + '% ছাড় প্রযোজ্য নয়।\nনতুন মোট: ৳' + total + '\nঅর্ডার করবেন?')) { submitBtn.disabled = false; return; }
-  const thumb = await makeThumb(currentSelectedImg || selectedProduct.img), ref = getRef();
+  const thumb = await makeThumb(currentSelectedImg || selectedProduct.img), ref = await getRef();
   const order = {
     id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: fd.get('name'), phone: fd.get('phone'),
     address: `${fd.get('division')} - ${fd.get('address')}`, affiliate_ref: ref,
@@ -1281,7 +1290,7 @@ window.addToCart = async function (pid, opt) {
 };
 function totals() {
   let sub = 0; cart.forEach(c => { const p = prod(c.pid); if (p) sub += unit(p) * c.qty; });
-  const disc = localStorage.getItem('dhong_ordered_before') ? 0 : discOf(sub);
+  const disc = discOf(sub);
   let fee = Number(F.division === 'Outside' ? settings.outsiderFee : settings.dhakaFee) || 0;
   if (settings.freeThreshold && sub >= Number(settings.freeThreshold)) fee = 0;
   return { sub, disc, fee, total: sub - disc + fee };
@@ -1388,7 +1397,7 @@ window.placeCartOrder = async function () {
   const t = { sub: shown.sub, disc, fee: shown.fee, total: shown.sub - disc + shown.fee };
   if (disc < shown.disc && !confirm('এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ' + discPct() + '% ছাড় প্রযোজ্য নয়।\nনতুন মোট: ' + bd(t.total) + '\nঅর্ডার করবেন?')) { btn.disabled = false; return; }
   const items = lines.map(({ c, p }) => ({ product_id: p.id, name: p.name, price: unit(p), quantity: c.qty, color: c.color, size: c.size, o1: lab1(p), o2: lab2(p), img: c.img || p.img || '' }));
-  const ref = getRef();
+  const ref = await getRef();
   const order = { id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: name, phone,
     address: `${F.division} - ${address}`, affiliate_ref: ref, items_json: JSON.stringify(items),
     total: t.total, discount: t.disc, delivery_fee: t.fee, commission_amount: ref !== 'None' ? Math.round((t.total - t.fee) * 0.05) : 0, commission_paid: false, status: 'Pending', created_at: new Date().toISOString() };
