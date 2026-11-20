@@ -548,6 +548,7 @@ td{padding:13px 12px}
         <div class="field-group">⭐ রেটিং (১-৫) <input type="number" step="0.1" min="1" max="5" id="pRating" placeholder="4.8"></div>
         <div class="field-group">🔥 মোট সেলস <input type="number" id="pSales" min="0"></div>
         <div class="field-group">✅ পণ্যের মান <input id="pQuality" placeholder="১০০% সুতি কটন"></div>
+        <div class="field-group">📦 প্রতি পণ্যের ক্রয়মূল্য (৳) <input type="number" id="pCost" min="0" step="0.01" placeholder="না জানলে খালি রাখুন"></div>
       </div>
       <div class="box warn">
         <b>🎨 ভেরিয়েন্ট (রং × সাইজ, প্রতিটির আলাদা স্টক)</b>
@@ -598,13 +599,15 @@ td{padding:13px 12px}
 
 <!-- প্রফিট -->
 <section class="page" id="profit">
-  <div class="ph"><div class="ph-ic">💰</div><div><h2>প্রফিট রিপোর্ট</h2><p>বিক্রির ওপর আনুমানিক লাভ</p></div></div>
+  <div class="ph"><div class="ph-ic">💰</div><div><h2>প্রফিট রিপোর্ট</h2><p>শুধু ডেলিভারি সম্পন্ন অর্ডার; পণ্যের ক্রয়মূল্য না দিলে হিসাব অসম্পূর্ণ থাকবে</p></div></div>
   <div class="card">
-    <div class="field-group" style="max-width:260px">📈 প্রফিট মার্জিন (%) <input type="number" id="profitMargin" min="0" max="100" value="35"></div>
     <div class="grid" style="margin:0">
-      <div class="card stat-card" style="margin:0"><div class="stat-ic" style="background:#eef0ff">💵</div><div><div class="stat-label">মোট সেলস</div><div class="stat" id="profitTotalSales">৳ 0</div></div></div>
-      <div class="card stat-card" style="margin:0"><div class="stat-ic" style="background:#e7f8f0">📈</div><div><div class="stat-label">ডেলিভারি সম্পন্ন অর্ডারের আনুমানিক প্রফিট</div><div class="stat" id="netProfitAmount" style="color:var(--green)">৳ 0</div></div></div>
+      <div class="card stat-card" style="margin:0"><div><div class="stat-label">Delivered বিক্রয় (ডেলিভারি চার্জ বাদে)</div><div class="stat" id="profitTotalSales">৳ 0</div></div></div>
+      <div class="card stat-card" style="margin:0"><div><div class="stat-label">পণ্যের ক্রয়মূল্য</div><div class="stat" id="profitCostAmount">৳ 0</div></div></div>
+      <div class="card stat-card" style="margin:0"><div><div class="stat-label">পরিশোধিত Affiliate কমিশন</div><div class="stat" id="profitCommissionAmount">৳ 0</div></div></div>
+      <div class="card stat-card" style="margin:0"><div><div class="stat-label">প্রাথমিক লাভ</div><div class="stat" id="netProfitAmount" style="color:var(--green)">৳ 0</div></div></div>
     </div>
+    <div class="muted" id="profitNote" style="margin-top:12px">বিজ্ঞাপন, কুরিয়ার ও অন্যান্য খরচ এখনো বাদ যায়নি।</div>
   </div>
 </section>
 
@@ -1116,12 +1119,25 @@ function render() {
   }).join('') || '<div class="empty">কোনো পণ্য নেই।</div>';
 }
 function renderProfit() {
-  const m = Math.min(100, Math.max(0, Number($('profitMargin').value) || 0));
-  const deliveredRevenue = orders.filter(o => o.status === 'Delivered')
-    .reduce((sum, o) => sum + Number(o.total || 0), 0);
-  $('netProfitAmount').textContent = money(Math.round(deliveredRevenue * m / 100));
+  const delivered = orders.filter(o => o.status === 'Delivered');
+  let revenue = 0, productCost = 0, commission = 0, missingCostItems = 0;
+  for (const o of delivered) {
+    revenue += Math.max(0, Number(o.total || 0) - Number(o.delivery_fee || 0));
+    if (o.commission_paid) commission += Math.max(0, Number(o.commission_amount) || 0);
+    const items = parseItems(o) || [];
+    for (const item of items) {
+      const p = products.find(x => String(x.id) === String(item.product_id));
+      const qty = Math.max(0, Number(item.quantity) || 0);
+      if (!p || p.unitCost == null || p.unitCost === '') missingCostItems += qty;
+      else productCost += Math.max(0, Number(p.unitCost) || 0) * qty;
+    }
+  }
+  $('profitTotalSales').textContent = money(revenue);
+  $('profitCostAmount').textContent = money(productCost);
+  $('profitCommissionAmount').textContent = money(commission);
+  $('netProfitAmount').textContent = money(revenue - productCost - commission);
+  $('profitNote').textContent = (missingCostItems ? missingCostItems + 'টি পণ্যের ক্রয়মূল্য দেওয়া নেই; তাই লাভের হিসাব অসম্পূর্ণ। ' : 'সব Delivered পণ্যের ক্রয়মূল্য পাওয়া গেছে। ') + 'বিজ্ঞাপন, কুরিয়ার ও অন্যান্য খরচ এখনো বাদ যায়নি।';
 }
-$('profitMargin').addEventListener('input', render);
 $('statusFilter').innerHTML = '<option value="">সব স্ট্যাটাস</option>' + STATUSES.map(s => `<option>${s}</option>`).join('');
 $('orderSearch').addEventListener('input', debounce(render));
 $('statusFilter').addEventListener('change', render);
@@ -1491,7 +1507,7 @@ $('productForm').addEventListener('submit', async e => {
       stock: totalStock, variants: vClean,
       opt1Label: $('vL1').value.trim(), opt2Label: $('vL2').value.trim(),
       rating: $('pRating').value || '5.0', sales: Number($('pSales').value) || 0,
-      quality: $('pQuality').value, img: thumb, imgMain: isUrl(main) ? main : '', colors, hasFull: true,
+      quality: $('pQuality').value, unitCost: Math.max(0, Number($('pCost').value) || 0), img: thumb, imgMain: isUrl(main) ? main : '', colors, hasFull: true,
       video: $('pVideo').value, desc: $('pDesc').value, comments: old ? (old.comments || []) : []
     };
     await db.ref('dhong_images/' + id).set({ main, colors });
@@ -1509,7 +1525,7 @@ function editProduct(key) {
   set('pName', p.name); set('pCat', p.cat); set('pPrice', p.price); set('pOldPrice', p.oldPrice || p.price);
   $('pDiscountOn').checked = p.discountEnabled === true || (p.discountEnabled == null && Number(p.oldPrice) > Number(p.price));
   set('pStock', p.stock || 0); set('pRating', p.rating || '5.0'); set('pSales', p.sales || 0);
-  set('pQuality', p.quality); set('pVideo', p.video); set('pDesc', p.desc);
+  set('pQuality', p.quality); set('pCost', p.unitCost || 0); set('pVideo', p.video); set('pDesc', p.desc);
   $('vL1').value = p.opt1Label || ''; $('vL2').value = p.opt2Label || '';
   variants = variantsOf(p).map(v => ({ color: v.color, size: v.size, stock: Number(v.stock) || 0 })); renderVariants();
   const cols = p.colors ? (Array.isArray(p.colors) ? p.colors : Object.values(p.colors)) : [];
