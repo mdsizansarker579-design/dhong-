@@ -271,7 +271,7 @@ th{color:var(--muted);font-weight:600;background:#fafbfd;font-size:12px}
     <div class="field-group" style="max-width:260px">📈 প্রফিট মার্জিন (%) <input type="number" id="profitMargin" min="0" max="100" value="35"></div>
     <div class="grid" style="margin:0">
       <div class="card stat-card" style="margin:0"><div class="stat-ic" style="background:#eef0ff">💵</div><div><div class="stat-label">মোট সেলস</div><div class="stat" id="profitTotalSales">৳ 0</div></div></div>
-      <div class="card stat-card" style="margin:0"><div class="stat-ic" style="background:#e7f8f0">📈</div><div><div class="stat-label">আনুমানিক প্রফিট</div><div class="stat" id="netProfitAmount" style="color:var(--green)">৳ 0</div></div></div>
+      <div class="card stat-card" style="margin:0"><div class="stat-ic" style="background:#e7f8f0">📈</div><div><div class="stat-label">ডেলিভারি সম্পন্ন অর্ডারের আনুমানিক প্রফিট</div><div class="stat" id="netProfitAmount" style="color:var(--green)">৳ 0</div></div></div>
     </div>
   </div>
 </section>
@@ -652,7 +652,7 @@ function orderIssue(o) {
   const d = Number(o.discount) || 0, f = Number(o.delivery_fee) || 0, thr = Number(settings.freeThreshold) || 0;
   const fdp = settings.firstDiscOn === 'off' ? 0 : (Number(settings.firstDiscPct) || 10);
   if (d > Math.round(sub * Math.max(fdp, 10) / 100)) return 'ছাড় নির্ধারিত শতাংশের বেশি';
-  if (![0, Number(settings.dhakaFee) || 60, Number(settings.outsiderFee) || 120].includes(f)) return 'ডেলিভারি চার্জ মেলেনি';
+  if (![0, Number(settings.dhakaFee) || 70, Number(settings.outsiderFee) || 130].includes(f)) return 'ডেলিভারি চার্জ মেলেনি';
   if (f === 0 && thr && sub < thr) return 'ফ্রি ডেলিভারির শর্ত পূরণ হয়নি';
   if (Math.abs(sub - d + f - Number(o.total)) > 1) return 'মোট হিসাব মেলেনি';
   return '';
@@ -712,9 +712,11 @@ function render() {
       <button class="btn sm red" data-act="delProduct" data-key="${esc(p._key)}">🗑️ ডিলিট</button></div></div>`;
   }).join('') || '<div class="empty">কোনো পণ্য নেই।</div>';
 }
-function renderProfit(total) {
+function renderProfit() {
   const m = Math.min(100, Math.max(0, Number($('profitMargin').value) || 0));
-  $('netProfitAmount').textContent = money(Math.round(total * m / 100));
+  const deliveredRevenue = orders.filter(o => o.status === 'Delivered')
+    .reduce((sum, o) => sum + Number(o.total || 0), 0);
+  $('netProfitAmount').textContent = money(Math.round(deliveredRevenue * m / 100));
 }
 $('profitMargin').addEventListener('input', render);
 $('statusFilter').innerHTML = '<option value="">সব স্ট্যাটাস</option>' + STATUSES.map(s => `<option>${s}</option>`).join('');
@@ -1314,7 +1316,7 @@ function fillSettingsForm() {
   v('setPromoOn', settings.promoOn || 'on'); v('setPromoSmall', settings.promoSmall != null ? settings.promoSmall : 'PREMIUM COLLECTION');
   v('setPromoTitle', settings.promoTitle != null ? settings.promoTitle : 'স্টাইলের নতুন মাত্রা'); v('setPromoBtn', settings.promoBtn != null ? settings.promoBtn : 'আরও দেখুন →');
   v('setPromoImg', settings.promoImg || ''); prevImg('promoPrev', settings.promoImg || '');
-  v('setDhaka', settings.dhakaFee || '60'); v('setOutsider', settings.outsiderFee || '120'); v('setThreshold', settings.freeThreshold || '3000');
+  v('setDhaka', settings.dhakaFee || '70'); v('setOutsider', settings.outsiderFee || '130'); v('setThreshold', settings.freeThreshold || '3000');
   v('setFirstOn', settings.firstDiscOn || 'on'); v('setFirstPct', settings.firstDiscPct || '10');
   v('setWhatsapp', settings.whatsapp || ''); v('setPhone', settings.phone || '');
   v('setTopBanner', settings.topBannerText || '🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি');
