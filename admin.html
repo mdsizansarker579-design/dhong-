@@ -11,6 +11,33 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <style>
+.record-overlay{position:fixed;inset:0;z-index:5000;background:rgba(8,12,20,.66);display:flex;align-items:center;justify-content:center;padding:16px}
+.record-dialog{width:min(760px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+.record-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.record-head h2{font-size:20px;margin:0}
+.record-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.record-grid>div{padding:12px;border:1px solid var(--line);border-radius:12px;min-width:0}
+.record-grid .wide{grid-column:1/-1}
+.record-grid small,.category-card-head small{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}
+.record-grid b{display:block;overflow-wrap:anywhere}
+.record-subtitle{font-size:16px;margin:18px 0 10px}
+.record-product{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.record-product img,.category-product img{width:52px;height:52px;object-fit:cover;border-radius:10px;background:#f3f4f6}
+.record-product>div{flex:1;min-width:0}
+.record-product small,.category-product small{display:block;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.record-total{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:18px;padding:14px;background:#f7f8fb;border-radius:12px}
+.record-total strong{font-size:18px;color:#111}
+.category-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.category-card{padding:16px}
+.category-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.category-card-head h3{margin:0;font-size:18px}
+.category-products{display:grid;gap:10px}
+.category-product{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);min-width:0}
+.category-product>div{min-width:0;flex:1}
+.category-product b{display:block;overflow-wrap:anywhere}
+.category-placeholder{width:52px;height:52px;border-radius:10px;background:#f3f4f6;display:grid;place-items:center;flex-shrink:0}
+.text-link{border:0;background:none;padding:0;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline}
+@media(max-width:600px){.record-overlay{padding:8px;align-items:flex-end}.record-dialog{max-height:92vh;border-radius:18px 18px 0 0;padding:16px}.record-grid{gap:8px}.record-grid>div{padding:10px}.record-product{align-items:flex-start}.record-product img{width:44px;height:44px}}
 :root{--bg:#f3f5f9;--card:#fff;--text:#1b2433;--muted:#6b7385;--side:#111827;--side2:#1f2937;--accent:#4f46e5;--accent-soft:#eef0ff;--line:#e6e9f0;--green:#0f9d6b;--red:#e5484d;--amber:#d97706}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);font-family:'Hind Siliguri',Arial,sans-serif;color:var(--text);font-size:14px}
@@ -380,6 +407,12 @@ td{padding:13px 12px}
     <div id="loginError" style="color:#c53030;font-size:12px;margin-top:10px;word-break:break-all"></div>
   </div>
 </div>
+<div class="record-overlay" id="recordModal" role="dialog" aria-modal="true" aria-labelledby="recordModalTitle" style="display:none">
+  <div class="record-dialog">
+    <div class="record-head"><h2 id="recordModalTitle">বিস্তারিত</h2><button type="button" class="btn ghost sm" id="recordModalClose" aria-label="বন্ধ করুন">✕</button></div>
+    <div id="recordModalContent"></div>
+  </div>
+</div>
 <div id="toasts" aria-live="polite"></div>
 <div class="scrim" id="scrim"></div>
 
@@ -391,12 +424,14 @@ td{padding:13px 12px}
 
     <div class="nav-label">বিক্রি</div>
     <button data-page="orders" data-title="অর্ডার"><span class="ic">🛒</span>অর্ডার</button>
+    <button data-page="customers" data-title="কাস্টমার"><span class="ic">👥</span>কাস্টমার</button>
     <button data-page="courier" data-title="কুরিয়ার"><span class="ic">🚚</span>কুরিয়ার</button>
     <button data-page="comments" data-title="রিভিউ"><span class="ic">💬</span>রিভিউ<span class="bdg" id="pendingCommentBadge"></span></button>
     <button data-page="profit" data-title="প্রফিট রিপোর্ট"><span class="ic">💰</span>প্রফিট</button>
 
     <div class="nav-label">পণ্য</div>
     <button data-page="products" data-title="পণ্য"><span class="ic">📦</span>পণ্য ও স্টক</button>
+    <button data-page="categories" data-title="প্রোডাক্ট ক্যাটাগরি"><span class="ic">🗂️</span>প্রোডাক্ট ক্যাটাগরি</button>
 
     <div class="nav-label">ওয়েবসাইট</div>
     <button data-page="site" data-title="সাইট সাজান"><span class="ic">🎨</span>সাইট সাজান</button>
@@ -463,6 +498,22 @@ td{padding:13px 12px}
     <div class="table-wrap"><table><thead><tr><th>ID</th><th>কাস্টমার</th><th>ফোন</th><th>ঠিকানা</th><th>পণ্য</th><th>রেফ</th><th>মোট</th><th>স্ট্যাটাস</th><th>তারিখ</th><th></th></tr></thead>
     <tbody id="orderRows"></tbody></table></div>
   </div>
+</section>
+
+<!-- কাস্টমার -->
+<section class="page" id="customers">
+  <div class="ph"><div class="ph-ic">👥</div><div><h2>কাস্টমার ম্যানেজমেন্ট</h2><p>মোবাইল নম্বর অনুযায়ী একই কাস্টমারের অর্ডার একসাথে দেখুন</p></div></div>
+  <div class="card">
+    <div class="toolbar"><input type="search" id="customerSearch" placeholder="🔍 কাস্টমারের নাম বা মোবাইল নম্বর..." oninput="renderCustomers()"></div>
+    <div class="table-wrap"><table><thead><tr><th>কাস্টমার</th><th>মোবাইল নম্বর</th><th>ঠিকানা</th><th>মোট অর্ডার</th><th>মোট অর্ডার মূল্য</th><th>সর্বশেষ অর্ডার</th><th></th></tr></thead>
+    <tbody id="customerRows"></tbody></table></div>
+  </div>
+</section>
+
+<!-- প্রোডাক্ট ক্যাটাগরি -->
+<section class="page" id="categories">
+  <div class="ph"><div class="ph-ic">🗂️</div><div><h2>প্রোডাক্ট ক্যাটাগরি</h2><p>ক্যাটাগরি অনুযায়ী পণ্য, দাম ও স্টক আলাদা করে দেখুন</p></div></div>
+  <div id="categoryCards" class="category-cards"></div>
 </section>
 
 <!-- পণ্য -->
@@ -780,6 +831,7 @@ const LOW_STOCK = 5;
 const FULL_MAX = 900, FULL_Q = .85, THUMB_MAX = 400, THUMB_Q = .75;
 
 let products = [], orders = [], affiliates = [], withdrawals = [], pendingComments = [], settings = {}, courier = {};
+let customerGroups = [];
 
 function toast(msg, isErr, ms) {
   const t = document.createElement('div');
@@ -930,6 +982,59 @@ function filteredOrders() {
   return orders.filter(o => (!st || o.status === st) && (!q ||
     String(o.customer_name || '').toLowerCase().includes(q) || String(o.phone || '').includes(q) || String(o.id || '').includes(q)));
 }
+function customerIdentity(o) {
+  const phone = String(o.phone || '').replace(/\\D/g, '');
+  return phone ? 'phone:' + phone : 'order:' + String(o._key || o.id || Math.random());
+}
+function renderCustomers() {
+  const q = ($('customerSearch')?.value || '').trim().toLowerCase();
+  const groups = new Map();
+  orders.forEach(o => {
+    const key = customerIdentity(o);
+    if (!groups.has(key)) groups.set(key, { key, name: o.customer_name || 'নাম নেই', phone: o.phone || '', address: o.address || '', orders: [] });
+    const g = groups.get(key);
+    g.orders.push(o);
+    if (!g.phone && o.phone) g.phone = o.phone;
+    if (o.created_at && (!g.latest || new Date(o.created_at) > new Date(g.latest.created_at || 0))) {
+      g.latest = o; g.name = o.customer_name || g.name; g.address = o.address || g.address;
+    }
+  });
+  customerGroups = [...groups.values()].sort((a,b) => new Date(b.latest?.created_at || 0) - new Date(a.latest?.created_at || 0));
+  const filtered = customerGroups.filter(g => [g.name,g.phone,g.address].some(v => String(v || '').toLowerCase().includes(q)));
+  $('customerRows').innerHTML = filtered.map(g => {
+    const index = customerGroups.indexOf(g), total = g.orders.reduce((n,o) => n + Number(o.total || 0), 0);
+    return `<tr><td><b>${esc(g.name)}</b></td><td>${esc(g.phone || 'নম্বর নেই')}</td><td>${esc(g.address || 'ঠিকানা নেই')}</td><td>${g.orders.length}</td><td><b>${money(total)}</b></td><td>${g.latest?.created_at ? esc(new Date(g.latest.created_at).toLocaleDateString()) : '—'}</td><td><button class="btn sm blue" data-act="viewCustomer" data-index="${index}">ডিটেইলস</button></td></tr>`;
+  }).join('') || '<tr><td colspan="7" class="empty">কোনো কাস্টমার পাওয়া যায়নি।</td></tr>';
+}
+function renderCategories() {
+  const cats = [...new Set(products.map(p => String(p.cat || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b,'bn'));
+  $('categoryCards').innerHTML = cats.map(cat => {
+    const items = products.filter(p => String(p.cat || '').trim() === cat);
+    return `<div class="card category-card"><div class="category-card-head"><div><small>PRODUCT CATEGORY</small><h3>${esc(cat)}</h3></div><span class="pill">${items.length} টি পণ্য</span></div><div class="category-products">${items.map(p => `<div class="category-product">${safeUrl(p.img) ? `<img src="${safeUrl(p.img)}" alt="">` : '<span class="category-placeholder">📦</span>'}<div><b>${esc(p.name)}</b><small>${money(p.price)} · স্টক ${Number(p.stock || 0)}</small></div></div>`).join('')}</div></div>`;
+  }).join('') || '<div class="card empty">এখনো কোনো পণ্যের ক্যাটাগরি যোগ করা হয়নি। পণ্য যোগ করার সময় ক্যাটাগরি লিখুন।</div>';
+}
+function openRecordModal(title, html) {
+  $('recordModalTitle').textContent = title;
+  $('recordModalContent').innerHTML = html;
+  $('recordModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeRecordModal() { $('recordModal').style.display = 'none'; document.body.style.overflow = ''; }
+function openOrderDetails(key) {
+  const o = orders.find(x => x._key === key); if (!o) return;
+  const items = parseItems(o) || [];
+  const itemHtml = items.map(i => {
+    const p = products.find(x => String(x.id) === String(i.product_id));
+    return `<div class="record-product">${safeUrl(i.img || p?.img) ? `<img src="${safeUrl(i.img || p.img)}" alt="">` : '<span class="category-placeholder">📦</span>'}<div><b>${esc(i.name || p?.name || 'পণ্য')}</b><small>ক্যাটাগরি: ${esc(p?.cat || 'অনির্ধারিত')} · পরিমাণ: ${Number(i.quantity || 0)} · একক দাম: ${money(i.price)}</small><small>${esc([i.color && i.color !== 'Standard' ? 'রং: '+i.color : '',i.size && i.size !== 'Free Size' ? 'সাইজ: '+i.size : ''].filter(Boolean).join(' · ') || 'ভ্যারিয়েন্ট নেই')}</small></div><b>${money(Number(i.price || 0) * Number(i.quantity || 0))}</b></div>`;
+  }).join('') || '<p class="muted">পণ্যের বিস্তারিত পাওয়া যায়নি।</p>';
+  openRecordModal('অর্ডার #DH-' + (o.id || ''), `<div class="record-grid"><div><small>কাস্টমারের নাম</small><b>${esc(o.customer_name || 'নাম নেই')}</b></div><div><small>মোবাইল নম্বর</small><b>${esc(o.phone || 'নম্বর নেই')}</b></div><div class="wide"><small>ডেলিভারি ঠিকানা</small><b>${esc(o.address || 'ঠিকানা নেই')}</b></div><div><small>অর্ডার স্ট্যাটাস</small><b>${esc(o.status || 'Pending')}</b></div><div><small>অর্ডারের তারিখ</small><b>${o.created_at ? esc(new Date(o.created_at).toLocaleString()) : '—'}</b></div></div><h3 class="record-subtitle">অর্ডার করা পণ্য</h3>${itemHtml}<div class="record-total"><span>পণ্যের ছাড়</span><b>− ${money(o.discount)}</b><span>ডেলিভারি চার্জ</span><b>${money(o.delivery_fee)}</b><span>সর্বমোট</span><strong>${money(o.total)}</strong></div>`);
+}
+function openCustomerDetails(index) {
+  const g = customerGroups[Number(index)]; if (!g) return;
+  const list = [...g.orders].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const rows = list.map(o => `<tr><td>#DH-${esc(o.id)}</td><td>${esc(o.created_at ? new Date(o.created_at).toLocaleDateString() : '—')}</td><td>${esc(o.status || 'Pending')}</td><td>${money(o.total)}</td><td><button class="btn sm blue" data-act="viewOrder" data-key="${esc(o._key)}">অর্ডার দেখুন</button></td></tr>`).join('');
+  openRecordModal('কাস্টমার: ' + g.name, `<div class="record-grid"><div><small>কাস্টমারের নাম</small><b>${esc(g.name)}</b></div><div><small>মোবাইল নম্বর</small><b>${esc(g.phone || 'নম্বর নেই')}</b></div><div class="wide"><small>ঠিকানা</small><b>${esc(g.address || 'ঠিকানা নেই')}</b></div><div><small>মোট অর্ডার</small><b>${list.length} টি</b></div><div><small>মোট অর্ডার মূল্য</small><b>${money(list.reduce((n,o)=>n+Number(o.total||0),0))}</b></div></div><h3 class="record-subtitle">এই কাস্টমারের অর্ডারসমূহ</h3><div class="table-wrap"><table><thead><tr><th>অর্ডার</th><th>তারিখ</th><th>স্ট্যাটাস</th><th>মোট</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`);
+}
 function render() {
   const counted = orders.filter(o => o.status !== 'Cancelled' && o.status !== 'WhatsApp Pending');
   const total = counted.reduce((s, o) => s + Number(o.total || 0), 0);
@@ -939,14 +1044,16 @@ function render() {
   $('lowStockCount').textContent = products.filter(p => Number(p.stock || 0) <= LOW_STOCK).length;
   renderProfit(total);
 
-  $('recentOrders').innerHTML = orders.slice(0, 5).map(o => `<tr><td>#DH-${esc(o.id)}</td><td>${esc(o.customer_name)}</td><td>${money(o.total)}</td><td><span class="pill pending">${esc(o.status)}</span></td></tr>`).join('') || '<tr><td colspan="4" class="empty">কোনো অর্ডার নেই।</td></tr>';
+  $('recentOrders').innerHTML = orders.slice(0, 5).map(o => `<tr><td><button class="text-link" data-act="viewOrder" data-key="${esc(o._key)}">#DH-${esc(o.id)}</button></td><td>${esc(o.customer_name)}</td><td>${money(o.total)}</td><td><span class="pill pending">${esc(o.status)}</span></td></tr>`).join('') || '<tr><td colspan="4" class="empty">কোনো অর্ডার নেই।</td></tr>';
+  renderCustomers();
+  renderCategories();
 
   const list = filteredOrders();
   $('orderRows').innerHTML = list.map(o => {
     const items = parseItems(o);
     const issue = orderIssue(o);
     const itemsHtml = items === null ? esc(o.items_json) : items.map(i => `<div class="item">${safeUrl(i.img) ? `<img src="${safeUrl(i.img)}" alt="">` : ''}<div><b>${esc(i.name)}</b><br><small>${esc([i.color && i.color !== 'Standard' ? (i.o1 || 'রং') + ': ' + i.color : '', i.size && i.size !== 'Free Size' ? (i.o2 || 'সাইজ') + ': ' + i.size : ''].filter(Boolean).join(' | '))}${(i.color && i.color !== 'Standard') || (i.size && i.size !== 'Free Size') ? ' | ' : ''}পিস: ${esc(i.quantity)}</small></div></div>`).join('');
-    return `<tr><td>#DH-${esc(o.id)}</td><td><b>${esc(o.customer_name)}</b></td><td>${esc(o.phone)}</td><td>${esc(o.address)}</td><td>${itemsHtml}</td>
+    return `<tr><td><button class="text-link" data-act="viewOrder" data-key="${esc(o._key)}">#DH-${esc(o.id)}</button></td><td><b>${esc(o.customer_name)}</b></td><td>${esc(o.phone)}</td><td>${esc(o.address)}</td><td>${itemsHtml}</td>
       <td><b>${esc(o.affiliate_ref || 'None')}</b>${o.commission_amount ? `<br><small>৳${esc(o.commission_amount)} ${o.commission_paid ? '✅ যোগ হয়েছে' : '⏳ ডেলিভারির অপেক্ষায়'}</small>` : ''}${o.utm && o.utm.utm_campaign ? `<br><small>📣 ${esc(o.utm.utm_campaign)}</small>` : ''}</td><td>${money(o.total)}${issue ? `<br><span class="pill bad" title="${esc(issue)}">⚠️ ${esc(issue)}</span>` : ''}</td>
       <td><select data-act="status" data-key="${esc(o._key)}">${STATUSES.map(s => `<option ${o.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
       <td>${o.created_at ? esc(new Date(o.created_at).toLocaleString()) : ''}</td>
@@ -1074,6 +1181,8 @@ $('syncTrackBtn').onclick = async () => {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'SELECT') return;
   const { act, key } = b.dataset;
+  if (act === 'viewOrder') openOrderDetails(key);
+  if (act === 'viewCustomer') openCustomerDetails(b.dataset.index);
   if (act === 'delOrder' && confirm('এই অর্ডার ডিলিট করবেন?')) {
     const o = orders.find(x => x._key === key);
     Promise.all([db.ref('dhong_orders/' + key).remove(), o && o.id ? trackKey(o).then(k => db.ref('dhong_track/' + k).remove()) : null, o && o.id ? db.ref('dhong_track/' + o.id).remove() : null])
@@ -1165,6 +1274,10 @@ async function settleCommission(key, status) {
     return a;
   });
 }
+
+$('recordModalClose').onclick = closeRecordModal;
+$('recordModal').addEventListener('click', e => { if (e.target === $('recordModal')) closeRecordModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('recordModal').style.display === 'flex') closeRecordModal(); });
 
 /* ---------- Navigation ---------- */
 document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => {
