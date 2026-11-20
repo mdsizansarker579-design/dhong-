@@ -1493,6 +1493,8 @@ $('productForm').addEventListener('submit', async e => {
       thumb = String(main).startsWith('data:') ? await shrink(main, THUMB_MAX, THUMB_Q) : main;
     }
     const id = old ? old.id : Date.now(), price = Number($('pPrice').value);
+    const regularPrice = Number($('pOldPrice').value) || price;
+    if ($('pDiscountOn').checked && !(regularPrice > price)) throw new Error('ডিসকাউন্ট চালু করতে নিয়মিত মূল্য বিক্রয় মূল্যের চেয়ে বেশি দিন।');
     const vClean = [], seen = new Set();
     for (const v of variants) {
       const color = String(v.color || '').trim() || 'Standard', size = String(v.size || '').trim() || 'Free Size', k = color + '|' + size;
