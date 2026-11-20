@@ -824,7 +824,9 @@ function applySettings() {
   $('footerLogo').textContent = settings.siteName;
   renderTrust(); renderPromo();
   $('siteTitle').textContent = settings.siteName;
-  $('topBanner').textContent = settings.topBannerText || '🎉 ঢং-এ স্বাগতম';
+  const savedBanner = String(settings.topBannerText || '');
+  const legacyBanner = savedBanner.includes('ঢং-এ স্বাগতম') || savedBanner.includes('ক্যাশ অন ডেলিভারি');
+  $('topBanner').textContent = (!savedBanner || legacyBanner) ? 'ঢং — আপনার পছন্দের পণ্য, এখন ঘরে বসেই অর্ডার করুন' : savedBanner;
   $('heroBox').style.background = `linear-gradient(135deg,${settings.heroBg || '#17080c'},#5a0a14)`;
   updateDeliveryFeeOption(); renderSupport(); renderFooter(); renderHero(); loadPixel();
 }
