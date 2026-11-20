@@ -354,6 +354,22 @@ footer button,.social-a{background:#1b1b1b;border-color:#4c4437}
 
 .top{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 14px;background:#111;color:#f7f4ec;line-height:1.35}.top-main{font-size:14px;font-weight:700;letter-spacing:.15px}.top-sub{font-size:11px;font-weight:400;color:#c9c1b2;opacity:.95}
 @media(max-width:600px){.top{padding:8px 10px}.top-main{font-size:13px}.top-sub{font-size:10px}}
+
+/* Fix: keep checkout form values readable with dark modal + browser autofill */
+#orderForm .field input,#orderForm .field select,#orderForm .field textarea{
+ background:#202020!important;color:#fff!important;-webkit-text-fill-color:#fff!important;
+}
+#orderForm input:-webkit-autofill,#orderForm input:-webkit-autofill:hover,
+#orderForm input:-webkit-autofill:focus,#orderForm textarea:-webkit-autofill,
+#orderForm select:-webkit-autofill{
+ -webkit-text-fill-color:#fff!important;
+ -webkit-box-shadow:0 0 0 1000px #202020 inset!important;
+ box-shadow:0 0 0 1000px #202020 inset!important;
+ caret-color:#fff;
+}
+#orderForm .order-summary{background:#202020;color:#f4d58d;padding:12px;border-radius:10px;border:1px solid rgba(218,183,103,.28)}
+#orderForm #summary{color:#f4d58d}
+
 </style>
 </head>
 <body>
@@ -507,7 +523,7 @@ footer button,.social-a{background:#1b1b1b;border-color:#4c4437}
         <div class="trust-item">⚡ ফার্স্ট ডেলিভারি</div>
         <div class="trust-item">💵 পে অন ডেলিভারি</div>
       </div>
-      <p style="background:#f7fafc;padding:10px;border-radius:8px;border:1px solid #edf2f7"><b id="summary">মোট: ৳০</b></p>
+      <p class="order-summary"><b id="summary">মোট: ৳০</b></p>
       <button class="primary" type="submit" id="submitBtn">অর্ডার নিশ্চিত করুন</button>
     </form>
   </div>
