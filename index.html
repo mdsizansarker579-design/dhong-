@@ -730,6 +730,7 @@ let settings = {
   siteName: "ঢং DHONG", themeColor: "#d90f1f", dhakaFee: "70", outsiderFee: "130",
   whatsapp: "8801700000000", phone: "01700000000", freeThreshold: "3000",
   topBannerText: "ঢং — আপনার পছন্দের পণ্য, এখন ঘরে বসেই অর্ডার করুন",
+  topBannerSubText: "পছন্দের পণ্য অর্ডার করুন সহজেই — ঘরে বসেই।",
   heroBg: "#17080c", timerStatus: "show", timerHours: "24", timerText: "⏳ অফার শেষ:", offerEnd: 0,
   firstDiscOn: "on", firstDiscPct: "10"
 };
@@ -829,6 +830,7 @@ function applySettings() {
   const savedBanner = String(settings.topBannerText || '');
   const legacyBanner = savedBanner.includes('ঢং-এ স্বাগতম') || savedBanner.includes('ক্যাশ অন ডেলিভারি');
   $('topBanner').querySelector('.top-main').textContent = (!savedBanner || legacyBanner) ? 'আপনার পছন্দ, আপনার ঠিকানায় ✨' : savedBanner;
+  $('topBanner').querySelector('.top-sub').textContent = String(settings.topBannerSubText || 'পছন্দের পণ্য অর্ডার করুন সহজেই — ঘরে বসেই।');
   $('heroBox').style.background = `linear-gradient(135deg,${settings.heroBg || '#17080c'},#5a0a14)`;
   updateDeliveryFeeOption(); renderSupport(); renderFooter(); renderHero(); loadPixel();
 }
