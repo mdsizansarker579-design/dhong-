@@ -179,6 +179,84 @@ tr:hover td{background:rgba(198,164,90,.045)}
  .nav button{min-height:46px}
 }
 
+
+
+/* DHONG Premium UX polish — contrast, form clarity and mobile order handling */
+:root{
+  --gold:#d8b66d;
+  --gold-soft:rgba(216,182,109,.12);
+  --surface-2:#191b21;
+  --surface-3:#202229;
+}
+.ph-ic,.box,.box.warn,.box.pink,.box.blue,.item,.tabs,.ed-item,.integ,.help{
+  background:var(--surface-2)!important;
+  color:var(--text)!important;
+  border-color:var(--line)!important;
+}
+.ph-ic{color:var(--gold)!important}
+.box{border-radius:13px}
+.box.warn,.box.pink,.box.blue{border-left:3px solid var(--gold)!important}
+.item{padding:8px;border-radius:10px}
+.ed-item,.integ{border-radius:14px}
+.ed-head{color:#f0dfb9}
+.tabs button{color:#c4beb0}
+.tabs button.on{background:#292a30!important;color:#f3d99e!important;box-shadow:inset 0 0 0 1px rgba(216,182,109,.25)}
+.help{border:1px solid var(--line);color:#e3d2a8!important}
+.menu-btn{background:#17191f;color:#f1d99f;border-color:var(--line)}
+.live{background:rgba(67,181,129,.12);color:#73d5a6;border-color:rgba(67,181,129,.25)}
+.pill{background:rgba(67,181,129,.14);color:#7fe0b1}
+.pill.pending{background:rgba(215,168,78,.15);color:#f0c875}
+.pill.bad{background:rgba(237,107,112,.14);color:#ff9b9f}
+.btn.ghost,.btn.gray,.btn.red,.btn.green,.btn.amber{
+  background:#202229;color:#e9e3d6;border-color:var(--line)
+}
+.btn.red{background:rgba(237,107,112,.14);color:#ff9b9f;border-color:rgba(237,107,112,.28)}
+.btn.green{background:rgba(67,181,129,.14);color:#82dfb2;border-color:rgba(67,181,129,.25)}
+.btn.gray{background:#25272e;color:#e4ddcf}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid var(--gold)!important;outline-offset:2px
+}
+.save-bar{background:linear-gradient(transparent,#090a0d 35%)}
+#toasts .toast{border:1px solid rgba(216,182,109,.22)}
+#loginModal .login-box input{background:#0d0f13!important}
+#loginError{color:#ff9b9f!important}
+.table-wrap{border:1px solid var(--line);background:#101217}
+.table-wrap::-webkit-scrollbar{height:8px}
+.table-wrap::-webkit-scrollbar-track{background:#17191f;border-radius:8px}
+.table-wrap::-webkit-scrollbar-thumb{background:#655536;border-radius:8px}
+#orders .toolbar{align-items:center}
+#orders .toolbar input{min-width:220px}
+#orders .toolbar .btn{white-space:nowrap}
+#orderRows td{padding-top:13px;padding-bottom:13px}
+#orderRows td:nth-child(2){min-width:125px}
+#orderRows td:nth-child(4){min-width:170px;max-width:240px;overflow-wrap:anywhere}
+#orderRows td:nth-child(5){min-width:190px}
+#orderRows td:last-child{min-width:140px}
+#orderRows td:last-child .btn{margin:3px 2px 3px 0}
+@media(max-width:900px){
+  .top-r{gap:6px}
+  .top-r .btn{min-height:40px}
+  #orders .toolbar{display:grid;grid-template-columns:1fr 1fr}
+  #orders .toolbar input{grid-column:1/-1;min-width:0;width:100%}
+  #orders .toolbar select{min-width:0;width:100%}
+  #orders .toolbar .btn{width:100%;padding:9px 8px}
+  .ph{align-items:flex-start}
+  .ph-ic{width:40px;height:40px;border-radius:12px}
+  .table-wrap{border-radius:12px}
+  .table-wrap table{margin:0}
+  .card{overflow:hidden}
+  .ed-item input,.integ input{max-width:100%}
+}
+@media(max-width:480px){
+  .top h1{font-size:18px}
+  .top-r{width:100%;justify-content:flex-end}
+  .top-r .btn{font-size:11px;padding:8px 9px}
+  #orders .toolbar{grid-template-columns:1fr 1fr}
+  #orders .toolbar .btn{font-size:12px}
+  .stat-card{min-height:78px}
+  .stat-label{max-width:110px}
+}
+
 </style>
 </head>
 <body>
