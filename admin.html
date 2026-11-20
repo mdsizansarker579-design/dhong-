@@ -541,12 +541,14 @@ td{padding:13px 12px}
       <div class="two">
         <div class="field-group">🏷️ পণ্যের নাম <input id="pName" required></div>
         <div class="field-group">🗂️ ক্যাটাগরি <input id="pCat" list="categoryList" required><datalist id="categoryList"><option value="পোশাক"><option value="ব্যাগ"><option value="অ্যাক্সেসরিজ"></datalist></div>
-        <div class="field-group">💰 অফার মূল্য (৳) <input type="number" id="pPrice" required min="0"></div>
+        <div class="field-group">💰 বিক্রয় মূল্য (৳) <input type="number" id="pPrice" required min="0"></div>
         <div class="field-group">🏷️ নিয়মিত মূল্য (৳) <input type="number" id="pOldPrice" min="0"></div>
+        <div class="field-group"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="pDiscountOn" style="width:auto"> 🎯 এই পণ্যে ডিসকাউন্ট চালু</label><small class="muted">চালু করলে নিয়মিত মূল্য ও বিক্রয় মূল্যের পার্থক্য দেখাবে।</small></div>
         <div class="field-group">📦 স্টক (ভেরিয়েন্ট থাকলে নিজে হিসাব হয়) <input type="number" id="pStock" min="0"></div>
         <div class="field-group">⭐ রেটিং (১-৫) <input type="number" step="0.1" min="1" max="5" id="pRating" placeholder="4.8"></div>
         <div class="field-group">🔥 মোট সেলস <input type="number" id="pSales" min="0"></div>
         <div class="field-group">✅ পণ্যের মান <input id="pQuality" placeholder="১০০% সুতি কটন"></div>
+        <div class="field-group">📦 প্রতি পণ্যের ক্রয়মূল্য (৳) <input type="number" id="pCost" min="0" step="0.01" placeholder="না জানলে খালি রাখুন"></div>
       </div>
       <div class="box warn">
         <b>🎨 ভেরিয়েন্ট (রং × সাইজ, প্রতিটির আলাদা স্টক)</b>
@@ -580,7 +582,8 @@ td{padding:13px 12px}
   </div>
 
   <div class="card" id="prodListCard">
-    <div class="toolbar"><button class="btn ghost" id="migrateBtn">☁️ পুরনো ছবি Cloudinary-তে সরান</button>
+    <div class="toolbar"><select id="productDiscountFilter" aria-label="পণ্যের ধরন"><option value="all">সব পণ্য</option><option value="discount">শুধু ডিসকাউন্ট পণ্য</option><option value="regular">ডিসকাউন্ট ছাড়া পণ্য</option></select>
+      <button class="btn ghost" id="migrateBtn">☁️ পুরনো ছবি Cloudinary-তে সরান</button>
       <button class="btn ghost" id="feedBtn">📤 Meta ক্যাটালগ ফিড (CSV)</button></div>
     <div id="productList"></div>
   </div>
@@ -596,13 +599,15 @@ td{padding:13px 12px}
 
 <!-- প্রফিট -->
 <section class="page" id="profit">
-  <div class="ph"><div class="ph-ic">💰</div><div><h2>প্রফিট রিপোর্ট</h2><p>বিক্রির ওপর আনুমানিক লাভ</p></div></div>
+  <div class="ph"><div class="ph-ic">💰</div><div><h2>প্রফিট রিপোর্ট</h2><p>শুধু ডেলিভারি সম্পন্ন অর্ডার; পণ্যের ক্রয়মূল্য না দিলে হিসাব অসম্পূর্ণ থাকবে</p></div></div>
   <div class="card">
-    <div class="field-group" style="max-width:260px">📈 প্রফিট মার্জিন (%) <input type="number" id="profitMargin" min="0" max="100" value="35"></div>
     <div class="grid" style="margin:0">
-      <div class="card stat-card" style="margin:0"><div class="stat-ic" style="background:#eef0ff">💵</div><div><div class="stat-label">মোট সেলস</div><div class="stat" id="profitTotalSales">৳ 0</div></div></div>
-      <div class="card stat-card" style="margin:0"><div class="stat-ic" style="background:#e7f8f0">📈</div><div><div class="stat-label">ডেলিভারি সম্পন্ন অর্ডারের আনুমানিক প্রফিট</div><div class="stat" id="netProfitAmount" style="color:var(--green)">৳ 0</div></div></div>
+      <div class="card stat-card" style="margin:0"><div><div class="stat-label">Delivered বিক্রয় (ডেলিভারি চার্জ বাদে)</div><div class="stat" id="profitTotalSales">৳ 0</div></div></div>
+      <div class="card stat-card" style="margin:0"><div><div class="stat-label">পণ্যের ক্রয়মূল্য</div><div class="stat" id="profitCostAmount">৳ 0</div></div></div>
+      <div class="card stat-card" style="margin:0"><div><div class="stat-label">পরিশোধিত Affiliate কমিশন</div><div class="stat" id="profitCommissionAmount">৳ 0</div></div></div>
+      <div class="card stat-card" style="margin:0"><div><div class="stat-label">প্রাথমিক লাভ</div><div class="stat" id="netProfitAmount" style="color:var(--green)">৳ 0</div></div></div>
     </div>
+    <div class="muted" id="profitNote" style="margin-top:12px">বিজ্ঞাপন, কুরিয়ার ও অন্যান্য খরচ এখনো বাদ যায়নি।</div>
   </div>
 </section>
 
@@ -752,6 +757,12 @@ td{padding:13px 12px}
 <!-- এফিলিয়েট -->
 <section class="page" id="affiliates">
   <div class="ph"><div class="ph-ic">🤝</div><div><h2>এফিলিয়েট ও উইথড্র</h2><p>কমিশন ব্যালেন্স ও পেমেন্ট রিকোয়েস্ট</p></div></div>
+  <div class="card">
+    <h3 class="section-title">⚙️ কমিশন সেটিংস</h3>
+    <div class="field-group" style="max-width:280px">কমিশনের হার (%) <input type="number" id="setAffiliatePct" min="0" max="50" step="0.1" value="5"></div>
+    <div class="muted">এখান থেকে কমিশনের হার পরিবর্তন করুন। নতুন অর্ডারের সময়কার হার সংরক্ষণ হবে; Delivered হলে সেই হারেই কমিশন যোগ হবে। ০ দিলে কমিশন বন্ধ থাকবে।</div>
+    <button class="btn primary" id="saveAffiliatePct">💾 কমিশন হার সেভ করুন</button>
+  </div>
   <div class="card">
     <h3 class="section-title">💸 উইথড্রল রিকোয়েস্ট</h3>
     <div class="table-wrap"><table><thead><tr><th>মার্কেটার</th><th>টাকা</th><th>মেথড</th><th>নম্বর</th><th>স্ট্যাটাস</th><th></th></tr></thead><tbody id="withdrawRows"></tbody></table></div>
@@ -982,8 +993,9 @@ function orderIssue(o) {
     sub += pr * q;
   }
   const d = Number(o.discount) || 0, f = Number(o.delivery_fee) || 0, thr = Number(settings.freeThreshold) || 0;
-  const fdp = settings.firstDiscOn === 'off' ? 0 : (Number(settings.firstDiscPct) || 10);
-  if (d > Math.round(sub * Math.max(fdp, 10) / 100)) return 'ছাড় নির্ধারিত শতাংশের বেশি';
+  const fdp = settings.firstDiscOn === 'off' ? 0 : Math.min(90, Math.max(0, Number(settings.firstDiscPct) || 0));
+  if (d > Math.round(sub * fdp / 100)) return 'ছাড় নির্ধারিত শতাংশের বেশি';
+  if (d > 0 && settings.firstDiscOn === 'off') return 'প্রথম অর্ডারের ছাড় বর্তমানে বন্ধ';
   if (![0, Number(settings.dhakaFee) || 70, Number(settings.outsiderFee) || 130].includes(f)) return 'ডেলিভারি চার্জ মেলেনি';
   if (f === 0 && thr && sub < thr) return 'ফ্রি ডেলিভারির শর্ত পূরণ হয়নি';
   if (Math.abs(sub - d + f - Number(o.total)) > 1) return 'মোট হিসাব মেলেনি';
@@ -1087,11 +1099,17 @@ function render() {
   }).join('') || '<tr><td colspan="5" class="empty">অনুমোদনের অপেক্ষায় কোনো রিভিউ নেই।</td></tr>';
 
   const base = location.origin + location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
-  $('productList').innerHTML = products.map(p => {
+  const discountFilter = $('productDiscountFilter') ? $('productDiscountFilter').value : 'all';
+  const visibleProducts = products.filter(p => {
+    const discounted = p.discountEnabled === true || (p.discountEnabled == null && Number(p.oldPrice) > Number(p.price));
+    return discountFilter === 'all' || (discountFilter === 'discount' ? discounted : !discounted);
+  });
+  $('productList').innerHTML = visibleProducts.map(p => {
+    const discounted = p.discountEnabled === true || (p.discountEnabled == null && Number(p.oldPrice) > Number(p.price));
     const link = base + 'index.html?product=' + encodeURIComponent(p.id);
     const low = Number(p.stock || 0) <= LOW_STOCK;
     return `<div class="row"><div style="display:flex;gap:10px;align-items:center">${safeUrl(p.img) ? `<img class="thumb" src="${safeUrl(p.img)}" alt="" style="width:48px;height:48px">` : ''}
-      <div><b>${esc(p.name)}</b> (${esc(p.cat)}) - ${money(p.price)}<br>
+      <div><b>${esc(p.name)}</b> (${esc(p.cat)}) - ${money(p.price)} ${discounted ? '<span class="pill good">ডিসকাউন্ট</span>' : '<span class="pill">নিয়মিত</span>'}<br>
       <small style="color:green">স্টক: ${esc(p.stock ?? 0)}${variantsOf(p).length ? ' (' + variantsOf(p).length + 'টি ভেরিয়েন্ট)' : ''} | ⭐${esc(p.rating || '5.0')} | আইডি: ${esc(p.id)}</small> ${low ? '<span class="pill bad">কম স্টক</span>' : ''}<br>
       <small style="word-break:break-all"><a href="${esc(link)}" target="_blank" rel="noopener">${esc(link)}</a></small></div></div>
       <div><button class="btn sm gray" data-act="copy" data-link="${esc(link)}">🔗 কপি</button>
@@ -1100,12 +1118,26 @@ function render() {
   }).join('') || '<div class="empty">কোনো পণ্য নেই।</div>';
 }
 function renderProfit() {
-  const m = Math.min(100, Math.max(0, Number($('profitMargin').value) || 0));
-  const deliveredRevenue = orders.filter(o => o.status === 'Delivered')
-    .reduce((sum, o) => sum + Number(o.total || 0), 0);
-  $('netProfitAmount').textContent = money(Math.round(deliveredRevenue * m / 100));
+  const delivered = orders.filter(o => o.status === 'Delivered');
+  let revenue = 0, productCost = 0, commission = 0, missingCostItems = 0;
+  for (const o of delivered) {
+    revenue += Math.max(0, Number(o.total || 0) - Number(o.delivery_fee || 0));
+    if (o.commission_paid) commission += Math.max(0, Number(o.commission_amount) || 0);
+    const items = parseItems(o) || [];
+    for (const item of items) {
+      const p = products.find(x => String(x.id) === String(item.product_id));
+      const qty = Math.max(0, Number(item.quantity) || 0);
+      const savedCost = item.unit_cost != null ? Number(item.unit_cost) : (p && p.unitCostSet === true ? Number(p.unitCost) : null);
+      if (savedCost == null || !Number.isFinite(savedCost)) missingCostItems += qty;
+      else productCost += Math.max(0, savedCost) * qty;
+    }
+  }
+  $('profitTotalSales').textContent = money(revenue);
+  $('profitCostAmount').textContent = money(productCost);
+  $('profitCommissionAmount').textContent = money(commission);
+  $('netProfitAmount').textContent = money(revenue - productCost - commission);
+  $('profitNote').textContent = (missingCostItems ? missingCostItems + 'টি পণ্যের ক্রয়মূল্য দেওয়া নেই; তাই লাভের হিসাব অসম্পূর্ণ। ' : 'সব Delivered পণ্যের ক্রয়মূল্য পাওয়া গেছে। ') + 'বিজ্ঞাপন, কুরিয়ার ও অন্যান্য খরচ এখনো বাদ যায়নি।';
 }
-$('profitMargin').addEventListener('input', render);
 $('statusFilter').innerHTML = '<option value="">সব স্ট্যাটাস</option>' + STATUSES.map(s => `<option>${s}</option>`).join('');
 $('orderSearch').addEventListener('input', debounce(render));
 $('statusFilter').addEventListener('change', render);
@@ -1272,7 +1304,8 @@ async function settleCommission(key, status) {
   const o = orders.find(x => x._key === key); if (!o) return;
   const ref = o.affiliate_ref;
   if (!ref || ref === 'None') return;
-  const amt = Math.max(0, Math.round((Number(o.total || 0) - Number(o.delivery_fee || 0)) * 0.05));
+  const rate = Math.min(50, Math.max(0, Number(o.commission_rate_pct != null ? o.commission_rate_pct : (settings.affiliateCommissionPct != null ? settings.affiliateCommissionPct : 5)) || 0));
+  const amt = Math.max(0, Math.round((Number(o.total || 0) - Number(o.delivery_fee || 0)) * rate / 100));
   if (!amt) return;
   const want = status === 'Delivered';
   if (want && !(await db.ref('dhong_affiliates/' + ref).once('value')).exists()) return;
@@ -1287,6 +1320,15 @@ async function settleCommission(key, status) {
   });
 }
 
+$('saveAffiliatePct').onclick = async () => {
+  const rate = Number($('setAffiliatePct').value);
+  if (!Number.isFinite(rate) || rate < 0 || rate > 50) return toast('কমিশন ০ থেকে ৫০ শতাংশের মধ্যে দিন।', true);
+  try {
+    await db.ref('dhong_settings/affiliateCommissionPct').set(rate);
+    settings.affiliateCommissionPct = rate;
+    toast('✅ কমিশন হার সেভ হয়েছে');
+  } catch (err) { fail(err); }
+};
 $('recordModalClose').onclick = closeRecordModal;
 $('recordModal').addEventListener('click', e => { if (e.target === $('recordModal')) closeRecordModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('recordModal').style.display === 'flex') closeRecordModal(); });
@@ -1451,6 +1493,8 @@ $('productForm').addEventListener('submit', async e => {
       thumb = String(main).startsWith('data:') ? await shrink(main, THUMB_MAX, THUMB_Q) : main;
     }
     const id = old ? old.id : Date.now(), price = Number($('pPrice').value);
+    const regularPrice = Number($('pOldPrice').value) || price;
+    if ($('pDiscountOn').checked && !(regularPrice > price)) throw new Error('ডিসকাউন্ট চালু করতে নিয়মিত মূল্য বিক্রয় মূল্যের চেয়ে বেশি দিন।');
     const vClean = [], seen = new Set();
     for (const v of variants) {
       const color = String(v.color || '').trim() || 'Standard', size = String(v.size || '').trim() || 'Free Size', k = color + '|' + size;
@@ -1460,10 +1504,12 @@ $('productForm').addEventListener('submit', async e => {
     const totalStock = vClean.length ? vClean.reduce((s, v) => s + v.stock, 0) : Number($('pStock').value) || 0;
     const data = {
       id, name: $('pName').value.trim(), cat: $('pCat').value.trim(), price,
-      oldPrice: Number($('pOldPrice').value) || price, stock: totalStock, variants: vClean,
+      oldPrice: $('pDiscountOn').checked && Number($('pOldPrice').value) > price ? Number($('pOldPrice').value) : price,
+      discountEnabled: $('pDiscountOn').checked && Number($('pOldPrice').value) > price,
+      stock: totalStock, variants: vClean,
       opt1Label: $('vL1').value.trim(), opt2Label: $('vL2').value.trim(),
       rating: $('pRating').value || '5.0', sales: Number($('pSales').value) || 0,
-      quality: $('pQuality').value, img: thumb, imgMain: isUrl(main) ? main : '', colors, hasFull: true,
+      quality: $('pQuality').value, unitCost: Math.max(0, Number($('pCost').value) || 0), unitCostSet: $('pCost').value.trim() !== '', img: thumb, imgMain: isUrl(main) ? main : '', colors, hasFull: true,
       video: $('pVideo').value, desc: $('pDesc').value, comments: old ? (old.comments || []) : []
     };
     await db.ref('dhong_images/' + id).set({ main, colors });
@@ -1479,8 +1525,9 @@ function editProduct(key) {
   const set = (id, v) => $(id).value = v ?? '';
   $('editKey').value = key;
   set('pName', p.name); set('pCat', p.cat); set('pPrice', p.price); set('pOldPrice', p.oldPrice || p.price);
+  $('pDiscountOn').checked = p.discountEnabled === true || (p.discountEnabled == null && Number(p.oldPrice) > Number(p.price));
   set('pStock', p.stock || 0); set('pRating', p.rating || '5.0'); set('pSales', p.sales || 0);
-  set('pQuality', p.quality); set('pVideo', p.video); set('pDesc', p.desc);
+  set('pQuality', p.quality); set('pCost', p.unitCostSet ? p.unitCost : ''); set('pVideo', p.video); set('pDesc', p.desc);
   $('vL1').value = p.opt1Label || ''; $('vL2').value = p.opt2Label || '';
   variants = variantsOf(p).map(v => ({ color: v.color, size: v.size, stock: Number(v.stock) || 0 })); renderVariants();
   const cols = p.colors ? (Array.isArray(p.colors) ? p.colors : Object.values(p.colors)) : [];
@@ -1711,6 +1758,7 @@ function fillSettingsForm() {
   v('setPromoImg', settings.promoImg || ''); prevImg('promoPrev', settings.promoImg || '');
   v('setDhaka', settings.dhakaFee || '70'); v('setOutsider', settings.outsiderFee || '130'); v('setThreshold', settings.freeThreshold || '3000');
   v('setFirstOn', settings.firstDiscOn || 'on'); v('setFirstPct', settings.firstDiscPct || '10');
+  v('setAffiliatePct', settings.affiliateCommissionPct != null ? settings.affiliateCommissionPct : 5);
   v('setWhatsapp', settings.whatsapp || ''); v('setPhone', settings.phone || '');
   v('setTopBanner', settings.topBannerText || 'আপনার পছন্দ, আপনার ঠিকানায় ✨');
   v('setTopBannerSub', settings.topBannerSubText || 'পছন্দের পণ্য অর্ডার করুন সহজেই — ঘরে বসেই।');
@@ -1753,6 +1801,7 @@ function prodTab(t) {
 }
 $('tabList').onclick = () => prodTab('list');
 $('tabForm').onclick = () => prodTab('form');
+$('productDiscountFilter').addEventListener('change', render);
 function toggleMenu(open) { $('sidebar').classList.toggle('open', open); $('scrim').classList.toggle('show', open); }
 $('menuBtn').onclick = () => toggleMenu(!$('sidebar').classList.contains('open'));
 $('scrim').onclick = () => toggleMenu(false);
