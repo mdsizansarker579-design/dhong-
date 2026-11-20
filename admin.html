@@ -1090,7 +1090,6 @@ function render() {
     <td>${w.status === 'Paid' ? '✅' : w.status === 'Rejected' ? '❌' : `<button class="btn sm blue" data-act="pay" data-key="${esc(w._key)}">✅ পেমেন্ট কমপ্লিট</button> <button class="btn sm red" data-act="rejectW" data-key="${esc(w._key)}">✖ বাতিল</button>`}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">কোনো উইথড্রল রিকোয়েস্ট নেই।</td></tr>';
 
   $('affiliateRows').innerHTML = affiliates.map(a => `<tr><td><b>${esc(a._key)}</b></td><td>${esc(a.sales || 0)} টি</td><td>${money(a.commission)}</td></tr>`).join('') || '<tr><td colspan="3" class="empty">কোনো এফিলিয়েট নেই।</td></tr>';
-  $('setAffiliatePct').value = settings.affiliateCommissionPct != null ? settings.affiliateCommissionPct : 5;
 
   $('pendingCommentBadge').textContent = pendingComments.length ? '(' + pendingComments.length + ')' : '';
   $('commentRows').innerHTML = pendingComments.map(c => {
@@ -1128,8 +1127,9 @@ function renderProfit() {
     for (const item of items) {
       const p = products.find(x => String(x.id) === String(item.product_id));
       const qty = Math.max(0, Number(item.quantity) || 0);
-      if (!p || p.unitCost == null || p.unitCost === '') missingCostItems += qty;
-      else productCost += Math.max(0, Number(p.unitCost) || 0) * qty;
+      const savedCost = item.unit_cost != null ? Number(item.unit_cost) : (p && p.unitCostSet === true ? Number(p.unitCost) : null);
+      if (savedCost == null || !Number.isFinite(savedCost)) missingCostItems += qty;
+      else productCost += Math.max(0, savedCost) * qty;
     }
   }
   $('profitTotalSales').textContent = money(revenue);
@@ -1507,7 +1507,7 @@ $('productForm').addEventListener('submit', async e => {
       stock: totalStock, variants: vClean,
       opt1Label: $('vL1').value.trim(), opt2Label: $('vL2').value.trim(),
       rating: $('pRating').value || '5.0', sales: Number($('pSales').value) || 0,
-      quality: $('pQuality').value, unitCost: Math.max(0, Number($('pCost').value) || 0), img: thumb, imgMain: isUrl(main) ? main : '', colors, hasFull: true,
+      quality: $('pQuality').value, unitCost: Math.max(0, Number($('pCost').value) || 0), unitCostSet: $('pCost').value.trim() !== '', img: thumb, imgMain: isUrl(main) ? main : '', colors, hasFull: true,
       video: $('pVideo').value, desc: $('pDesc').value, comments: old ? (old.comments || []) : []
     };
     await db.ref('dhong_images/' + id).set({ main, colors });
@@ -1525,7 +1525,7 @@ function editProduct(key) {
   set('pName', p.name); set('pCat', p.cat); set('pPrice', p.price); set('pOldPrice', p.oldPrice || p.price);
   $('pDiscountOn').checked = p.discountEnabled === true || (p.discountEnabled == null && Number(p.oldPrice) > Number(p.price));
   set('pStock', p.stock || 0); set('pRating', p.rating || '5.0'); set('pSales', p.sales || 0);
-  set('pQuality', p.quality); set('pCost', p.unitCost || 0); set('pVideo', p.video); set('pDesc', p.desc);
+  set('pQuality', p.quality); set('pCost', p.unitCostSet ? p.unitCost : ''); set('pVideo', p.video); set('pDesc', p.desc);
   $('vL1').value = p.opt1Label || ''; $('vL2').value = p.opt2Label || '';
   variants = variantsOf(p).map(v => ({ color: v.color, size: v.size, stock: Number(v.stock) || 0 })); renderVariants();
   const cols = p.colors ? (Array.isArray(p.colors) ? p.colors : Object.values(p.colors)) : [];
