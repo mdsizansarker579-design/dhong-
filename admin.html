@@ -308,7 +308,7 @@ th{color:var(--muted);font-weight:600;background:#fafbfd;font-size:12px}
       <img id="logoPrev" class="ed-prev" alt="" style="display:none;max-height:60px;width:auto;object-fit:contain">
       <button type="button" class="btn ghost sm" id="logoClear" style="margin-top:6px">🗑️ লোগো মুছুন</button>
     </div>
-    <div class="field-group">📢 ওপরের অফার বার টেক্সট <input id="setTopBanner"></div>
+    <div class="field-group">📢 উপরের ব্র্যান্ড বার লেখা <input id="setTopBanner" maxlength="120" placeholder="আপনার পছন্দ, আপনার ঠিকানায় ✨"><div class="muted">কাস্টমার সাইটের একদম উপরের কালো বারে এই লেখাটি দেখাবে। নিজের মতো লিখে নিচের সংরক্ষণ বাটনে চাপুন।</div></div>
   </div>
 
   <div class="card">
@@ -1319,7 +1319,7 @@ function fillSettingsForm() {
   v('setDhaka', settings.dhakaFee || '70'); v('setOutsider', settings.outsiderFee || '130'); v('setThreshold', settings.freeThreshold || '3000');
   v('setFirstOn', settings.firstDiscOn || 'on'); v('setFirstPct', settings.firstDiscPct || '10');
   v('setWhatsapp', settings.whatsapp || ''); v('setPhone', settings.phone || '');
-  v('setTopBanner', settings.topBannerText || '🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি');
+  v('setTopBanner', settings.topBannerText || 'আপনার পছন্দ, আপনার ঠিকানায় ✨');
   v('setHeroBg', settings.heroBg || '#17080c'); v('setTimerStatus', settings.timerStatus || 'show'); v('setTimerHours', settings.timerHours || '24');
   v('setOfferEnd', toLocalInput(Number(settings.offerEnd) || 0));
   v('setPixel', settings.fbPixelId || ''); v('setCloudName', settings.cloudName || ''); v('setCloudPreset', settings.cloudPreset || ''); v('setAddress', settings.address || ''); v('setEmail', settings.email || ''); v('setHours', settings.hours || '');
