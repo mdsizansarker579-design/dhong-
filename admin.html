@@ -11,6 +11,33 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <style>
+.record-overlay{position:fixed;inset:0;z-index:5000;background:rgba(8,12,20,.66);display:flex;align-items:center;justify-content:center;padding:16px}
+.record-dialog{width:min(760px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+.record-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.record-head h2{font-size:20px;margin:0}
+.record-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.record-grid>div{padding:12px;border:1px solid var(--line);border-radius:12px;min-width:0}
+.record-grid .wide{grid-column:1/-1}
+.record-grid small,.category-card-head small{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}
+.record-grid b{display:block;overflow-wrap:anywhere}
+.record-subtitle{font-size:16px;margin:18px 0 10px}
+.record-product{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.record-product img,.category-product img{width:52px;height:52px;object-fit:cover;border-radius:10px;background:#f3f4f6}
+.record-product>div{flex:1;min-width:0}
+.record-product small,.category-product small{display:block;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.record-total{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:18px;padding:14px;background:#f7f8fb;border-radius:12px}
+.record-total strong{font-size:18px;color:#111}
+.category-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.category-card{padding:16px}
+.category-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.category-card-head h3{margin:0;font-size:18px}
+.category-products{display:grid;gap:10px}
+.category-product{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);min-width:0}
+.category-product>div{min-width:0;flex:1}
+.category-product b{display:block;overflow-wrap:anywhere}
+.category-placeholder{width:52px;height:52px;border-radius:10px;background:#f3f4f6;display:grid;place-items:center;flex-shrink:0}
+.text-link{border:0;background:none;padding:0;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline}
+@media(max-width:600px){.record-overlay{padding:8px;align-items:flex-end}.record-dialog{max-height:92vh;border-radius:18px 18px 0 0;padding:16px}.record-grid{gap:8px}.record-grid>div{padding:10px}.record-product{align-items:flex-start}.record-product img{width:44px;height:44px}}
 :root{--bg:#f3f5f9;--card:#fff;--text:#1b2433;--muted:#6b7385;--side:#111827;--side2:#1f2937;--accent:#4f46e5;--accent-soft:#eef0ff;--line:#e6e9f0;--green:#0f9d6b;--red:#e5484d;--amber:#d97706}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);font-family:'Hind Siliguri',Arial,sans-serif;color:var(--text);font-size:14px}
@@ -257,6 +284,114 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .stat-label{max-width:110px}
 }
 
+/* DHONG Full Admin Experience — redesigned information hierarchy and responsive workspace */
+:root{
+ --bg:#090a0d;--card:#13151a;--text:#f5f0e5;--muted:#aaa394;
+ --side:#090a0d;--side2:#1b1d23;--accent:#d4b36b;--accent-soft:rgba(212,179,107,.14);
+ --line:rgba(221,199,151,.15);--gold:#e0c27d;
+}
+body{letter-spacing:.05px}
+.layout{gap:0}
+.sidebar{width:264px;padding:24px 15px 20px;background:#0b0c10;border-right:1px solid rgba(212,179,107,.18)}
+.brand{padding:7px 9px 24px;margin-bottom:18px}
+.brand-ic{width:44px;height:44px;border-radius:14px;font-size:20px}
+.brand b{font-size:19px;letter-spacing:2.5px}
+.nav-label{margin-top:10px;padding:13px 12px 7px;font-size:10px;letter-spacing:1.5px;color:#b59a62}
+.nav{gap:5px}
+.nav button{min-height:46px;padding:9px 12px;font-size:13px;border-radius:12px}
+.nav button .ic{width:31px;height:31px;border-radius:10px}
+.main{padding:0 32px 54px;max-width:1800px;margin:0 auto;width:calc(100% - 264px)}
+.top{min-height:76px;margin:0 -2px 24px;padding:14px 2px;background:rgba(9,10,13,.93);border-bottom:1px solid var(--line)}
+.top h1{font-size:20px;letter-spacing:.2px}
+.top-r .btn{min-height:40px}
+.page{max-width:1500px;margin:0 auto}
+.ph{padding:0 0 17px;margin:4px 0 22px;border-bottom:1px solid var(--line)}
+.ph-ic{width:48px;height:48px;background:linear-gradient(145deg,rgba(212,179,107,.22),rgba(212,179,107,.06))!important;border:1px solid rgba(212,179,107,.2)}
+.ph h2{font-size:21px;letter-spacing:.1px}
+.ph p{font-size:13px;color:#aaa394}
+.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:25px}
+.card{padding:20px;margin-bottom:18px;border-radius:17px}
+.stat-card{min-height:112px;padding:18px}
+.stat-ic{width:48px;height:48px;border-radius:14px}
+.stat-label{font-size:12px;letter-spacing:.15px}
+.stat{font-size:26px;line-height:1.2;margin-top:7px}
+.section-title{font-size:16px;margin-bottom:17px}
+.table-wrap{border:1px solid var(--line);border-radius:13px}
+table{min-width:620px}
+th{padding:13px 12px;font-size:11px;letter-spacing:.35px}
+td{padding:13px 12px}
+.toolbar{gap:10px;margin-bottom:16px}
+.toolbar input,.toolbar select{min-height:44px}
+.btn{min-height:40px}
+.btn.sm{min-height:34px}
+.tabs{margin:0 0 18px}
+.ed-item,.integ{padding:16px;margin-bottom:13px}
+.field-group{line-height:1.5}
+.save-bar{padding:18px 0 8px}
+.dash-welcome{position:relative;display:flex;align-items:center;justify-content:space-between;min-height:190px;overflow:hidden;padding:30px 34px;margin:0 0 26px;border:1px solid rgba(212,179,107,.24);border-radius:22px;background:radial-gradient(circle at 85% 45%,rgba(212,179,107,.18),transparent 28%),linear-gradient(115deg,#1c1a15,#121318 62%,#17140f)}
+.dash-welcome-copy{position:relative;z-index:1}
+.eyebrow{display:block;color:#c9a85f;font-size:10px;font-weight:700;letter-spacing:1.8px;margin-bottom:9px}
+.dash-welcome h2{font-size:clamp(23px,3vw,34px);line-height:1.25;margin:0 0 8px;color:#f8edcf}
+.dash-welcome p{margin:0;color:#bcb4a3;font-size:13px}
+.dash-welcome-mark{position:absolute;right:54px;top:50%;transform:translateY(-50%) rotate(-9deg);font-size:150px;line-height:1;font-weight:700;color:rgba(222,190,120,.07);text-shadow:0 0 60px rgba(222,190,120,.08)}
+.dash-section-head{display:flex;align-items:end;justify-content:space-between;margin:0 0 14px;padding:0 2px}
+.dash-section-head .eyebrow{margin-bottom:3px;font-size:9px}
+.dash-section-head h3{font-size:17px;margin:0;color:#f1e5c8}
+.dash-live{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid var(--line);border-radius:20px;color:#bdb39f;font-size:11px}
+.dash-live i{width:7px;height:7px;border-radius:50%;background:#55c58e;box-shadow:0 0 10px #55c58e}
+.quick-head{margin-top:8px}
+.quick-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:25px}
+.quick-action{display:flex;align-items:center;gap:11px;min-width:0;text-align:left;padding:15px 13px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(145deg,#17191e,#111318);color:var(--text);cursor:pointer;transition:transform .18s,border-color .18s,background .18s}
+.quick-action:hover{transform:translateY(-2px);border-color:rgba(212,179,107,.48);background:#1b1b1b}
+.quick-icon{display:grid;place-items:center;flex:0 0 40px;height:40px;border-radius:12px;background:rgba(212,179,107,.13);font-size:18px}
+.quick-action b,.quick-action small{display:block}
+.quick-action b{font-size:12px;color:#f0dfb9;margin-bottom:4px}
+.quick-action small{font-size:10px;line-height:1.4;color:#a9a293}
+.quick-arrow{margin-left:auto;color:#c9a85f;font-size:17px}
+.recent-orders-card{margin-top:0}
+.page .card + .card{margin-top:14px}
+@media(max-width:1200px){
+ .main{padding-left:22px;padding-right:22px}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:900px){
+ .sidebar{width:min(86vw,320px);padding:20px 14px}
+ .main{width:100%;padding:0 16px 40px}
+ .top{margin-bottom:18px;min-height:66px}
+ .dash-welcome{min-height:165px;padding:23px 21px;border-radius:18px}
+ .dash-welcome-mark{right:12px;font-size:110px}
+ .stat-card{min-height:94px;padding:14px}
+ .card{padding:15px}
+ .ph{margin-bottom:17px}
+}
+@media(max-width:560px){
+ .main{padding-left:11px;padding-right:11px}
+ .top{margin-bottom:15px}
+ .top h1{font-size:17px}
+ .top-r{width:auto}
+ .top-r .btn{font-size:10px;padding:7px 8px}
+ .dash-welcome{min-height:155px;padding:20px 17px;margin-bottom:20px}
+ .dash-welcome h2{font-size:23px;max-width:260px}
+ .dash-welcome p{max-width:240px;font-size:12px}
+ .dash-welcome-mark{right:-5px;font-size:90px}
+ .dash-section-head h3{font-size:15px}
+ .grid{gap:9px;margin-bottom:21px}
+ .stat-card{gap:9px;min-height:84px;padding:11px}
+ .stat-ic{width:35px;height:35px;font-size:16px}
+ .stat{font-size:19px;margin-top:4px}
+ .stat-label{font-size:10px}
+ .quick-actions{gap:8px;margin-bottom:19px}
+ .quick-action{padding:11px 9px;gap:8px;border-radius:12px}
+ .quick-icon{flex-basis:33px;height:33px;font-size:15px;border-radius:10px}
+ .quick-action b{font-size:10px}
+ .quick-action small{font-size:9px}
+ .quick-arrow{font-size:14px}
+ .card{padding:12px;border-radius:14px}
+ .ph h2{font-size:17px}
+ .ph p{font-size:11px}
+}
+
 </style>
 </head>
 <body>
@@ -272,6 +407,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <div id="loginError" style="color:#c53030;font-size:12px;margin-top:10px;word-break:break-all"></div>
   </div>
 </div>
+<div class="record-overlay" id="recordModal" role="dialog" aria-modal="true" aria-labelledby="recordModalTitle" style="display:none">
+  <div class="record-dialog">
+    <div class="record-head"><h2 id="recordModalTitle">বিস্তারিত</h2><button type="button" class="btn ghost sm" id="recordModalClose" aria-label="বন্ধ করুন">✕</button></div>
+    <div id="recordModalContent"></div>
+  </div>
+</div>
 <div id="toasts" aria-live="polite"></div>
 <div class="scrim" id="scrim"></div>
 
@@ -283,12 +424,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
     <div class="nav-label">বিক্রি</div>
     <button data-page="orders" data-title="অর্ডার"><span class="ic">🛒</span>অর্ডার</button>
+    <button data-page="customers" data-title="কাস্টমার"><span class="ic">👥</span>কাস্টমার</button>
     <button data-page="courier" data-title="কুরিয়ার"><span class="ic">🚚</span>কুরিয়ার</button>
     <button data-page="comments" data-title="রিভিউ"><span class="ic">💬</span>রিভিউ<span class="bdg" id="pendingCommentBadge"></span></button>
     <button data-page="profit" data-title="প্রফিট রিপোর্ট"><span class="ic">💰</span>প্রফিট</button>
 
     <div class="nav-label">পণ্য</div>
     <button data-page="products" data-title="পণ্য"><span class="ic">📦</span>পণ্য ও স্টক</button>
+    <button data-page="categories" data-title="প্রোডাক্ট ক্যাটাগরি"><span class="ic">🗂️</span>প্রোডাক্ট ক্যাটাগরি</button>
 
     <div class="nav-label">ওয়েবসাইট</div>
     <button data-page="site" data-title="সাইট সাজান"><span class="ic">🎨</span>সাইট সাজান</button>
@@ -313,13 +456,29 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 <!-- ড্যাশবোর্ড -->
 <section class="page active" id="dashboard">
+  <div class="dash-welcome">
+    <div class="dash-welcome-copy">
+      <span class="eyebrow">DHONG • STORE CONTROL CENTER</span>
+      <h2>আপনার স্টোর, এক জায়গায়।</h2>
+      <p>আজকের অর্ডার, বিক্রি ও স্টকের অবস্থা দ্রুত দেখে নিন।</p>
+    </div>
+    <div class="dash-welcome-mark" aria-hidden="true">D</div>
+  </div>
+  <div class="dash-section-head"><div><span class="eyebrow">OVERVIEW</span><h3>স্টোরের সারসংক্ষেপ</h3></div><span class="dash-live"><i></i> ড্যাশবোর্ড</span></div>
   <div class="grid">
     <div class="card stat-card"><div class="stat-ic" style="background:#eef0ff">🛒</div><div><div class="stat-label">মোট অর্ডার</div><div class="stat" id="totalOrdersCount">0</div></div></div>
     <div class="card stat-card"><div class="stat-ic" style="background:#fff2db">🆕</div><div><div class="stat-label">নতুন অর্ডার</div><div class="stat" id="newOrdersCount">0</div></div></div>
     <div class="card stat-card"><div class="stat-ic" style="background:#e7f8f0">💵</div><div><div class="stat-label">মোট বিক্রি</div><div class="stat" id="totalSalesAmount">৳ 0</div></div></div>
     <div class="card stat-card"><div class="stat-ic" style="background:#fee2e2">⚠️</div><div><div class="stat-label">কম স্টকের পণ্য</div><div class="stat" id="lowStockCount" style="color:var(--red)">0</div></div></div>
   </div>
-  <div class="card">
+  <div class="dash-section-head quick-head"><div><span class="eyebrow">QUICK ACCESS</span><h3>দ্রুত কাজ</h3></div></div>
+  <div class="quick-actions">
+    <button type="button" class="quick-action" onclick="document.querySelector('.nav button[data-page=orders]').click()"><span class="quick-icon">🛒</span><span><b>অর্ডার ম্যানেজ করুন</b><small>নতুন অর্ডার দেখুন ও আপডেট করুন</small></span><span class="quick-arrow">↗</span></button>
+    <button type="button" class="quick-action" onclick="document.querySelector('.nav button[data-page=products]').click()"><span class="quick-icon">📦</span><span><b>পণ্য ও স্টক</b><small>পণ্য যোগ করুন, স্টক দেখুন</small></span><span class="quick-arrow">↗</span></button>
+    <button type="button" class="quick-action" onclick="document.querySelector('.nav button[data-page=courier]').click()"><span class="quick-icon">🚚</span><span><b>কুরিয়ার ডেস্ক</b><small>ডেলিভারি ও ট্র্যাকিং পরিচালনা</small></span><span class="quick-arrow">↗</span></button>
+    <button type="button" class="quick-action" onclick="document.querySelector('.nav button[data-page=profit]').click()"><span class="quick-icon">৳</span><span><b>ব্যবসার রিপোর্ট</b><small>ডেলিভারি ও লাভের হিসাব</small></span><span class="quick-arrow">↗</span></button>
+  </div>
+  <div class="card recent-orders-card">
     <h3 class="section-title">🕒 সাম্প্রতিক অর্ডার</h3>
     <div class="table-wrap"><table><thead><tr><th>আইডি</th><th>কাস্টমার</th><th>টাকা</th><th>স্ট্যাটাস</th></tr></thead>
     <tbody id="recentOrders"></tbody></table></div>
@@ -339,6 +498,22 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <div class="table-wrap"><table><thead><tr><th>ID</th><th>কাস্টমার</th><th>ফোন</th><th>ঠিকানা</th><th>পণ্য</th><th>রেফ</th><th>মোট</th><th>স্ট্যাটাস</th><th>তারিখ</th><th></th></tr></thead>
     <tbody id="orderRows"></tbody></table></div>
   </div>
+</section>
+
+<!-- কাস্টমার -->
+<section class="page" id="customers">
+  <div class="ph"><div class="ph-ic">👥</div><div><h2>কাস্টমার ম্যানেজমেন্ট</h2><p>মোবাইল নম্বর অনুযায়ী একই কাস্টমারের অর্ডার একসাথে দেখুন</p></div></div>
+  <div class="card">
+    <div class="toolbar"><input type="search" id="customerSearch" placeholder="🔍 কাস্টমারের নাম বা মোবাইল নম্বর..." oninput="renderCustomers()"></div>
+    <div class="table-wrap"><table><thead><tr><th>কাস্টমার</th><th>মোবাইল নম্বর</th><th>ঠিকানা</th><th>মোট অর্ডার</th><th>মোট অর্ডার মূল্য</th><th>সর্বশেষ অর্ডার</th><th></th></tr></thead>
+    <tbody id="customerRows"></tbody></table></div>
+  </div>
+</section>
+
+<!-- প্রোডাক্ট ক্যাটাগরি -->
+<section class="page" id="categories">
+  <div class="ph"><div class="ph-ic">🗂️</div><div><h2>প্রোডাক্ট ক্যাটাগরি</h2><p>ক্যাটাগরি অনুযায়ী পণ্য, দাম ও স্টক আলাদা করে দেখুন</p></div></div>
+  <div id="categoryCards" class="category-cards"></div>
 </section>
 
 <!-- পণ্য -->
@@ -656,6 +831,7 @@ const LOW_STOCK = 5;
 const FULL_MAX = 900, FULL_Q = .85, THUMB_MAX = 400, THUMB_Q = .75;
 
 let products = [], orders = [], affiliates = [], withdrawals = [], pendingComments = [], settings = {}, courier = {};
+let customerGroups = [];
 
 function toast(msg, isErr, ms) {
   const t = document.createElement('div');
@@ -806,6 +982,59 @@ function filteredOrders() {
   return orders.filter(o => (!st || o.status === st) && (!q ||
     String(o.customer_name || '').toLowerCase().includes(q) || String(o.phone || '').includes(q) || String(o.id || '').includes(q)));
 }
+function customerIdentity(o) {
+  const phone = String(o.phone || '').replace(/\\D/g, '');
+  return phone ? 'phone:' + phone : 'order:' + String(o._key || o.id || 'unknown');
+}
+function renderCustomers() {
+  const q = ($('customerSearch')?.value || '').trim().toLowerCase();
+  const groups = new Map();
+  orders.forEach(o => {
+    const key = customerIdentity(o);
+    if (!groups.has(key)) groups.set(key, { key, name: o.customer_name || 'নাম নেই', phone: o.phone || '', address: o.address || '', orders: [] });
+    const g = groups.get(key);
+    g.orders.push(o);
+    if (!g.phone && o.phone) g.phone = o.phone;
+    if (o.created_at && (!g.latest || new Date(o.created_at) > new Date(g.latest.created_at || 0))) {
+      g.latest = o; g.name = o.customer_name || g.name; g.address = o.address || g.address;
+    }
+  });
+  customerGroups = [...groups.values()].sort((a,b) => new Date(b.latest?.created_at || 0) - new Date(a.latest?.created_at || 0));
+  const filtered = customerGroups.filter(g => [g.name,g.phone,g.address].some(v => String(v || '').toLowerCase().includes(q)));
+  $('customerRows').innerHTML = filtered.map(g => {
+    const index = customerGroups.indexOf(g), total = g.orders.reduce((n,o) => n + Number(o.total || 0), 0);
+    return `<tr><td><b>${esc(g.name)}</b></td><td>${esc(g.phone || 'নম্বর নেই')}</td><td>${esc(g.address || 'ঠিকানা নেই')}</td><td>${g.orders.length}</td><td><b>${money(total)}</b></td><td>${g.latest?.created_at ? esc(new Date(g.latest.created_at).toLocaleDateString()) : '—'}</td><td><button class="btn sm blue" data-act="viewCustomer" data-index="${index}">ডিটেইলস</button></td></tr>`;
+  }).join('') || '<tr><td colspan="7" class="empty">কোনো কাস্টমার পাওয়া যায়নি।</td></tr>';
+}
+function renderCategories() {
+  const cats = [...new Set(products.map(p => String(p.cat || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b,'bn'));
+  $('categoryCards').innerHTML = cats.map(cat => {
+    const items = products.filter(p => String(p.cat || '').trim() === cat);
+    return `<div class="card category-card"><div class="category-card-head"><div><small>PRODUCT CATEGORY</small><h3>${esc(cat)}</h3></div><span class="pill">${items.length} টি পণ্য</span></div><div class="category-products">${items.map(p => `<div class="category-product">${safeUrl(p.img) ? `<img src="${safeUrl(p.img)}" alt="">` : '<span class="category-placeholder">📦</span>'}<div><b>${esc(p.name)}</b><small>${money(p.price)} · স্টক ${Number(p.stock || 0)}</small></div></div>`).join('')}</div></div>`;
+  }).join('') || '<div class="card empty">এখনো কোনো পণ্যের ক্যাটাগরি যোগ করা হয়নি। পণ্য যোগ করার সময় ক্যাটাগরি লিখুন।</div>';
+}
+function openRecordModal(title, html) {
+  $('recordModalTitle').textContent = title;
+  $('recordModalContent').innerHTML = html;
+  $('recordModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeRecordModal() { $('recordModal').style.display = 'none'; document.body.style.overflow = ''; }
+function openOrderDetails(key) {
+  const o = orders.find(x => x._key === key); if (!o) return;
+  const items = parseItems(o) || [];
+  const itemHtml = items.map(i => {
+    const p = products.find(x => String(x.id) === String(i.product_id));
+    return `<div class="record-product">${safeUrl(i.img || p?.img) ? `<img src="${safeUrl(i.img || p.img)}" alt="">` : '<span class="category-placeholder">📦</span>'}<div><b>${esc(i.name || p?.name || 'পণ্য')}</b><small>ক্যাটাগরি: ${esc(p?.cat || 'অনির্ধারিত')} · পরিমাণ: ${Number(i.quantity || 0)} · একক দাম: ${money(i.price)}</small><small>${esc([i.color && i.color !== 'Standard' ? 'রং: '+i.color : '',i.size && i.size !== 'Free Size' ? 'সাইজ: '+i.size : ''].filter(Boolean).join(' · ') || 'ভ্যারিয়েন্ট নেই')}</small></div><b>${money(Number(i.price || 0) * Number(i.quantity || 0))}</b></div>`;
+  }).join('') || '<p class="muted">পণ্যের বিস্তারিত পাওয়া যায়নি।</p>';
+  openRecordModal('অর্ডার #DH-' + (o.id || ''), `<div class="record-grid"><div><small>কাস্টমারের নাম</small><b>${esc(o.customer_name || 'নাম নেই')}</b></div><div><small>মোবাইল নম্বর</small><b>${esc(o.phone || 'নম্বর নেই')}</b></div><div class="wide"><small>ডেলিভারি ঠিকানা</small><b>${esc(o.address || 'ঠিকানা নেই')}</b></div><div><small>অর্ডার স্ট্যাটাস</small><b>${esc(o.status || 'Pending')}</b></div><div><small>অর্ডারের তারিখ</small><b>${o.created_at ? esc(new Date(o.created_at).toLocaleString()) : '—'}</b></div></div><h3 class="record-subtitle">অর্ডার করা পণ্য</h3>${itemHtml}<div class="record-total"><span>পণ্যের ছাড়</span><b>− ${money(o.discount)}</b><span>ডেলিভারি চার্জ</span><b>${money(o.delivery_fee)}</b><span>সর্বমোট</span><strong>${money(o.total)}</strong></div>`);
+}
+function openCustomerDetails(index) {
+  const g = customerGroups[Number(index)]; if (!g) return;
+  const list = [...g.orders].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const rows = list.map(o => `<tr><td>#DH-${esc(o.id)}</td><td>${esc(o.created_at ? new Date(o.created_at).toLocaleDateString() : '—')}</td><td>${esc(o.status || 'Pending')}</td><td>${money(o.total)}</td><td><button class="btn sm blue" data-act="viewOrder" data-key="${esc(o._key)}">অর্ডার দেখুন</button></td></tr>`).join('');
+  openRecordModal('কাস্টমার: ' + g.name, `<div class="record-grid"><div><small>কাস্টমারের নাম</small><b>${esc(g.name)}</b></div><div><small>মোবাইল নম্বর</small><b>${esc(g.phone || 'নম্বর নেই')}</b></div><div class="wide"><small>ঠিকানা</small><b>${esc(g.address || 'ঠিকানা নেই')}</b></div><div><small>মোট অর্ডার</small><b>${list.length} টি</b></div><div><small>মোট অর্ডার মূল্য</small><b>${money(list.reduce((n,o)=>n+Number(o.total||0),0))}</b></div></div><h3 class="record-subtitle">এই কাস্টমারের অর্ডারসমূহ</h3><div class="table-wrap"><table><thead><tr><th>অর্ডার</th><th>তারিখ</th><th>স্ট্যাটাস</th><th>মোট</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`);
+}
 function render() {
   const counted = orders.filter(o => o.status !== 'Cancelled' && o.status !== 'WhatsApp Pending');
   const total = counted.reduce((s, o) => s + Number(o.total || 0), 0);
@@ -815,14 +1044,16 @@ function render() {
   $('lowStockCount').textContent = products.filter(p => Number(p.stock || 0) <= LOW_STOCK).length;
   renderProfit(total);
 
-  $('recentOrders').innerHTML = orders.slice(0, 5).map(o => `<tr><td>#DH-${esc(o.id)}</td><td>${esc(o.customer_name)}</td><td>${money(o.total)}</td><td><span class="pill pending">${esc(o.status)}</span></td></tr>`).join('') || '<tr><td colspan="4" class="empty">কোনো অর্ডার নেই।</td></tr>';
+  $('recentOrders').innerHTML = orders.slice(0, 5).map(o => `<tr><td><button class="text-link" data-act="viewOrder" data-key="${esc(o._key)}">#DH-${esc(o.id)}</button></td><td>${esc(o.customer_name)}</td><td>${money(o.total)}</td><td><span class="pill pending">${esc(o.status)}</span></td></tr>`).join('') || '<tr><td colspan="4" class="empty">কোনো অর্ডার নেই।</td></tr>';
+  renderCustomers();
+  renderCategories();
 
   const list = filteredOrders();
   $('orderRows').innerHTML = list.map(o => {
     const items = parseItems(o);
     const issue = orderIssue(o);
     const itemsHtml = items === null ? esc(o.items_json) : items.map(i => `<div class="item">${safeUrl(i.img) ? `<img src="${safeUrl(i.img)}" alt="">` : ''}<div><b>${esc(i.name)}</b><br><small>${esc([i.color && i.color !== 'Standard' ? (i.o1 || 'রং') + ': ' + i.color : '', i.size && i.size !== 'Free Size' ? (i.o2 || 'সাইজ') + ': ' + i.size : ''].filter(Boolean).join(' | '))}${(i.color && i.color !== 'Standard') || (i.size && i.size !== 'Free Size') ? ' | ' : ''}পিস: ${esc(i.quantity)}</small></div></div>`).join('');
-    return `<tr><td>#DH-${esc(o.id)}</td><td><b>${esc(o.customer_name)}</b></td><td>${esc(o.phone)}</td><td>${esc(o.address)}</td><td>${itemsHtml}</td>
+    return `<tr><td><button class="text-link" data-act="viewOrder" data-key="${esc(o._key)}">#DH-${esc(o.id)}</button></td><td><b>${esc(o.customer_name)}</b></td><td>${esc(o.phone)}</td><td>${esc(o.address)}</td><td>${itemsHtml}</td>
       <td><b>${esc(o.affiliate_ref || 'None')}</b>${o.commission_amount ? `<br><small>৳${esc(o.commission_amount)} ${o.commission_paid ? '✅ যোগ হয়েছে' : '⏳ ডেলিভারির অপেক্ষায়'}</small>` : ''}${o.utm && o.utm.utm_campaign ? `<br><small>📣 ${esc(o.utm.utm_campaign)}</small>` : ''}</td><td>${money(o.total)}${issue ? `<br><span class="pill bad" title="${esc(issue)}">⚠️ ${esc(issue)}</span>` : ''}</td>
       <td><select data-act="status" data-key="${esc(o._key)}">${STATUSES.map(s => `<option ${o.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
       <td>${o.created_at ? esc(new Date(o.created_at).toLocaleString()) : ''}</td>
@@ -950,6 +1181,8 @@ $('syncTrackBtn').onclick = async () => {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'SELECT') return;
   const { act, key } = b.dataset;
+  if (act === 'viewOrder') openOrderDetails(key);
+  if (act === 'viewCustomer') openCustomerDetails(b.dataset.index);
   if (act === 'delOrder' && confirm('এই অর্ডার ডিলিট করবেন?')) {
     const o = orders.find(x => x._key === key);
     Promise.all([db.ref('dhong_orders/' + key).remove(), o && o.id ? trackKey(o).then(k => db.ref('dhong_track/' + k).remove()) : null, o && o.id ? db.ref('dhong_track/' + o.id).remove() : null])
@@ -1041,6 +1274,10 @@ async function settleCommission(key, status) {
     return a;
   });
 }
+
+$('recordModalClose').onclick = closeRecordModal;
+$('recordModal').addEventListener('click', e => { if (e.target === $('recordModal')) closeRecordModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('recordModal').style.display === 'flex') closeRecordModal(); });
 
 /* ---------- Navigation ---------- */
 document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => {
