@@ -984,7 +984,7 @@ function filteredOrders() {
 }
 function customerIdentity(o) {
   const phone = String(o.phone || '').replace(/\\D/g, '');
-  return phone ? 'phone:' + phone : 'order:' + String(o._key || o.id || Math.random());
+  return phone ? 'phone:' + phone : 'order:' + String(o._key || o.id || 'unknown');
 }
 function renderCustomers() {
   const q = ($('customerSearch')?.value || '').trim().toLowerCase();
