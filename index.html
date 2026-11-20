@@ -331,11 +331,32 @@ footer button,.social-a{background:#1b1b1b;border-color:#4c4437}
  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
 
+
+/* ---------- DHONG premium modal refresh ---------- */
+.top{background:linear-gradient(90deg,#080808,#191919,#080808);color:#e7c77a;font-weight:700;letter-spacing:.15px;border-bottom:1px solid rgba(218,183,103,.28)}
+.modalbg{background:rgba(0,0,0,.78);backdrop-filter:blur(8px);padding:16px}
+.modal{background:linear-gradient(155deg,#171717 0%,#0c0c0c 100%);color:#f7f4ed;border:1px solid rgba(218,183,103,.38);border-radius:22px;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.025) inset}
+.modal h2{color:#f4d58d;font-size:21px;font-weight:700;padding:2px 42px 14px 0;border-bottom:1px solid rgba(218,183,103,.2);margin:0 0 16px}
+.modal .close{background:#292929;color:#f4d58d;border:1px solid rgba(218,183,103,.25);width:36px;height:36px}
+.modal .field{color:#e8e1d3;font-weight:600}
+.modal .field input,.modal .field select,.modal .field textarea,
+.modal input:not([type=hidden]),.modal select,.modal textarea{background:#202020;color:#fff;border:1px solid #45413a;border-radius:10px}
+.modal .field input::placeholder,.modal textarea::placeholder{color:#9b978e}
+.modal .field input:focus,.modal .field select:focus,.modal .field textarea:focus{border-color:#d8b96d;box-shadow:0 0 0 3px rgba(216,185,109,.12)}
+.modal .primary{background:linear-gradient(135deg,#e5c77e,#b8954b);color:#17130b;font-weight:700;border:0}
+.modal .primary:hover{filter:brightness(1.08)}
+.modal .menu-btn{background:#202020;color:#f4f0e7;border:1px solid #35312a;border-radius:12px;padding:13px 14px}
+.modal .menu-btn:hover{background:#29251d;border-color:#b8954b}
+.modal .trust-item,.modal .cart-sum,.modal .comment-item,.modal details.faq{background:#202020;color:#eee;border-color:#403a2e}
+.modal .info-row{border-color:#39352d;color:#eee}
+.modal a{color:#e6c77d}
+@media(max-width:600px){.modal{padding:19px;border-radius:19px}.modal h2{font-size:19px}.modalbg{padding:10px}}
+
 </style>
 </head>
 <body>
 
-<div class="top" id="topBanner">🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি</div>
+<div class="top" id="topBanner">ঢং — আপনার পছন্দের পণ্য, এখন ঘরে বসেই অর্ডার করুন</div>
 
 <header>
   <div class="logo" id="logoText">DHONG</div>
@@ -706,7 +727,7 @@ let isTimerExpired = false, timerInterval = null, currentAffUser = null, pending
 let settings = {
   siteName: "ঢং DHONG", themeColor: "#d90f1f", dhakaFee: "70", outsiderFee: "130",
   whatsapp: "8801700000000", phone: "01700000000", freeThreshold: "3000",
-  topBannerText: "🎉 ঢং-এ স্বাগতম | প্রথম অর্ডারে ১০% ছাড় ও ক্যাশ অন ডেলিভারি",
+  topBannerText: "ঢং — আপনার পছন্দের পণ্য, এখন ঘরে বসেই অর্ডার করুন",
   heroBg: "#17080c", timerStatus: "show", timerHours: "24", timerText: "⏳ অফার শেষ:", offerEnd: 0,
   firstDiscOn: "on", firstDiscPct: "10"
 };
