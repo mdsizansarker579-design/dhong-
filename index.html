@@ -635,14 +635,10 @@ const bd = n => '৳' + Number(n || 0).toLocaleString('en-US');
 const money = bd;
 const AFF_DOMAIN = '@aff.dhong.local';
 
-async function getRef() {
-  const r = (sessionStorage.getItem('dhong_ref_id') || '').replace(/[^a-zA-Z0-9_]/g, '');
+function getRef() {
+  const r = (localStorage.getItem('dhong_ref_id') || '').replace(/[^a-zA-Z0-9_]/g, '');
   const me = localStorage.getItem('dhong_logged_aff');
-  if (!r || r === me) return 'None';
-  try {
-    const snap = await db.ref('dhong_affiliates/' + r).once('value');
-    return snap.exists() ? r : 'None';
-  } catch (e) { return 'None'; }
+  return (!r || r === me) ? 'None' : r;
 }
 function getUrlParameter(name) {
   const m = window.location.href.match(new RegExp('[?&#]' + name + '=([^&#]*)'));
@@ -752,30 +748,22 @@ let settings = {
   topBannerText: "ঢং — আপনার পছন্দের পণ্য, এখন ঘরে বসেই অর্ডার করুন",
   topBannerSubText: "পছন্দের পণ্য অর্ডার করুন সহজেই — ঘরে বসেই।",
   heroBg: "#17080c", timerStatus: "show", timerHours: "24", timerText: "⏳ অফার শেষ:", offerEnd: 0,
-  firstDiscOn: "on", firstDiscPct: "10", affiliateCommissionPct: 5
+  firstDiscOn: "on", firstDiscPct: "10"
 };
 // প্রথম অর্ডারের ছাড় (অ্যাডমিন সেটিংস থেকে চালু/বন্ধ ও শতাংশ)
 const discPct = () => settings.firstDiscOn === 'off' ? 0 : Math.min(90, Math.max(0, Number(settings.firstDiscPct) || 0));
 const discOf = sub => Math.round(sub * discPct() / 100);
-// Referral attribution lasts only for this browser tab session; discard stale persistent referrals.
-localStorage.removeItem('dhong_ref_id');
 const refAffId = getUrlParameter('ref');
-if (refAffId) {
-  const cleanRef = String(refAffId).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 64);
-  if (cleanRef) sessionStorage.setItem('dhong_ref_id', cleanRef);
-}
+if (refAffId) localStorage.setItem('dhong_ref_id', refAffId.replace(/[^a-zA-Z0-9_]/g, ''));
 const prod = id => products.find(p => String(p.id) === String(id));
 const designs = p => { const a = []; if (p.img) a.push(p.img); const c = p.colors ? (Array.isArray(p.colors) ? p.colors : Object.values(p.colors)) : []; c.forEach(x => { if (x && !a.includes(x)) a.push(x); }); return a; };
 function priceInfo(p) {
   const price = Number(p.price) || 0, old = Number(p.oldPrice) || 0;
-  const discounted = isDiscountProduct(p) && old > price;
-  const active = (isTimerExpired && discounted) ? old : price;
-  const showOld = (!isTimerExpired && discounted) ? old : 0;
+  const active = (isTimerExpired && old) ? old : price;
+  const showOld = (!isTimerExpired && old > price) ? old : 0;
   return { active, showOld, pct: showOld ? Math.round((old - price) / old * 100) : 0 };
 }
-const isDiscountProduct = p => p && (p.discountEnabled === true || (p.discountEnabled == null && Number(p.oldPrice) > Number(p.price)));
 const unit = p => priceInfo(p).active;
-const affiliateRate = () => Math.min(50, Math.max(0, Number(settings.affiliateCommissionPct != null ? settings.affiliateCommissionPct : 5) || 0));
 
 /* wishlist */
 let wish = []; try { wish = JSON.parse(localStorage.getItem('dhong_wish') || '[]'); if (!Array.isArray(wish)) wish = []; } catch (e) {}
@@ -968,7 +956,6 @@ function renderCategories() {
   const imgs = catImgs(), cats = [...new Set(products.map(p => p.cat).filter(Boolean))];
   const tile = (key, label, inner) => `<button class="cat ${category === key ? 'on' : ''}" data-c="${E(key)}" onclick="setCategory(this.dataset.c)"><span class="cat-i">${inner}</span><span>${E(label)}</span></button>`;
   let html = tile('সব', 'সব পণ্য', '🛍️');
-  if (products.some(isDiscountProduct)) html += tile('__discount', 'ডিসকাউন্ট', '🏷️');
   if (wish.length) html += tile('__wish', 'পছন্দের', '❤️');
   html += cats.map(c => tile(c, c, safeImg(imgs[c]) ? `<img src="${safeImg(imgs[c])}" alt="" loading="lazy">` : (CAT_EMOJI[c] || '🏷️'))).join('');
   $('categoryContainer').innerHTML = html;
@@ -998,7 +985,7 @@ function cardHtml(p) {
 function renderProducts() {
   renderCategories();
   const q = $('search').value.trim().toLowerCase();
-  let list = products.filter(p => (category === 'সব' || (category === '__discount' ? isDiscountProduct(p) : category === '__wish' ? isWish(p.id) : p.cat === category)) && String(p.name || '').toLowerCase().includes(q));
+  let list = products.filter(p => (category === 'সব' || (category === '__wish' ? isWish(p.id) : p.cat === category)) && String(p.name || '').toLowerCase().includes(q));
   list = sorted(list);
   $('grid').innerHTML = (!loaded && !products.length)
     ? Array.from({ length: 6 }, () => '<div class="sk"></div>').join('')
@@ -1171,14 +1158,14 @@ function addComment(e, prodId) {
 async function waOrder(prodId) {
   const p = prod(prodId); if (!p) return;
   const w = window.open('', '_blank');
-  const price = unit(p), orderId = String(Math.floor(100000 + Math.random() * 900000)), affiliateRef = await getRef();
+  const price = unit(p), orderId = String(Math.floor(100000 + Math.random() * 900000)), affiliateRef = getRef();
   const link = location.origin + location.pathname + '?product=' + encodeURIComponent(p.id) + '&ref=' + affiliateRef;
   const vs = variantsOf(p), color = vs.length ? sel.color : '', size = vs.length ? sel.size : '';
   const thumb = await makeThumb((ppImgs && ppImgs[sel ? sel.img : 0]) || p.img);
   const newOrder = {
     id: orderId, customer_name: 'WhatsApp Customer', phone: '', address: '', affiliate_ref: affiliateRef,
-    items_json: JSON.stringify([{ product_id: p.id, name: p.name, price, unit_cost: p.unitCostSet === true ? Number(p.unitCost) || 0 : null, quantity: 1, color, size, o1: lab1(p), o2: lab2(p), img: thumb, deliveryFee: 0 }]),
-    total: price, commission_rate_pct: affiliateRef !== 'None' ? affiliateRate() : 0, commission_amount: affiliateRef !== 'None' ? Math.round(price * affiliateRate() / 100) : 0, commission_paid: false, status: 'WhatsApp Pending', created_at: new Date().toISOString()
+    items_json: JSON.stringify([{ product_id: p.id, name: p.name, price, quantity: 1, color, size, o1: lab1(p), o2: lab2(p), img: thumb, deliveryFee: 0 }]),
+    total: price, commission_amount: affiliateRef !== 'None' ? Math.round(price * 0.05) : 0, commission_paid: false, status: 'WhatsApp Pending', created_at: new Date().toISOString()
   };
   try { await saveOrder(newOrder); } catch (e) { console.error(e); if (w) w.close(); alert('❌ অর্ডার সেভ হয়নি, আবার চেষ্টা করুন।'); return; }
   track('Lead', { content_name: p.name, value: price, currency: 'BDT' });
@@ -1233,7 +1220,7 @@ function updateTotal() {
   const qty = Number($('quantity').value) || 1;
   let delivery = Number($('deliveryFee').value) || 0;
   const subtotal = unit(selectedProduct) * qty;
-  const discount = discOf(subtotal);
+  const discount = localStorage.getItem('dhong_ordered_before') ? 0 : discOf(subtotal);
   if (settings.freeThreshold && subtotal >= Number(settings.freeThreshold)) delivery = 0;
   let t = `মূল্য: ৳${subtotal}`;
   if (discount > 0) t += ` | ডিসকাউন্ট (${discPct()}%): -৳${discount}`;
@@ -1253,16 +1240,16 @@ $('orderForm').addEventListener('submit', async function (e) {
   submitBtn.disabled = true;
   const unitPrice = unit(selectedProduct), subtotal = unitPrice * qty;
   if (settings.freeThreshold && subtotal >= Number(settings.freeThreshold)) delivery = 0;
-  const shown = discOf(subtotal);
+  const shown = localStorage.getItem('dhong_ordered_before') ? 0 : discOf(subtotal);
   const chk = await checkFirst(fd.get('phone'));
   const discount = chk.eligible ? discOf(subtotal) : 0, total = subtotal - discount + delivery;
   if (discount < shown && !confirm('এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ' + discPct() + '% ছাড় প্রযোজ্য নয়।\nনতুন মোট: ৳' + total + '\nঅর্ডার করবেন?')) { submitBtn.disabled = false; return; }
-  const thumb = await makeThumb(currentSelectedImg || selectedProduct.img), ref = await getRef();
+  const thumb = await makeThumb(currentSelectedImg || selectedProduct.img), ref = getRef();
   const order = {
     id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: fd.get('name'), phone: fd.get('phone'),
     address: `${fd.get('division')} - ${fd.get('address')}`, affiliate_ref: ref,
-    items_json: JSON.stringify([{ product_id: selectedProduct.id, name: selectedProduct.name, price: unitPrice, unit_cost: selectedProduct.unitCostSet === true ? Number(selectedProduct.unitCost) || 0 : null, quantity: qty, color, size, o1: lab1(selectedProduct), o2: lab2(selectedProduct), img: thumb, deliveryFee: delivery }]),
-    total, discount, delivery_fee: delivery, commission_rate_pct: ref !== 'None' ? affiliateRate() : 0, commission_amount: ref !== 'None' ? Math.round((total - delivery) * affiliateRate() / 100) : 0, commission_paid: false,
+    items_json: JSON.stringify([{ product_id: selectedProduct.id, name: selectedProduct.name, price: unitPrice, quantity: qty, color, size, o1: lab1(selectedProduct), o2: lab2(selectedProduct), img: thumb, deliveryFee: delivery }]),
+    total, discount, delivery_fee: delivery, commission_amount: ref !== 'None' ? Math.round((total - delivery) * 0.05) : 0, commission_paid: false,
     status: 'Pending', created_at: new Date().toISOString()
   };
   if (chk.h) order.phoneHash = chk.h;
@@ -1294,7 +1281,7 @@ window.addToCart = async function (pid, opt) {
 };
 function totals() {
   let sub = 0; cart.forEach(c => { const p = prod(c.pid); if (p) sub += unit(p) * c.qty; });
-  const disc = discOf(sub);
+  const disc = localStorage.getItem('dhong_ordered_before') ? 0 : discOf(sub);
   let fee = Number(F.division === 'Outside' ? settings.outsiderFee : settings.dhakaFee) || 0;
   if (settings.freeThreshold && sub >= Number(settings.freeThreshold)) fee = 0;
   return { sub, disc, fee, total: sub - disc + fee };
@@ -1400,11 +1387,11 @@ window.placeCartOrder = async function () {
   const disc = chk.eligible ? discOf(shown.sub) : 0;
   const t = { sub: shown.sub, disc, fee: shown.fee, total: shown.sub - disc + shown.fee };
   if (disc < shown.disc && !confirm('এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ' + discPct() + '% ছাড় প্রযোজ্য নয়।\nনতুন মোট: ' + bd(t.total) + '\nঅর্ডার করবেন?')) { btn.disabled = false; return; }
-  const items = lines.map(({ c, p }) => ({ product_id: p.id, name: p.name, price: unit(p), unit_cost: p.unitCostSet === true ? Number(p.unitCost) || 0 : null, quantity: c.qty, color: c.color, size: c.size, o1: lab1(p), o2: lab2(p), img: c.img || p.img || '' }));
-  const ref = await getRef();
+  const items = lines.map(({ c, p }) => ({ product_id: p.id, name: p.name, price: unit(p), quantity: c.qty, color: c.color, size: c.size, o1: lab1(p), o2: lab2(p), img: c.img || p.img || '' }));
+  const ref = getRef();
   const order = { id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: name, phone,
     address: `${F.division} - ${address}`, affiliate_ref: ref, items_json: JSON.stringify(items),
-    total: t.total, discount: t.disc, delivery_fee: t.fee, commission_rate_pct: ref !== 'None' ? affiliateRate() : 0, commission_amount: ref !== 'None' ? Math.round((t.total - t.fee) * affiliateRate() / 100) : 0, commission_paid: false, status: 'Pending', created_at: new Date().toISOString() };
+    total: t.total, discount: t.disc, delivery_fee: t.fee, commission_amount: ref !== 'None' ? Math.round((t.total - t.fee) * 0.05) : 0, commission_paid: false, status: 'Pending', created_at: new Date().toISOString() };
   if (chk.h) order.phoneHash = chk.h;
   try { await saveOrder(order, chk.eligible ? chk.h : null); }
   catch (e) { console.error(e); alert('❌ অর্ডার সেভ হয়নি, আবার চেষ্টা করুন।'); btn.disabled = false; return; }
