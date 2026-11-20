@@ -982,8 +982,9 @@ function orderIssue(o) {
     sub += pr * q;
   }
   const d = Number(o.discount) || 0, f = Number(o.delivery_fee) || 0, thr = Number(settings.freeThreshold) || 0;
-  const fdp = settings.firstDiscOn === 'off' ? 0 : (Number(settings.firstDiscPct) || 10);
-  if (d > Math.round(sub * Math.max(fdp, 10) / 100)) return 'ছাড় নির্ধারিত শতাংশের বেশি';
+  const fdp = settings.firstDiscOn === 'off' ? 0 : Math.min(90, Math.max(0, Number(settings.firstDiscPct) || 0));
+  if (d > Math.round(sub * fdp / 100)) return 'ছাড় নির্ধারিত শতাংশের বেশি';
+  if (d > 0 && settings.firstDiscOn === 'off') return 'প্রথম অর্ডারের ছাড় বর্তমানে বন্ধ';
   if (![0, Number(settings.dhakaFee) || 70, Number(settings.outsiderFee) || 130].includes(f)) return 'ডেলিভারি চার্জ মেলেনি';
   if (f === 0 && thr && sub < thr) return 'ফ্রি ডেলিভারির শর্ত পূরণ হয়নি';
   if (Math.abs(sub - d + f - Number(o.total)) > 1) return 'মোট হিসাব মেলেনি';
