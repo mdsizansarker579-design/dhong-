@@ -1,0 +1,116 @@
+name: DHONG Quality Checks
+
+on:
+  push:
+    branches:
+      - dhong-premium-black-redesign
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-checks:
+    name: HTML and JavaScript checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check required files and HTML structure
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import sys
+
+          required = ["index.html", "admin.html"]
+          missing = [name for name in required if not Path(name).is_file()]
+          if missing:
+              print("Missing required files:", ", ".join(missing))
+              sys.exit(1)
+
+          class PageCheck(HTMLParser):
+              def __init__(self):
+                  super().__init__(convert_charrefs=True)
+                  self.ids = set()
+                  self.duplicates = set()
+                  self.tags = set()
+                  self.scripts = []
+                  self.current_script = None
+
+              def handle_starttag(self, tag, attrs):
+                  self.tags.add(tag)
+                  attrs = dict(attrs)
+                  element_id = attrs.get("id")
+                  if element_id:
+                      if element_id in self.ids:
+                          self.duplicates.add(element_id)
+                      self.ids.add(element_id)
+                  if tag == "script" and not attrs.get("src"):
+                      self.current_script = []
+
+              def handle_data(self, data):
+                  if self.current_script is not None:
+                      self.current_script.append(data)
+
+              def handle_endtag(self, tag):
+                  if tag == "script" and self.current_script is not None:
+                      self.scripts.append("".join(self.current_script))
+                      self.current_script = None
+
+          total_scripts = 0
+          for filename in required:
+              page = PageCheck()
+              page.feed(Path(filename).read_text(encoding="utf-8"))
+              page.close()
+              if not {"html", "head", "body"}.issubset(page.tags):
+                  print(f"{filename}: missing html/head/body structure")
+                  sys.exit(1)
+              if page.duplicates:
+                  print(f"{filename}: duplicate IDs: {', '.join(sorted(page.duplicates))}")
+                  sys.exit(1)
+              Path(f"/tmp/{filename}.scripts").write_text(
+                  "\\n".join(page.scripts), encoding="utf-8"
+              )
+              total_scripts += len(page.scripts)
+              print(f"{filename}: structure OK; {len(page.ids)} unique IDs; {len(page.scripts)} inline scripts")
+
+          print(f"HTML checks passed. Inline scripts found: {total_scripts}")
+          PY
+
+      - name: Check inline JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          files = [Path("/tmp/index.html.scripts"), Path("/tmp/admin.html.scripts")]
+          checked = 0
+          for source_file in files:
+              scripts = source_file.read_text(encoding="utf-8").split("\\n")
+              for number, source in enumerate(scripts, 1):
+                  if not source.strip():
+                      continue
+                  temp = Path(f"/tmp/dhong-inline-{checked}.js")
+                  temp.write_text(source, encoding="utf-8")
+                  result = subprocess.run(
+                      ["node", "--check", str(temp)],
+                      text=True, capture_output=True
+                  )
+                  if result.returncode:
+                      print(f"JavaScript syntax error in {source_file.name}, script {number}:")
+                      print(result.stderr)
+                      sys.exit(result.returncode)
+                  checked += 1
+          print(f"JavaScript syntax checks passed: {checked} inline scripts.")
+          PY
