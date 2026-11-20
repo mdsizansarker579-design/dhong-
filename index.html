@@ -1177,7 +1177,7 @@ async function waOrder(prodId) {
   const thumb = await makeThumb((ppImgs && ppImgs[sel ? sel.img : 0]) || p.img);
   const newOrder = {
     id: orderId, customer_name: 'WhatsApp Customer', phone: '', address: '', affiliate_ref: affiliateRef,
-    items_json: JSON.stringify([{ product_id: p.id, name: p.name, price, quantity: 1, color, size, o1: lab1(p), o2: lab2(p), img: thumb, deliveryFee: 0 }]),
+    items_json: JSON.stringify([{ product_id: p.id, name: p.name, price, unit_cost: p.unitCostSet === true ? Number(p.unitCost) || 0 : null, quantity: 1, color, size, o1: lab1(p), o2: lab2(p), img: thumb, deliveryFee: 0 }]),
     total: price, commission_rate_pct: affiliateRef !== 'None' ? affiliateRate() : 0, commission_amount: affiliateRef !== 'None' ? Math.round(price * affiliateRate() / 100) : 0, commission_paid: false, status: 'WhatsApp Pending', created_at: new Date().toISOString()
   };
   try { await saveOrder(newOrder); } catch (e) { console.error(e); if (w) w.close(); alert('❌ অর্ডার সেভ হয়নি, আবার চেষ্টা করুন।'); return; }
@@ -1261,7 +1261,7 @@ $('orderForm').addEventListener('submit', async function (e) {
   const order = {
     id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: fd.get('name'), phone: fd.get('phone'),
     address: `${fd.get('division')} - ${fd.get('address')}`, affiliate_ref: ref,
-    items_json: JSON.stringify([{ product_id: selectedProduct.id, name: selectedProduct.name, price: unitPrice, quantity: qty, color, size, o1: lab1(selectedProduct), o2: lab2(selectedProduct), img: thumb, deliveryFee: delivery }]),
+    items_json: JSON.stringify([{ product_id: selectedProduct.id, name: selectedProduct.name, price: unitPrice, unit_cost: selectedProduct.unitCostSet === true ? Number(selectedProduct.unitCost) || 0 : null, quantity: qty, color, size, o1: lab1(selectedProduct), o2: lab2(selectedProduct), img: thumb, deliveryFee: delivery }]),
     total, discount, delivery_fee: delivery, commission_rate_pct: ref !== 'None' ? affiliateRate() : 0, commission_amount: ref !== 'None' ? Math.round((total - delivery) * affiliateRate() / 100) : 0, commission_paid: false,
     status: 'Pending', created_at: new Date().toISOString()
   };
@@ -1400,7 +1400,7 @@ window.placeCartOrder = async function () {
   const disc = chk.eligible ? discOf(shown.sub) : 0;
   const t = { sub: shown.sub, disc, fee: shown.fee, total: shown.sub - disc + shown.fee };
   if (disc < shown.disc && !confirm('এই মোবাইল নম্বর থেকে আগে অর্ডার করা হয়েছে, তাই প্রথম অর্ডারের ' + discPct() + '% ছাড় প্রযোজ্য নয়।\nনতুন মোট: ' + bd(t.total) + '\nঅর্ডার করবেন?')) { btn.disabled = false; return; }
-  const items = lines.map(({ c, p }) => ({ product_id: p.id, name: p.name, price: unit(p), quantity: c.qty, color: c.color, size: c.size, o1: lab1(p), o2: lab2(p), img: c.img || p.img || '' }));
+  const items = lines.map(({ c, p }) => ({ product_id: p.id, name: p.name, price: unit(p), unit_cost: p.unitCostSet === true ? Number(p.unitCost) || 0 : null, quantity: c.qty, color: c.color, size: c.size, o1: lab1(p), o2: lab2(p), img: c.img || p.img || '' }));
   const ref = await getRef();
   const order = { id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: name, phone,
     address: `${F.division} - ${address}`, affiliate_ref: ref, items_json: JSON.stringify(items),
