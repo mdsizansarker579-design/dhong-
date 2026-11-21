@@ -873,30 +873,44 @@ function applySettings() {
 }
 /* ঠিকানা থেকে ঢাকা সিটি বনাম ঢাকার বাইরের ডেলিভারি শনাক্ত */
 const DHAKA_CITY_TERMS = [
- 'ঢাকা সিটি','ঢাকা শহর','dhaka city','dhaka metropolitan','ঢাকা মহানগর',
+ 'ঢাকা সিটি','ঢাকা শহর','dhaka city','dhaka metropolitan','ঢাকা মহানগর','dhaka cantonment',
  'মিরপুর','পল্লবী','রূপনগর','কাফরুল','শেওড়াপাড়া','শেওড়াপাড়া','আগারগাঁও','তালতলা',
- 'উত্তরা','দক্ষিণখান','উত্তরখান','খিলক্ষেত','বিমানবন্দর','আব্দুল্লাহপুর','টঙ্গী','বনানী','গুলশান','বারিধারা',
+ 'উত্তরা','দক্ষিণখান','উত্তরখান','খিলক্ষেত','বিমানবন্দর','আব্দুল্লাহপুর','বনানী','গুলশান','বারিধারা',
  'বাড্ডা','রামপুরা','হাতিরঝিল','মালিবাগ','মৌচাক','খিলগাঁও','বাসাবো','মুগদা','যাত্রাবাড়ী','যাত্রাবাড়ী',
  'সায়েদাবাদ','সায়েদাবাদ','মতিঝিল','পল্টন','গুলিস্তান','ফকিরাপুল','আরামবাগ','ধানমন্ডি','কলাবাগান',
  'নিউ মার্কেট','লালবাগ','আজিমপুর','হাজারীবাগ','জিগাতলা','মোহাম্মদপুর','আদাবর','শ্যামলী','শেরেবাংলা নগর',
  'তেজগাঁও','ফার্মগেট','কারওয়ান বাজার','কারওয়ান বাজার','ইস্কাটন','বাংলামোটর','সুত্রাপুর','সূত্রাপুর',
- 'ওয়ারী','ওয়ারী','গেন্ডারিয়া','গেন্ডারিয়া','কেরানীগঞ্জ','সদরঘাট','কামরাঙ্গীরচর'
+ 'ওয়ারী','ওয়ারী','গেন্ডারিয়া','গেন্ডারিয়া','সদরঘাট','কামরাঙ্গীরচর',
+ 'mirpur','pallabi','rupnagar','kafrul','shewrapara','agargaon','uttara','dakshinkhan','uttarkhan','khilkhet',
+ 'banani','gulshan','baridhara','badda','rampura','hatirjheel','malibagh','khilgaon','basabo','mugda',
+ 'jatrabari','sayedabad','motijheel','paltan','gulistan','dhanmondi','kalabagan','new market','lalbagh',
+ 'azimpur','hazaribagh','jigatola','mohammadpur','adabor','shyamoli','tejgaon','farmgate','karwan bazar',
+ 'iskaton','banglamotor','sutrapur','wari','sadarghat','kamrangirchar'
 ];
 const OUTSIDE_TERMS = [
- 'চট্টগ্রাম','চট্রগ্রাম','চট্টগ্রাম','কক্সবাজার','কুমিল্লা','ফেনী','নোয়াখালী','নোয়াখালী','লক্ষ্মীপুর','চাঁদপুর','ব্রাহ্মণবাড়িয়া','ব্রাহ্মণবাড়িয়া','রাঙ্গামাটি','রাঙামাটি','খাগড়াছড়ি','খাগড়াছড়ি','বান্দরবান',
+ 'চট্টগ্রাম','চট্রগ্রাম','কক্সবাজার','কুমিল্লা','ফেনী','নোয়াখালী','নোয়াখালী','লক্ষ্মীপুর','চাঁদপুর','ব্রাহ্মণবাড়িয়া','ব্রাহ্মণবাড়িয়া','রাঙ্গামাটি','রাঙামাটি','খাগড়াছড়ি','খাগড়াছড়ি','বান্দরবান',
  'সিলেট','মৌলভীবাজার','হবিগঞ্জ','সুনামগঞ্জ','রাজশাহী','নাটোর','নওগাঁ','পাবনা','সিরাজগঞ্জ','বগুড়া','বগুড়া','জয়পুরহাট','জয়পুরহাট','চাঁপাইনবাবগঞ্জ',
  'খুলনা','যশোর','কুষ্টিয়া','কুষ্টিয়া','সাতক্ষীরা','বাগেরহাট','ঝিনাইদহ','মাগুরা','নড়াইল','নড়াইল','চুয়াডাঙ্গা','চুয়াডাঙ্গা','মেহেরপুর',
  'বরিশাল','পটুয়াখালী','পটুয়াখালী','ভোলা','পিরোজপুর','ঝালকাঠি','বরগুনা',
  'রংপুর','দিনাজপুর','গাইবান্ধা','কুড়িগ্রাম','কুড়িগ্রাম','লালমনিরহাট','নীলফামারী','পঞ্চগড়','পঞ্চগড়','ঠাকুরগাঁও',
- 'ময়মনসিংহ','ময়মনসিংহ','জামালপুর','শেরপুর','নেত্রকোনা','গাজীপুর','নারায়ণগঞ্জ','নারায়ণগঞ্জ','মানিকগঞ্জ','মুন্সিগঞ্জ','মুনশিগঞ্জ','টাঙ্গাইল','কিশোরগঞ্জ','ফরিদপুর','গোপালগঞ্জ','মাদারীপুর','শরীয়তপুর','শরীয়তপুর','রাজবাড়ী','রাজবাড়ী','সাভার','আশুলিয়া','আশুলিয়া','ধামরাই','দোহার','নবাবগঞ্জ'
+ 'ময়মনসিংহ','ময়মনসিংহ','জামালপুর','শেরপুর','নেত্রকোনা','গাজীপুর','নারায়ণগঞ্জ','নারায়ণগঞ্জ','মানিকগঞ্জ','মুন্সিগঞ্জ','মুনশিগঞ্জ','টাঙ্গাইল','কিশোরগঞ্জ','ফরিদপুর','গোপালগঞ্জ','মাদারীপুর','শরীয়তপুর','শরীয়তপুর','রাজবাড়ী','রাজবাড়ী','সাভার','আশুলিয়া','আশুলিয়া','ধামরাই','দোহার','নবাবগঞ্জ',
+ 'chattogram','chittagong','cox bazar',"cox's bazar",'cumilla','comilla','feni','noakhali','lakshmipur','chandpur','brahmanbaria','rangamati','khagrachhari','bandarban',
+ 'sylhet','moulvibazar','habiganj','sunamganj','rajshahi','natore','naogaon','pabna','sirajganj','bogura','bogra','joypurhat','chapainawabganj',
+ 'khulna','jashore','jessore','kushtia','satkhira','bagerhat','jhenaidah','magura','narail','chuadanga','meherpur',
+ 'barishal','barisal','patuakhali','bhola','pirojpur','jhalokathi','barguna','rangpur','dinajpur','gaibandha','kurigram','lalmonirhat','nilphamari','panchagarh','thakurgaon',
+ 'mymensingh','jamalpur','sherpur','netrokona','gazipur','narayanganj','manikganj','munshiganj','tangail','kishoreganj','faridpur','gopalganj','madaripur','shariatpur','rajbari',
+ 'savar','ashulia','tongi','keraniganj','dhamrai','dohar','nawabganj'
 ];
 function normalizeAddress(v) { return ' ' + String(v || '').toLowerCase().replace(/[.,،؛()\-_/\\]/g,' ').replace(/\s+/g,' ').trim() + ' '; }
 function detectDeliveryArea(address) {
  const a=normalizeAddress(address);
- const has=(terms)=>terms.some(t=>a.includes(' '+t.toLowerCase()+' ') || a.includes(t.toLowerCase()));
- if (has(DHAKA_CITY_TERMS)) return 'Dhaka';
- if (has(OUTSIDE_TERMS)) return 'Outside';
- if (/\bdhaka\b/.test(a) || a.includes(' ঢাকা ')) return 'Dhaka';
+ const has=(terms)=>terms.some(t=>a.includes(' '+t.toLowerCase()+' '));
+ const isDhakaCity=has(DHAKA_CITY_TERMS);
+ const isOutside=has(OUTSIDE_TERMS);
+ if (isDhakaCity && isOutside) return 'Unknown';
+ if (isOutside) return 'Outside';
+ if (isDhakaCity) return 'Dhaka';
+ // "Dhaka" alone does not identify the courier zone.
  return 'Unknown';
 }
 function setDeliveryFields(area) {
@@ -1281,8 +1295,11 @@ function updateTotal() {
   if (settings.freeThreshold && subtotal >= Number(settings.freeThreshold)) delivery = 0;
   let t = `মূল্য: ৳${subtotal}`;
   if (discount > 0) t += ` | ডিসকাউন্ট (${discPct()}%): -৳${discount}`;
-  t += $('orderDivision').value === '' ? ' | ডেলিভারি: ঠিকানা লিখুন' : delivery === 0 ? ' | ডেলিভারি: ফ্রি' : ` | ডেলিভারি: ৳${delivery}`;
-  t += ` | মোট: ৳${(subtotal - discount) + delivery}`;
+  const areaKnown = $('orderDivision').value !== '';
+  t += !areaKnown ? ' | ডেলিভারি: ঠিকানা লিখুন' : delivery === 0 ? ' | ডেলিভারি: ফ্রি' : ` | ডেলিভারি: ৳${delivery}`;
+  t += areaKnown || (settings.freeThreshold && subtotal >= Number(settings.freeThreshold))
+    ? ` | মোট: ৳${(subtotal - discount) + delivery}`
+    : ' | ঠিকানা দিলে মোট দেখাবে';
   $('summary').textContent = t;
 }
 $('orderForm').addEventListener('submit', async function (e) {
@@ -1350,7 +1367,8 @@ function totals() {
 function sumUpdate() {
   const el = $('ckSum'); if (!el) return; const t = totals();
   const left = Number(settings.freeThreshold) - t.sub;
-  el.innerHTML = `মূল্য: ${bd(t.sub)}${t.disc ? ` | ডিসকাউন্ট (${discPct()}%): -${bd(t.disc)}` : ''} | ডেলিভারি: ${t.fee === null ? 'ঠিকানা লিখুন' : t.fee ? bd(t.fee) : 'ফ্রি'}<br><b>মোট: ${bd(t.total)}</b>${Number(settings.freeThreshold) > 0 && left > 0 && t.sub > 0 ? `<br><small style="color:#047857">আর ${bd(left)} কিনলে ডেলিভারি ফ্রি!</small>` : ''}`;
+  const totalText = t.fee === null ? 'ঠিকানা দিলে মোট দেখাবে' : bd(t.total);
+  el.innerHTML = `মূল্য: ${bd(t.sub)}${t.disc ? ` | ডিসকাউন্ট (${discPct()}%): -${bd(t.disc)}` : ''} | ডেলিভারি: ${t.fee === null ? 'ঠিকানা লিখুন' : t.fee ? bd(t.fee) : 'ফ্রি'}<br><b>মোট: ${totalText}</b>${Number(settings.freeThreshold) > 0 && left > 0 && t.sub > 0 ? `<br><small style="color:#047857">আর ${bd(left)} কিনলে ডেলিভারি ফ্রি!</small>` : ''}`;
 }
 window.cartSet = function (i, k, v) { if (!cart[i]) return; cart[i][k] = k === 'qty' ? Number(v) : v; saveCart(); updateBadge(); sumUpdate(); };
 window.cartVar = function (i, k, v) {
