@@ -1429,7 +1429,9 @@ function showReceipt(o, items) {
 }
 window.placeCartOrder = async function () {
   const name = F.name.trim(), phone = F.phone.trim(), address = F.address.trim();
-  const detectedArea = detectDeliveryArea(address);\n  if (detectedArea === 'Unknown') return alert('ঠিকানা থেকে এলাকা শনাক্ত হয়নি। থানা ও জেলার নামসহ ঠিকানা লিখুন।');\n  F.division = detectedArea;
+  const detectedArea = detectDeliveryArea(address);
+  if (detectedArea === 'Unknown') return alert('ঠিকানা থেকে এলাকা শনাক্ত হয়নি। থানা ও জেলার নামসহ ঠিকানা লিখুন।');
+  F.division = detectedArea;
   if (!name) return alert('নাম দিন।');
   if (!/^01[3-9][0-9]{8}$/.test(phone)) return alert('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
   if (!address) return alert('ঠিকানা দিন।');
