@@ -1288,7 +1288,10 @@ function updateTotal() {
 $('orderForm').addEventListener('submit', async function (e) {
   e.preventDefault();
   const form = e.target, fd = new FormData(form), qty = Number(fd.get('quantity')), submitBtn = $('submitBtn');
-  let delivery = Number(fd.get('deliveryFee'));
+  const detectedArea = detectDeliveryArea(fd.get('address'));
+  if (detectedArea === 'Unknown') { alert('ঠিকানা থেকে এলাকা শনাক্ত হয়নি। থানা ও জেলার নামসহ ঠিকানা লিখুন।'); return; }
+  const division = detectedArea;
+  let delivery = Number(division === 'Dhaka' ? settings.dhakaFee : settings.outsiderFee);
   const color = fd.get('color'), size = fd.get('size');
   if (variantsOf(selectedProduct).length) {
     const vs = vStock(selectedProduct, color, size);
