@@ -506,18 +506,12 @@ footer button,.social-a{background:#1b1b1b;border-color:#4c4437}
           <option value="1">১টি</option><option value="2">২টি</option><option value="3">৩টি</option><option value="4">৪টি</option><option value="5">৫টি</option>
         </select>
       </label>
-      <label class="field">বিভাগ / অঞ্চল
-        <select name="division" id="orderDivision" onchange="updateDeliveryFeeOption()" required>
-          <option value="Dhaka">ঢাকা বিভাগ / ঢাকা সিটি</option>
-          <option value="Outside">অন্যান্য বিভাগ / জেলা / উপজেলা</option>
-        </select>
+      <input type="hidden" name="division" id="orderDivision" value="">
+      <input type="hidden" name="deliveryFee" id="deliveryFee" value="">
+      <label class="field">সম্পূর্ণ ঠিকানা (বাসা/রোড/থানা/জেলা)
+        <textarea name="address" id="orderAddress" required rows="3" oninput="detectOrderDelivery(this.value)" placeholder="বাসা/রোড, এলাকা, থানা ও জেলা লিখুন (যেমন: মিরপুর, ঢাকা / কুমিল্লা সদর, কুমিল্লা)"></textarea>
       </label>
-      <label class="field">ডেলিভারি এলাকা (চার্জ)
-        <select name="deliveryFee" id="deliveryFee" onchange="updateTotal()" required></select>
-      </label>
-      <label class="field">সম্পূর্ণ ঠিকানা (বাসা/রোড/থানা)
-        <textarea name="address" required rows="2" placeholder="বাসা/হোল্ডিং নম্বর, রোড, এলাকা, থানা"></textarea>
-      </label>
+      <div id="orderDeliveryHint" class="cart-sum" aria-live="polite">ঠিকানা লিখুন—ডেলিভারি চার্জ স্বয়ংক্রিয়ভাবে নির্ধারণ হবে।</div>
       <div class="trust-icons">
         <div class="trust-item">🛡️ ১০০% অরিজিনাল</div>
         <div class="trust-item">⚡ ফার্স্ট ডেলিভারি</div>
@@ -877,12 +871,48 @@ function applySettings() {
   $('heroBox').style.background = `linear-gradient(135deg,${settings.heroBg || '#17080c'},#5a0a14)`;
   updateDeliveryFeeOption(); renderSupport(); renderFooter(); renderHero(); loadPixel();
 }
+/* ঠিকানা থেকে ঢাকা সিটি বনাম ঢাকার বাইরের ডেলিভারি শনাক্ত */
+const DHAKA_CITY_TERMS = [
+ 'ঢাকা সিটি','ঢাকা শহর','dhaka city','dhaka metropolitan','ঢাকা মহানগর',
+ 'মিরপুর','পল্লবী','রূপনগর','কাফরুল','শেওড়াপাড়া','শেওড়াপাড়া','আগারগাঁও','তালতলা',
+ 'উত্তরা','দক্ষিণখান','উত্তরখান','খিলক্ষেত','বিমানবন্দর','আব্দুল্লাহপুর','টঙ্গী?','বনানী','গুলশান','বারিধারা',
+ 'বাড্ডা','রামপুরা','হাতিরঝিল','মালিবাগ','মৌচাক','খিলগাঁও','বাসাবো','মুগদা','যাত্রাবাড়ী','যাত্রাবাড়ী',
+ 'সায়েদাবাদ','সায়েদাবাদ','মতিঝিল','পল্টন','গুলিস্তান','ফকিরাপুল','আরামবাগ','ধানমন্ডি','কলাবাগান',
+ 'নিউ মার্কেট','লালবাগ','আজিমপুর','হাজারীবাগ','জিগাতলা','মোহাম্মদপুর','আদাবর','শ্যামলী','শেরেবাংলা নগর',
+ 'তেজগাঁও','ফার্মগেট','কারওয়ান বাজার','কারওয়ান বাজার','ইস্কাটন','বাংলামোটর','সুত্রাপুর','সূত্রাপুর',
+ 'ওয়ারী','ওয়ারী','গেন্ডারিয়া','গেন্ডারিয়া','কেরানীগঞ্জ?','সদরঘাট','কামরাঙ্গীরচর'
+];
+const OUTSIDE_TERMS = [
+ 'চট্টগ্রাম','চট্রগ্রাম','চট্টগ্রাম','কক্সবাজার','কুমিল্লা','ফেনী','নোয়াখালী','নোয়াখালী','লক্ষ্মীপুর','চাঁদপুর','ব্রাহ্মণবাড়িয়া','ব্রাহ্মণবাড়িয়া','রাঙ্গামাটি','রাঙামাটি','খাগড়াছড়ি','খাগড়াছড়ি','বান্দরবান',
+ 'সিলেট','মৌলভীবাজার','হবিগঞ্জ','সুনামগঞ্জ','রাজশাহী','নাটোর','নওগাঁ','পাবনা','সিরাজগঞ্জ','বগুড়া','বগুড়া','জয়পুরহাট','জয়পুরহাট','চাঁপাইনবাবগঞ্জ',
+ 'খুলনা','যশোর','কুষ্টিয়া','কুষ্টিয়া','সাতক্ষীরা','বাগেরহাট','ঝিনাইদহ','মাগুরা','নড়াইল','নড়াইল','চুয়াডাঙ্গা','চুয়াডাঙ্গা','মেহেরপুর',
+ 'বরিশাল','পটুয়াখালী','পটুয়াখালী','ভোলা','পিরোজপুর','ঝালকাঠি','বরগুনা',
+ 'রংপুর','দিনাজপুর','গাইবান্ধা','কুড়িগ্রাম','কুড়িগ্রাম','লালমনিরহাট','নীলফামারী','পঞ্চগড়','পঞ্চগড়','ঠাকুরগাঁও',
+ 'ময়মনসিংহ','ময়মনসিংহ','জামালপুর','শেরপুর','নেত্রকোনা','গাজীপুর','নারায়ণগঞ্জ','নারায়ণগঞ্জ','মানিকগঞ্জ','মুন্সিগঞ্জ','মুনশিগঞ্জ','টাঙ্গাইল','কিশোরগঞ্জ','ফরিদপুর','গোপালগঞ্জ','মাদারীপুর','শরীয়তপুর','শরীয়তপুর','রাজবাড়ী','রাজবাড়ী','সাভার','আশুলিয়া','আশুলিয়া','ধামরাই','দোহার','নবাবগঞ্জ'
+];
+function normalizeAddress(v) { return ' ' + String(v || '').toLowerCase().replace(/[.,،؛()\-_/\\]/g,' ').replace(/\s+/g,' ').trim() + ' '; }
+function detectDeliveryArea(address) {
+ const a=normalizeAddress(address);
+ const has=(terms)=>terms.some(t=>a.includes(' '+t.toLowerCase()+' ') || a.includes(t.toLowerCase()));
+ if (has(DHAKA_CITY_TERMS)) return 'Dhaka';
+ if (has(OUTSIDE_TERMS)) return 'Outside';
+ if (/\\bdhaka\\b/.test(a) || a.includes(' ঢাকা ')) return 'Dhaka';
+ return 'Unknown';
+}
+function setDeliveryFields(area) {
+ const div=$('orderDivision'), fee=$('deliveryFee'), hint=$('orderDeliveryHint');
+ if (!div || !fee) return;
+ div.value=area==='Unknown'?'':area;
+ fee.value=area==='Dhaka'?String(settings.dhakaFee):area==='Outside'?String(settings.outsiderFee):'';
+ if (hint) hint.textContent=area==='Dhaka'?'📍 ঢাকা সিটির ঠিকানা শনাক্ত হয়েছে — ডেলিভারি চার্জ ৳'+fee.value:
+   area==='Outside'?'📍 ঢাকার বাইরের ঠিকানা শনাক্ত হয়েছে — ডেলিভারি চার্জ ৳'+fee.value:
+   '⚠️ ঠিকানা থেকে এলাকা নিশ্চিত হওয়া যায়নি। থানা/জেলা-সহ ঠিকানা লিখুন।';
+ updateTotal();
+}
+window.detectOrderDelivery=function(address){setDeliveryFields(detectDeliveryArea(address));};
 function updateDeliveryFeeOption() {
-  const div = $('orderDivision').value, feeSelect = $('deliveryFee');
-  feeSelect.innerHTML = div === 'Dhaka'
-    ? `<option value="${E(settings.dhakaFee)}">ঢাকা ভেতরে (৳${E(settings.dhakaFee)})</option>`
-    : `<option value="${E(settings.outsiderFee)}">ঢাকা বাইরে / সারা দেশ (৳${E(settings.outsiderFee)})</option>`;
-  updateTotal();
+ const address=$('orderAddress');
+ setDeliveryFields(detectDeliveryArea(address ? address.value : ''));
 }
 function renderSupport() {
   let html = '';
@@ -1274,7 +1304,7 @@ $('orderForm').addEventListener('submit', async function (e) {
   const thumb = await makeThumb(currentSelectedImg || selectedProduct.img), ref = getRef();
   const order = {
     id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: fd.get('name'), phone: fd.get('phone'),
-    address: `${fd.get('division')} - ${fd.get('address')}`, affiliate_ref: ref,
+    address: `${division} - ${fd.get('address')}`, delivery_area: division, affiliate_ref: ref,
     items_json: JSON.stringify([{ product_id: selectedProduct.id, name: selectedProduct.name, price: unitPrice, quantity: qty, color, size, o1: lab1(selectedProduct), o2: lab2(selectedProduct), img: thumb, deliveryFee: delivery }]),
     total, discount, delivery_fee: delivery, commission_amount: ref !== 'None' ? Math.round((total - delivery) * 0.05) : 0, commission_paid: false,
     status: 'Pending', created_at: new Date().toISOString()
@@ -1291,7 +1321,7 @@ $('orderForm').addEventListener('submit', async function (e) {
 const KEY = 'dhong_cart', SIZES = ['Free Size', 'M', 'L', 'XL', 'XXL'];
 let cart = []; try { cart = JSON.parse(localStorage.getItem(KEY) || '[]'); if (!Array.isArray(cart)) cart = []; } catch (e) { cart = []; }
 const saveCart = () => { try { localStorage.setItem(KEY, JSON.stringify(cart)); } catch (e) {} };
-const F = { name: '', phone: '', division: 'Dhaka', address: '' };
+const F = { name: '', phone: '', division: '', address: '' };
 function updateBadge() { const n = cart.reduce((s, c) => s + c.qty, 0); $('cartCount').textContent = n; $('ppCartCount').textContent = n; }
 window.addToCart = async function (pid, opt) {
   const p = prod(pid); if (!p) return;
@@ -1309,7 +1339,7 @@ window.addToCart = async function (pid, opt) {
 function totals() {
   let sub = 0; cart.forEach(c => { const p = prod(c.pid); if (p) sub += unit(p) * c.qty; });
   const disc = localStorage.getItem('dhong_ordered_before') ? 0 : discOf(sub);
-  let fee = Number(F.division === 'Outside' ? settings.outsiderFee : settings.dhakaFee) || 0;
+  const detectedArea = detectDeliveryArea(F.address);\n  let fee = detectedArea === 'Dhaka' ? Number(settings.dhakaFee) || 0 : detectedArea === 'Outside' ? Number(settings.outsiderFee) || 0 : 0;
   if (settings.freeThreshold && sub >= Number(settings.freeThreshold)) fee = 0;
   return { sub, disc, fee, total: sub - disc + fee };
 }
@@ -1327,7 +1357,7 @@ window.cartVar = function (i, k, v) {
   saveCart(); renderCart();
 };
 window.cartDel = function (i) { cart.splice(i, 1); saveCart(); renderCart(); };
-window.cartF = function (k, v) { F[k] = v; if (k === 'division') sumUpdate(); };
+window.cartF = function (k, v) { F[k] = v; if (k === 'address') { F.division = detectDeliveryArea(v); sumUpdate(); const h=$('cartDeliveryHint'); if(h) h.textContent=F.division==='Dhaka'?'📍 ঢাকা সিটি শনাক্ত — ডেলিভারি ৳'+settings.dhakaFee:F.division==='Outside'?'📍 ঢাকার বাইরে শনাক্ত — ডেলিভারি ৳'+settings.outsiderFee:'⚠️ থানা ও জেলার নামসহ ঠিকানা লিখুন।'; } };
 function fixVar(c, p) {
   if (vStock(p, c.color, c.size) > 0) return;
   const cs = vColors(p); if (!cs.includes(c.color)) c.color = cs[0] || c.color;
@@ -1355,10 +1385,8 @@ function renderCart() {
   body.innerHTML = rows + `
     <label class="field">আপনার নাম<input value="${E(F.name)}" oninput="cartF('name',this.value)" placeholder="সম্পূর্ণ নাম"></label>
     <label class="field">মোবাইল নম্বর<input value="${E(F.phone)}" inputmode="tel" oninput="cartF('phone',this.value)" placeholder="01XXXXXXXXX"></label>
-    <label class="field">বিভাগ / অঞ্চল<select onchange="cartF('division',this.value)">
-      <option value="Dhaka" ${F.division === 'Dhaka' ? 'selected' : ''}>ঢাকা বিভাগ / ঢাকা সিটি</option>
-      <option value="Outside" ${F.division === 'Outside' ? 'selected' : ''}>অন্যান্য বিভাগ / জেলা / উপজেলা</option></select></label>
-    <label class="field">সম্পূর্ণ ঠিকানা<textarea rows="2" oninput="cartF('address',this.value)" placeholder="বাসা/হোল্ডিং নম্বর, রোড, এলাকা, থানা">${E(F.address)}</textarea></label>
+    <label class="field">সম্পূর্ণ ঠিকানা (বাসা/রোড, থানা ও জেলা)<textarea rows="3" oninput="cartF('address',this.value)" placeholder="যেমন: মিরপুর ১০, কাফরুল, ঢাকা / কুমিল্লা সদর, কুমিল্লা">${E(F.address)}</textarea></label>
+    <div class="cart-sum" id="cartDeliveryHint">${F.division==='Dhaka'?'📍 ঢাকা সিটি শনাক্ত':F.division==='Outside'?'📍 ঢাকার বাইরে শনাক্ত':'ঠিকানা লিখুন—চার্জ স্বয়ংক্রিয়ভাবে নির্ধারণ হবে।'}</div>
     <div class="cart-sum" id="ckSum"></div>
     <button class="primary" id="ckBtn" onclick="placeCartOrder()">অর্ডার নিশ্চিত করুন</button>`;
   sumUpdate();
@@ -1396,7 +1424,7 @@ function showReceipt(o, items) {
   openModal('receiptModal');
 }
 window.placeCartOrder = async function () {
-  const name = F.name.trim(), phone = F.phone.trim(), address = F.address.trim();
+  const name = F.name.trim(), phone = F.phone.trim(), address = F.address.trim();\n  const detectedArea = detectDeliveryArea(address);\n  if (detectedArea === 'Unknown') return alert('ঠিকানা থেকে এলাকা শনাক্ত হয়নি। থানা ও জেলার নামসহ ঠিকানা লিখুন।');\n  F.division = detectedArea;
   if (!name) return alert('নাম দিন।');
   if (!/^01[3-9][0-9]{8}$/.test(phone)) return alert('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
   if (!address) return alert('ঠিকানা দিন।');
@@ -1417,7 +1445,7 @@ window.placeCartOrder = async function () {
   const items = lines.map(({ c, p }) => ({ product_id: p.id, name: p.name, price: unit(p), quantity: c.qty, color: c.color, size: c.size, o1: lab1(p), o2: lab2(p), img: c.img || p.img || '' }));
   const ref = getRef();
   const order = { id: String(Math.floor(100000 + Math.random() * 900000)), customer_name: name, phone,
-    address: `${F.division} - ${address}`, affiliate_ref: ref, items_json: JSON.stringify(items),
+    address: `${F.division} - ${address}`, delivery_area: F.division, affiliate_ref: ref, items_json: JSON.stringify(items),
     total: t.total, discount: t.disc, delivery_fee: t.fee, commission_amount: ref !== 'None' ? Math.round((t.total - t.fee) * 0.05) : 0, commission_paid: false, status: 'Pending', created_at: new Date().toISOString() };
   if (chk.h) order.phoneHash = chk.h;
   try { await saveOrder(order, chk.eligible ? chk.h : null); }
