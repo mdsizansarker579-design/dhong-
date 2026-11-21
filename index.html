@@ -875,12 +875,12 @@ function applySettings() {
 const DHAKA_CITY_TERMS = [
  'ঢাকা সিটি','ঢাকা শহর','dhaka city','dhaka metropolitan','ঢাকা মহানগর',
  'মিরপুর','পল্লবী','রূপনগর','কাফরুল','শেওড়াপাড়া','শেওড়াপাড়া','আগারগাঁও','তালতলা',
- 'উত্তরা','দক্ষিণখান','উত্তরখান','খিলক্ষেত','বিমানবন্দর','আব্দুল্লাহপুর','টঙ্গী?','বনানী','গুলশান','বারিধারা',
+ 'উত্তরা','দক্ষিণখান','উত্তরখান','খিলক্ষেত','বিমানবন্দর','আব্দুল্লাহপুর','টঙ্গী','বনানী','গুলশান','বারিধারা',
  'বাড্ডা','রামপুরা','হাতিরঝিল','মালিবাগ','মৌচাক','খিলগাঁও','বাসাবো','মুগদা','যাত্রাবাড়ী','যাত্রাবাড়ী',
  'সায়েদাবাদ','সায়েদাবাদ','মতিঝিল','পল্টন','গুলিস্তান','ফকিরাপুল','আরামবাগ','ধানমন্ডি','কলাবাগান',
  'নিউ মার্কেট','লালবাগ','আজিমপুর','হাজারীবাগ','জিগাতলা','মোহাম্মদপুর','আদাবর','শ্যামলী','শেরেবাংলা নগর',
  'তেজগাঁও','ফার্মগেট','কারওয়ান বাজার','কারওয়ান বাজার','ইস্কাটন','বাংলামোটর','সুত্রাপুর','সূত্রাপুর',
- 'ওয়ারী','ওয়ারী','গেন্ডারিয়া','গেন্ডারিয়া','কেরানীগঞ্জ?','সদরঘাট','কামরাঙ্গীরচর'
+ 'ওয়ারী','ওয়ারী','গেন্ডারিয়া','গেন্ডারিয়া','কেরানীগঞ্জ','সদরঘাট','কামরাঙ্গীরচর'
 ];
 const OUTSIDE_TERMS = [
  'চট্টগ্রাম','চট্রগ্রাম','চট্টগ্রাম','কক্সবাজার','কুমিল্লা','ফেনী','নোয়াখালী','নোয়াখালী','লক্ষ্মীপুর','চাঁদপুর','ব্রাহ্মণবাড়িয়া','ব্রাহ্মণবাড়িয়া','রাঙ্গামাটি','রাঙামাটি','খাগড়াছড়ি','খাগড়াছড়ি','বান্দরবান',
@@ -896,7 +896,7 @@ function detectDeliveryArea(address) {
  const has=(terms)=>terms.some(t=>a.includes(' '+t.toLowerCase()+' ') || a.includes(t.toLowerCase()));
  if (has(DHAKA_CITY_TERMS)) return 'Dhaka';
  if (has(OUTSIDE_TERMS)) return 'Outside';
- if (/\\bdhaka\\b/.test(a) || a.includes(' ঢাকা ')) return 'Dhaka';
+ if (/\bdhaka\b/.test(a) || a.includes(' ঢাকা ')) return 'Dhaka';
  return 'Unknown';
 }
 function setDeliveryFields(area) {
@@ -1281,7 +1281,7 @@ function updateTotal() {
   if (settings.freeThreshold && subtotal >= Number(settings.freeThreshold)) delivery = 0;
   let t = `মূল্য: ৳${subtotal}`;
   if (discount > 0) t += ` | ডিসকাউন্ট (${discPct()}%): -৳${discount}`;
-  t += delivery === 0 ? ' | ডেলিভারি: ফ্রি' : ` | ডেলিভারি: ৳${delivery}`;
+  t += $('orderDivision').value === '' ? ' | ডেলিভারি: ঠিকানা লিখুন' : delivery === 0 ? ' | ডেলিভারি: ফ্রি' : ` | ডেলিভারি: ৳${delivery}`;
   t += ` | মোট: ৳${(subtotal - discount) + delivery}`;
   $('summary').textContent = t;
 }
@@ -1339,14 +1339,15 @@ window.addToCart = async function (pid, opt) {
 function totals() {
   let sub = 0; cart.forEach(c => { const p = prod(c.pid); if (p) sub += unit(p) * c.qty; });
   const disc = localStorage.getItem('dhong_ordered_before') ? 0 : discOf(sub);
-  const detectedArea = detectDeliveryArea(F.address);\n  let fee = detectedArea === 'Dhaka' ? Number(settings.dhakaFee) || 0 : detectedArea === 'Outside' ? Number(settings.outsiderFee) || 0 : 0;
+  const detectedArea = detectDeliveryArea(F.address);
+  let fee = detectedArea === 'Dhaka' ? Number(settings.dhakaFee) || 0 : detectedArea === 'Outside' ? Number(settings.outsiderFee) || 0 : null;
   if (settings.freeThreshold && sub >= Number(settings.freeThreshold)) fee = 0;
   return { sub, disc, fee, total: sub - disc + fee };
 }
 function sumUpdate() {
   const el = $('ckSum'); if (!el) return; const t = totals();
   const left = Number(settings.freeThreshold) - t.sub;
-  el.innerHTML = `মূল্য: ${bd(t.sub)}${t.disc ? ` | ডিসকাউন্ট (${discPct()}%): -${bd(t.disc)}` : ''} | ডেলিভারি: ${t.fee ? bd(t.fee) : 'ফ্রি'}<br><b>মোট: ${bd(t.total)}</b>${Number(settings.freeThreshold) > 0 && left > 0 && t.sub > 0 ? `<br><small style="color:#047857">আর ${bd(left)} কিনলে ডেলিভারি ফ্রি!</small>` : ''}`;
+  el.innerHTML = `মূল্য: ${bd(t.sub)}${t.disc ? ` | ডিসকাউন্ট (${discPct()}%): -${bd(t.disc)}` : ''} | ডেলিভারি: ${t.fee === null ? 'ঠিকানা লিখুন' : t.fee ? bd(t.fee) : 'ফ্রি'}<br><b>মোট: ${bd(t.total)}</b>${Number(settings.freeThreshold) > 0 && left > 0 && t.sub > 0 ? `<br><small style="color:#047857">আর ${bd(left)} কিনলে ডেলিভারি ফ্রি!</small>` : ''}`;
 }
 window.cartSet = function (i, k, v) { if (!cart[i]) return; cart[i][k] = k === 'qty' ? Number(v) : v; saveCart(); updateBadge(); sumUpdate(); };
 window.cartVar = function (i, k, v) {
@@ -1424,7 +1425,8 @@ function showReceipt(o, items) {
   openModal('receiptModal');
 }
 window.placeCartOrder = async function () {
-  const name = F.name.trim(), phone = F.phone.trim(), address = F.address.trim();\n  const detectedArea = detectDeliveryArea(address);\n  if (detectedArea === 'Unknown') return alert('ঠিকানা থেকে এলাকা শনাক্ত হয়নি। থানা ও জেলার নামসহ ঠিকানা লিখুন।');\n  F.division = detectedArea;
+  const name = F.name.trim(), phone = F.phone.trim(), address = F.address.trim();
+  const detectedArea = detectDeliveryArea(address);\n  if (detectedArea === 'Unknown') return alert('ঠিকানা থেকে এলাকা শনাক্ত হয়নি। থানা ও জেলার নামসহ ঠিকানা লিখুন।');\n  F.division = detectedArea;
   if (!name) return alert('নাম দিন।');
   if (!/^01[3-9][0-9]{8}$/.test(phone)) return alert('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
   if (!address) return alert('ঠিকানা দিন।');
