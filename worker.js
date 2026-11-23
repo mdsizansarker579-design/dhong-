@@ -214,7 +214,7 @@ async function handleAdminApi(request, env, url) {
         env.DHONG.prepare("UPDATE dhong_orders_v2 SET status = ? WHERE order_id = ? AND status = ?")
           .bind(nextStatus, orderId, existing.status),
         env.DHONG.prepare(
-          "INSERT INTO dhong_admin_order_audit (order_id, admin_uid, old_status, new_status, changed_at) VALUES (?, ?, ?, ?, ?)"
+          "INSERT INTO dhong_admin_order_audit (order_id, admin_uid, old_status, new_status, changed_at) SELECT ?, ?, ?, ?, ? WHERE changes() > 0"
         ).bind(orderId, admin.uid, existing.status, nextStatus, now)
       ]);
       if (!results[0]?.meta?.changes) return json({ error: "ORDER_STATUS_CONFLICT" }, 409);
