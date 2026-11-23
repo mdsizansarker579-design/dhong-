@@ -139,3 +139,52 @@ test("D1 Admin API never returns orders when the database binding is absent", as
   assert.equal(response.status, 503);
   assert.equal((await response.json()).error, "DATABASE_NOT_CONFIGURED");
 });
+test("D1 Admin API rejects a valid Firebase user who is not allowlisted", async () => {
+  const cryptoApi = globalThis.crypto;
+  const { publicKey, privateKey } = await cryptoApi.subtle.generateKey({
+    name: "RSASSA-PKCS1-v1_5",
+    modulusLength: 2048,
+    publicExponent: new Uint8Array([1, 0, 1]),
+    hash: "SHA-256"
+  }, true, ["sign", "verify"]);
+  const jwk = await cryptoApi.subtle.exportKey("jwk", publicKey);
+  jwk.kid = "dhong-test-kid";
+  const encode = value => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const now = Math.floor(Date.now() / 1000);
+  const header = encode({ alg: "RS256", typ: "JWT", kid: jwk.kid });
+  const claims = encode({
+    iss: "https://securetoken.google.com/dhong-c897d",
+    aud: "dhong-c897d",
+    sub: "not-allowlisted-test-user",
+    iat: now,
+    auth_time: now,
+    exp: now + 3600
+  });
+  const signingInput = header + "." + claims;
+  const signature = await cryptoApi.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    privateKey,
+    new TextEncoder().encode(signingInput)
+  );
+  const token = signingInput + "." + Buffer.from(signature).toString("base64url");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ keys: [jwk] }), {
+    status: 200,
+    headers: { "content-type": "application/json", "cache-control": "max-age=3600" }
+  });
+  try {
+    const db = {
+      prepare() {
+        return { bind() { return { first: async () => null }; } };
+      }
+    };
+    const response = await handle(new Request("https://worker.test/api/admin/orders", {
+      method: "GET",
+      headers: { authorization: "Bearer " + token }
+    }), { DHONG: db, FIREBASE_PROJECT_ID: "dhong-c897d" });
+    assert.equal(response.status, 403);
+    assert.equal((await response.json()).error, "ADMIN_FORBIDDEN");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
