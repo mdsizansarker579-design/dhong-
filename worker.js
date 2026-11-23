@@ -91,7 +91,60 @@ async function quoteItems(db, rawItems) {
     canonical.push({ product_id: productId, title: cleanText(product.title, 180), qty, unit_price: unitPrice,
       color, size, line_total: unitPrice * qty });
   }
-  return { subtotal, items: canonical };
+  const inventory = [];
+  for (const [productId, qty] of productQty.entries()) {
+    const product = products.get(productId);
+    const variantsToReserve = [];
+    for (const [key, variantQtyForKey] of variantQty.entries()) {
+      const [id, color, size] = key.split("\\u0000");
+      if (id !== productId) continue;
+      const index = product.variants.findIndex(v => cleanText(v?.color, 40) === color && cleanText(v?.size, 40) === size);
+      if (index < 0) throw new Error("VARIANT_UNAVAILABLE");
+      variantsToReserve.push({ index, qty: variantQtyForKey });
+    }
+    inventory.push({ product_id: productId, qty, variants: variantsToReserve });
+  }
+  return { subtotal, items: canonical, inventory };
+}
+
+// One conditional UPDATE reserves every product and selected variant in a single
+// SQLite statement. The sufficiency CTE prevents partial reservations under races.
+function buildInventoryReservation(db, inventory) {
+  const products = inventory;
+  const requestedRows = products.map(() => "(?, ?)").join(", ");
+  const variantRows = products.flatMap(p => p.variants.map(() => "(?, ?, ?)")).join(", ");
+  const params = [];
+  for (const p of products) params.push(p.product_id, p.qty);
+  const variantParams = [];
+  for (const p of products) for (const v of p.variants) {
+    variantParams.push(p.product_id, "$[" + v.index + "].stock", v.qty);
+  }
+  const variantCte = variantRows
+    ? "requested_variants(product_id, path, qty) AS (VALUES " + variantRows + "),"
+    : "requested_variants(product_id, path, qty) AS (SELECT NULL, NULL, NULL WHERE 0),";
+  const jsonCases = [];
+  const jsonParams = [];
+  for (const p of products) {
+    let expression = "variants_json";
+    for (const v of p.variants) {
+      const path = "$[" + v.index + "].stock";
+      expression = "json_set(" + expression + ", '" + path + "', CAST(json_extract(" + expression + ", '" + path + "') AS INTEGER) - " + v.qty + ")";
+    }
+    jsonCases.push("WHEN ? THEN " + expression);
+    jsonParams.push(p.product_id);
+  }
+  const ids = products.map(() => "?").join(", ");
+  const sql = "WITH requested(product_id, qty) AS (VALUES " + requestedRows + "), " +
+    variantCte +
+    "sufficient(n) AS (SELECT COUNT(*) FROM dhong_catalog c JOIN requested r ON r.product_id = c.product_id " +
+    "WHERE c.active = 1 AND c.stock >= r.qty AND NOT EXISTS (" +
+    "SELECT 1 FROM requested_variants rv WHERE rv.product_id = c.product_id AND " +
+    "(json_type(c.variants_json, rv.path) IS NULL OR CAST(json_extract(c.variants_json, rv.path) AS INTEGER) < rv.qty))) " +
+    "UPDATE dhong_catalog SET stock = stock - (SELECT qty FROM requested WHERE product_id = dhong_catalog.product_id), " +
+    "variants_json = CASE product_id " + jsonCases.join(" ") + " ELSE variants_json END " +
+    "WHERE product_id IN (" + ids + ") AND (SELECT n FROM sufficient) = ?";
+  const allParams = [...params, ...variantParams, ...jsonParams, ...products.map(p => p.product_id), products.length];
+  return db.prepare(sql).bind(...allParams);
 }
 
 const ADMIN_STATUSES = new Set(["WhatsApp Pending", "Pending", "Processing", "Delivered", "Cancelled"]);
@@ -260,9 +313,12 @@ async function handle(request, env) {
   const orderId = crypto.randomUUID();
   const now = new Date().toISOString();
   try {
-    await env.DHONG.prepare(
-      "INSERT INTO dhong_orders_v2 (order_id, idempotency_key, customer_name, phone, address, items_json, subtotal, discount, delivery_fee, total, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'Pending', ?)"
-    ).bind(orderId, idempotencyKey, name, phone, address, JSON.stringify(quote.items), quote.subtotal, deliveryFee, total, now).run();
+    const insertOrder = env.DHONG.prepare(
+      "INSERT INTO dhong_orders_v2 (order_id, idempotency_key, customer_name, phone, address, items_json, subtotal, discount, delivery_fee, total, status, created_at) " +
+      "SELECT ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'Pending', ? WHERE changes() = ?"
+    ).bind(orderId, idempotencyKey, name, phone, address, JSON.stringify(quote.items), quote.subtotal, deliveryFee, total, now, quote.inventory.length);
+    const results = await env.DHONG.batch([buildInventoryReservation(env.DHONG, quote.inventory), insertOrder]);
+    if (!results[1]?.meta?.changes) return json({ error: "STOCK_CHANGED_RETRY_ORDER" }, 409);
   } catch (e) {
     if (String(e).toLowerCase().includes("unique")) {
       const old = await env.DHONG.prepare("SELECT order_id, total, status, created_at FROM dhong_orders_v2 WHERE idempotency_key = ?")
