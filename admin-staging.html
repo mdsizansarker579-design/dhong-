@@ -27,7 +27,8 @@ table{width:100%;border-collapse:collapse;margin-top:10px}td,th{text-align:left;
 <label for="email">Admin Email</label><input id="email" type="email" autocomplete="username">
 <label for="password">Password</label><input id="password" type="password" autocomplete="current-password">
 <button id="loginBtn">Login করুন</button>
-<div id="loginMsg" class="small" role="status"></div>
+<button id="resetBtn" class="secondary" type="button">পাসওয়ার্ড ভুলে গেছেন? Reset email পাঠান</button>
+<div id="loginMsg" class="small" role="status">উপরের ঘরে Admin Email লিখে Reset email বাটনে চাপুন।</div>
 </section>
 <section class="card hidden" id="testCard">
 <div>Login: <b id="who"></b> <button class="secondary" id="logoutBtn">Logout</button></div>
@@ -86,6 +87,19 @@ async function loadOrders() {
   renderOrders(data.orders);
   showMessage("সফল: Admin API থেকে " + data.orders.length + "টি অর্ডার পাওয়া গেছে। মোট: " + data.total, "success");
 }
+$("resetBtn").addEventListener("click", async () => {
+  const email = $("email").value.trim();
+  if (!email) { $("loginMsg").textContent = "আগে Admin Email লিখুন।"; $("loginMsg").className = "error"; $("email").focus(); return; }
+  $("resetBtn").disabled = true; $("loginMsg").textContent = "Reset email পাঠানো হচ্ছে…"; $("loginMsg").className = "small";
+  try {
+    await auth.sendPasswordResetEmail(email);
+    $("loginMsg").textContent = "যদি এই Email দিয়ে Admin account থাকে, Firebase Reset Link পাঠিয়েছে। Inbox ও Spam/Junk folder দেখুন।";
+    $("loginMsg").className = "success";
+  } catch (e) {
+    $("loginMsg").textContent = e.code === "auth/invalid-email" ? "Email ঠিকভাবে লিখুন।" : "Reset email পাঠানো যায়নি। Email ঠিক আছে কি না এবং Firebase Email/Password sign-in চালু আছে কি না পরীক্ষা করুন।";
+    $("loginMsg").className = "error";
+  } finally { $("resetBtn").disabled = false; }
+});
 $("loginBtn").addEventListener("click", async () => {
   $("loginBtn").disabled = true; $("loginMsg").textContent = "Login হচ্ছে…";
   try { await auth.signInWithEmailAndPassword($("email").value.trim(), $("password").value); $("password").value = ""; }
