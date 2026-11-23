@@ -18,8 +18,10 @@ The Worker verifies Firebase ID tokens against Google's published Secure Token J
 
 ## Staging-only onboarding
 
-1. Create or select a separate staging D1 database.
-2. Apply the existing order/catalog migrations first, then `migrations/0002_admin_api.sql`.
+A separate empty staging D1 database (`dhong-admin-staging`) and a separate Worker (`dhong-api-staging`) have been created. Migrations `0001_phase1.sql` and `0002_admin_api.sql` were applied successfully to that staging database only. The staging Worker is configured with the D1 binding, `FIREBASE_PROJECT_ID=dhong-c897d`, and the GitHub Pages CORS origin.
+
+1. The staging database starts with zero orders and zero authorized Admin UIDs; it contains schema only.
+2. For a repeatable rebuild, apply the existing order/catalog migrations first, then `migrations/0002_admin_api.sql`.
 3. Add only the verified Firebase Auth UID(s) of authorized admins to `dhong_admin_api_users`, for example:
 
    ```sql
@@ -28,7 +30,7 @@ The Worker verifies Firebase ID tokens against Google's published Secure Token J
    ```
 
 4. Configure the staging Worker with the staging D1 binding and `FIREBASE_PROJECT_ID`.
-5. Test unauthenticated 401, authenticated non-admin 403, authorized list access, status update, and audit rows using synthetic orders.
+5. Add a verified Firebase Auth UID to the staging allowlist, then test unauthenticated 401, authenticated non-admin 403, authorized list access, status update, and audit rows using synthetic orders.
 
 Do not copy a UID from a browser-supplied request body. Confirm it from the authenticated Firebase session or Firebase Authentication console.
 
@@ -36,4 +38,4 @@ Do not copy a UID from a browser-supplied request body. Confirm it from the auth
 
 The existing Admin page still reads and writes customer orders in Firebase Realtime Database. This API reads and updates only `dhong_orders_v2` in D1. It does not silently switch the live Admin page, sync Firebase orders into D1, or change Firebase Rules. Connecting the UI requires a separately reviewed migration plan and staging tests.
 
-The current customer checkout and production Worker are unchanged. Do not apply this migration to production or deploy this Worker until the D1 schema, staging tests, admin UID, and rollback/backup plan are verified.
+The current customer checkout and production Worker are unchanged. The staging Worker has been uploaded separately, but runtime requests with a real Firebase token have not yet been verified. Do not apply this migration to production or deploy the staging source over the production Worker until the D1 schema, staging tests, admin UID, and rollback/backup plan are verified.
