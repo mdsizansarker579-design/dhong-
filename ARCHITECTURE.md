@@ -10,6 +10,7 @@ DHONG is a guest-checkout Bangladesh storefront with a separate Admin Panel. Cus
 - `admin.html` is the separate Admin Panel and currently contains substantial inline HTML, CSS and JavaScript.
 - Firebase Authentication, Realtime Database and the existing Firebase order flow are still the live application integration.
 - `worker.js`, D1 migrations and catalog import tooling are a staged backend foundation only. They are not deployed by this branch.
+- The Worker now includes Firebase ID-token-verified Admin API routes and a D1 UID allowlist/audit migration, but these routes are not deployed or connected to the Admin UI.
 - The Worker writes to `dhong_orders_v2`; it is not yet the source of truth for the existing Admin order-management screens.
 - No production Firebase Rules, Cloudflare bindings/secrets, database migrations or external courier/Meta credentials are included in source control.
 
@@ -79,7 +80,7 @@ Do not move or split the large HTML files in one rewrite. Extract one module at 
 
 ## Current blockers before production
 
-- Secure Worker admin authentication and D1 order listing/status API.
+- Apply and verify the new Admin API migration in staging; onboard verified Admin UIDs and connect a separately reviewed D1 orders view to the Admin UI.
 - Atomic inventory reservation.
 - Firebase-to-D1 order reconciliation and source-of-truth decision.
 - Staging D1 migration and catalog import.
