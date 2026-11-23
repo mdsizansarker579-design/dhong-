@@ -1,6 +1,6 @@
 /**
- * DHONG API — Phase 1 secure order intake foundation.
- * This file is NOT deployed by this commit. Configure and test in a staging Worker first.
+ * DHONG API — staged secure order intake foundation.
+ * Deployed to the isolated staging Worker only; production Worker remains unchanged.
  */
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
 const MAX_BODY = 32 * 1024;
