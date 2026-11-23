@@ -722,12 +722,20 @@ async function saveOrder(order, firstHash) {
   if (firstHash) up['dhong_firstorder/' + firstHash] = true;
   await db.ref().update(up);
 
+  // WhatsApp enquiries are not confirmed customer orders: they have no
+  // verified phone/address and must not be sent to the D1 order intake.
+  if (order.status === 'WhatsApp Pending' || !order.phone || !order.address) return;
+
   // Mirror the saved Firebase order to DHONG API for D1 storage.
   // Firebase remains the primary order save; API failure must not block checkout.
   try {
-    const cookieMap = Object.fromEntries(document.cookie.split(';').map(part => {
-      const idx = part.indexOf('=');
-      return idx < 0 ? [part.trim(), ''] : [part.slice(0, idx).trim(), decodeURIComponent(part.slice(idx + 1).trim())];
+    const sourceItems = JSON.parse(order.items_json || '[]');
+    if (!Array.isArray(sourceItems) || sourceItems.length === 0) throw new Error('Invalid order items for API mirror');
+    const apiItems = sourceItems.map(item => ({
+      product_id: String(item.product_id || ''),
+      qty: Number(item.quantity ?? item.qty),
+      color: String(item.color || ''),
+      size: String(item.size || '')
     }));
     const apiResponse = await fetch('https://dhong-api.mdsizansarker579.workers.dev/api/orders', {
       method: 'POST',
@@ -740,12 +748,7 @@ async function saveOrder(order, firstHash) {
         name: order.customer_name,
         phone: order.phone,
         address: order.address,
-        items: JSON.parse(order.items_json || '[]'),
-        total: Number(order.total) || 0,
-        event_id: 'DH-' + order.id,
-        event_source_url: location.href,
-        fbp: cookieMap._fbp || '',
-        fbc: cookieMap._fbc || ''
+        items: apiItems
       })
     });
     if (!apiResponse.ok) console.warn('DHONG API order sync failed:', apiResponse.status);
