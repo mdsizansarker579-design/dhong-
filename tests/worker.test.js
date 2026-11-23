@@ -90,7 +90,7 @@ test("catalog importer validates and emits an idempotent D1 upsert", () => {
   assert.match(sql, /BEGIN TRANSACTION/);
   assert.match(sql, /ON CONFLICT\(product_id\) DO UPDATE/);
   assert.match(sql, /Men''s Shirt/);
-  assert.match(sql, /\\"color\\":\\"Black\\"/);
+  assert.match(sql, /"color":"Black"/);
   assert.match(sql, /COMMIT/);
 });
 
