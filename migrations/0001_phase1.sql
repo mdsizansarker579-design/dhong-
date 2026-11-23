@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS dhong_catalog (
   sale_price INTEGER NOT NULL DEFAULT 0 CHECK (sale_price >= 0),
   stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
   active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
+  variants_json TEXT NOT NULL DEFAULT '[]',
   updated_at TEXT NOT NULL
 );
 
