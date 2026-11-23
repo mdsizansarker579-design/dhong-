@@ -22,7 +22,7 @@ function catalogDb(rows) {
 
 test("quotes from trusted catalog prices, not client prices", async () => {
   const db = catalogDb({
-    p1: { product_id: "p1", title: "Shirt", price: 500, sale_price: 400, stock: 10, active: 1 }
+    p1: { product_id: "p1", title: "Shirt", price: 500, sale_price: 400, stock: 10, active: 1, variants_json: "[]" }
   });
   const quote = await quoteItems(db, [{ id: "p1", qty: 2, price: 1 }]);
   assert.equal(quote.subtotal, 800);
@@ -31,21 +31,21 @@ test("quotes from trusted catalog prices, not client prices", async () => {
 });
 
 test("rejects inactive and unknown products", async () => {
-  const db = catalogDb({ off: { product_id: "off", title: "Off", price: 100, sale_price: 0, stock: 5, active: 0 } });
+  const db = catalogDb({ off: { product_id: "off", title: "Off", price: 100, sale_price: 0, stock: 5, active: 0, variants_json: "[]" } });
   await assert.rejects(() => quoteItems(db, [{ id: "missing", qty: 1 }]), /PRODUCT_UNAVAILABLE/);
   await assert.rejects(() => quoteItems(db, [{ id: "off", qty: 1 }]), /PRODUCT_UNAVAILABLE/);
 });
 
 test("checks combined quantity for repeated product lines", async () => {
   const db = catalogDb({
-    p1: { product_id: "p1", title: "Shirt", price: 100, sale_price: 0, stock: 5, active: 1 }
+    p1: { product_id: "p1", title: "Shirt", price: 100, sale_price: 0, stock: 5, active: 1, variants_json: "[]" }
   });
   await assert.rejects(() => quoteItems(db, [{ id: "p1", qty: 3 }, { id: "p1", qty: 3 }]), /INVALID_ITEM/);
 });
 
 test("rejects insufficient stock and malformed quantities", async () => {
   const db = catalogDb({
-    p1: { product_id: "p1", title: "Shirt", price: 100, sale_price: 0, stock: 2, active: 1 }
+    p1: { product_id: "p1", title: "Shirt", price: 100, sale_price: 0, stock: 2, active: 1, variants_json: "[]" }
   });
   await assert.rejects(() => quoteItems(db, [{ id: "p1", qty: 3 }]), /INSUFFICIENT_STOCK/);
   await assert.rejects(() => quoteItems(db, [{ id: "p1", qty: 0 }]), /INVALID_ITEM/);
@@ -65,4 +65,15 @@ test("order endpoint requires idempotency key", async () => {
   }), { DHONG: {} });
   assert.equal(response.status, 400);
   assert.equal((await response.json()).error, "IDEMPOTENCY_KEY_REQUIRED");
+});
+
+test("validates the exact color and size stock for variant products", async () => {
+  const db = catalogDb({
+    p2: { product_id: "p2", title: "Panjabi", price: 1200, sale_price: 1000, stock: 8, active: 1,
+      variants_json: JSON.stringify([{ color: "Black", size: "L", stock: 2 }, { color: "White", size: "M", stock: 6 }]) }
+  });
+  const quote = await quoteItems(db, [{ id: "p2", qty: 2, color: "Black", size: "L" }]);
+  assert.equal(quote.subtotal, 2000);
+  await assert.rejects(() => quoteItems(db, [{ id: "p2", qty: 3, color: "Black", size: "L" }]), /INSUFFICIENT_VARIANT_STOCK/);
+  await assert.rejects(() => quoteItems(db, [{ id: "p2", qty: 1, color: "Red", size: "L" }]), /VARIANT_UNAVAILABLE/);
 });
