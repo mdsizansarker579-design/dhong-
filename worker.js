@@ -112,7 +112,7 @@ async function firebaseJwks() {
   const data = await response.json();
   if (!Array.isArray(data.keys)) throw new Error("FIREBASE_KEYS_INVALID");
   firebaseJwksCache = data.keys;
-  const maxAge = Number((response.headers.get("cache-control") || "").match(/max-age=(\\d+)/)?.[1] || 3600);
+  const maxAge = Number((response.headers.get("cache-control") || "").match(/max-age=(\d+)/)?.[1] || 3600);
   firebaseJwksExpiry = Date.now() + Math.min(Math.max(maxAge, 60), 86400) * 1000;
   return firebaseJwksCache;
 }
@@ -120,7 +120,7 @@ async function verifyFirebaseIdToken(request, env) {
   const projectId = cleanText(env.FIREBASE_PROJECT_ID, 128);
   if (!projectId) throw new Error("FIREBASE_PROJECT_ID_NOT_CONFIGURED");
   const authorization = request.headers.get("Authorization") || "";
-  const match = authorization.match(/^Bearer\\s+([A-Za-z0-9._~-]+)$/i);
+  const match = authorization.match(/^Bearer\s+([A-Za-z0-9._~-]+)$/i);
   if (!match) throw new Error("ADMIN_AUTH_REQUIRED");
   const parts = match[1].split(".");
   if (parts.length !== 3) throw new Error("INVALID_ADMIN_TOKEN");
@@ -181,7 +181,7 @@ async function handleAdminApi(request, env, url) {
     if (status) { clauses.push("status = ?"); params.push(status); }
     if (search) {
       clauses.push("(customer_name LIKE ? OR phone LIKE ? OR order_id LIKE ?)");
-      const term = "%" + search.replace(/[\\%_]/g, "\\async function handle(request, env) {") + "%";
+      const term = "%" + search + "%";
       params.push(term, term, term);
     }
     const where = clauses.length ? " WHERE " + clauses.join(" AND ") : "";
@@ -231,6 +231,7 @@ async function handle(request, env) {
   if (url.pathname === "/api/health" && request.method === "GET") {
     return json({ service: "DHONG API", phase: 1, status: "ok", order_intake: "catalog-required" });
   }
+  if (url.pathname.startsWith("/api/admin/")) return handleAdminApi(request, env, url);
   if (url.pathname !== "/api/orders" || request.method !== "POST") return json({ error: "NOT_FOUND" }, 404);
   if (!env.DHONG) return json({ error: "DATABASE_NOT_CONFIGURED" }, 503);
   const idempotencyKey = cleanText(request.headers.get("Idempotency-Key"), 100);
