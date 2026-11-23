@@ -76,7 +76,7 @@ async function quoteItems(db, rawItems) {
     if (!Number.isSafeInteger(unitPrice) || unitPrice < 0) throw new Error("INVALID_CATALOG_PRICE");
     subtotal += unitPrice * qty;
     if (!Number.isSafeInteger(subtotal)) throw new Error("TOTAL_OVERFLOW");
-    canonical.push({ product_id: productId, title: cleanText(product.title, 180), qty, unit_price: unitPrice,
+    canonical.push({ product_id: productId, title: cleanText(product.title || product.name, 180), qty, unit_price: unitPrice,
       color: cleanText(line?.color, 40), size: cleanText(line?.size, 40), line_total: unitPrice * qty });
   }
   return { subtotal, items: canonical };
