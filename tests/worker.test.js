@@ -113,3 +113,27 @@ test("catalog importer rejects duplicate IDs and unsafe stock or prices", () => 
   assert.throws(() => parseCatalogDocument({ schema: "dhong_catalog_v1", products: [{ ...base, stock: -1 }] }), /Invalid stock/);
   assert.throws(() => parseCatalogDocument({ schema: "dhong_catalog_v1", products: [{ ...base, sale_price: 100 }] }), /Invalid sale_price/);
 });
+
+test("D1 Admin API rejects requests without a Firebase bearer token", async () => {
+  const response = await handle(new Request("https://worker.test/api/admin/orders", {
+    method: "GET"
+  }), { DHONG: {}, FIREBASE_PROJECT_ID: "dhong-c897d" });
+  assert.equal(response.status, 401);
+  assert.equal((await response.json()).error, "ADMIN_AUTH_REQUIRED");
+});
+
+test("D1 Admin API fails closed when Firebase project configuration is missing", async () => {
+  const response = await handle(new Request("https://worker.test/api/admin/orders", {
+    method: "GET"
+  }), { DHONG: {} });
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "FIREBASE_PROJECT_ID_NOT_CONFIGURED");
+});
+
+test("D1 Admin API never returns orders when the database binding is absent", async () => {
+  const response = await handle(new Request("https://worker.test/api/admin/orders", {
+    method: "GET"
+  }), { FIREBASE_PROJECT_ID: "dhong-c897d" });
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "DATABASE_NOT_CONFIGURED");
+});
