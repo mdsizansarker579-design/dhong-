@@ -109,6 +109,55 @@ async function quoteItems(db, rawItems) {
 
 // One conditional UPDATE reserves every product and selected variant in a single
 // SQLite statement. The sufficiency CTE prevents partial reservations under races.
+function buildInventoryLedgerStatements(db, orderId, inventory, now) {
+  const statements = [];
+  for (const product of inventory) {
+    const entries = product.variants.length
+      ? product.variants.map(v => ({ variant_index: v.index, qty: v.qty }))
+      : [{ variant_index: null, qty: product.qty }];
+    for (const entry of entries) {
+      statements.push(db.prepare(
+        "INSERT INTO dhong_inventory_reservations (order_id, product_id, variant_index, qty, state, created_at) " +
+        "SELECT ?, ?, ?, ?, 'reserved', ? WHERE EXISTS (SELECT 1 FROM dhong_orders_v2 WHERE order_id = ?)"
+      ).bind(orderId, product.product_id, entry.variant_index, entry.qty, now, orderId));
+    }
+  }
+  return statements;
+}
+
+async function buildInventoryReleaseStatements(db, orderId, now) {
+  const result = await db.prepare(
+    "SELECT product_id, variant_index, qty FROM dhong_inventory_reservations WHERE order_id = ? AND state = 'reserved'"
+  ).bind(orderId).all();
+  const grouped = new Map();
+  for (const row of result.results || []) {
+    if (!grouped.has(row.product_id)) grouped.set(row.product_id, []);
+    grouped.get(row.product_id).push(row);
+  }
+  const statements = [];
+  for (const [productId, rows] of grouped) {
+    const totalQty = rows.reduce((sum, row) => sum + Number(row.qty), 0);
+    let expression = "variants_json";
+    for (const row of rows) {
+      if (row.variant_index === null || row.variant_index === undefined) continue;
+      const path = "$[" + Number(row.variant_index) + "].stock";
+      expression = "json_set(" + expression + ", '" + path + "', CAST(json_extract(" + expression + ", '" + path + "') AS INTEGER) + " + Number(row.qty) + ")";
+    }
+    statements.push(db.prepare(
+      "UPDATE dhong_catalog SET stock = stock + ?, variants_json = " + expression +
+      " WHERE product_id = ? AND EXISTS (SELECT 1 FROM dhong_inventory_reservations " +
+      "WHERE order_id = ? AND product_id = ? AND state = 'reserved') " +
+      "AND (SELECT status FROM dhong_orders_v2 WHERE order_id = ?) = 'Cancelled'"
+    ).bind(totalQty, productId, orderId, productId, orderId));
+  }
+  statements.push(db.prepare(
+    "UPDATE dhong_inventory_reservations SET state = 'released', released_at = ? " +
+    "WHERE order_id = ? AND state = 'reserved' " +
+    "AND (SELECT status FROM dhong_orders_v2 WHERE order_id = ?) = 'Cancelled'"
+  ).bind(now, orderId, orderId));
+  return statements;
+}
+
 function buildInventoryReservation(db, inventory) {
   const products = inventory;
   const requestedRows = products.map(() => "(?, ?)").join(", ");
@@ -263,13 +312,17 @@ async function handleAdminApi(request, env, url) {
       if (!existing) return json({ error: "ORDER_NOT_FOUND" }, 404);
       const now = new Date().toISOString();
       if (existing.status === nextStatus) return json({ ok: true, changed: false, order: { order_id: orderId, status: nextStatus } });
-      const results = await env.DHONG.batch([
+      const statements = [
         env.DHONG.prepare("UPDATE dhong_orders_v2 SET status = ? WHERE order_id = ? AND status = ?")
           .bind(nextStatus, orderId, existing.status),
         env.DHONG.prepare(
           "INSERT INTO dhong_admin_order_audit (order_id, admin_uid, old_status, new_status, changed_at) SELECT ?, ?, ?, ?, ? WHERE changes() > 0"
         ).bind(orderId, admin.uid, existing.status, nextStatus, now)
-      ]);
+      ];
+      if (nextStatus === "Cancelled") {
+        statements.push(...await buildInventoryReleaseStatements(env.DHONG, orderId, now));
+      }
+      const results = await env.DHONG.batch(statements);
       if (!results[0]?.meta?.changes) return json({ error: "ORDER_STATUS_CONFLICT" }, 409);
       return json({ ok: true, changed: true, order: { order_id: orderId, status: nextStatus, updated_at: now } });
     } catch {
@@ -306,8 +359,8 @@ async function handle(request, env) {
   }
   const deliveryFee = Number(env.DELIVERY_FEE_DEFAULT ?? 130);
   if (!Number.isSafeInteger(deliveryFee) || deliveryFee < 0) return json({ error: "DELIVERY_FEE_NOT_CONFIGURED" }, 503);
-  // Phase 1 does not trust or use client-supplied totals, discounts, stock or event IDs.
-  // First-order discounts and atomic stock reservation are implemented in the next phase.
+  // The server calculates totals and atomically reserves product + selected variant stock.
+  // Discounts remain disabled until a separately reviewed server-side ruleset exists.
   const total = quote.subtotal + deliveryFee;
   if (!Number.isSafeInteger(total)) return json({ error: "TOTAL_OVERFLOW" }, 400);
   const orderId = crypto.randomUUID();
@@ -317,7 +370,11 @@ async function handle(request, env) {
       "INSERT INTO dhong_orders_v2 (order_id, idempotency_key, customer_name, phone, address, items_json, subtotal, discount, delivery_fee, total, status, created_at) " +
       "SELECT ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'Pending', ? WHERE changes() = ?"
     ).bind(orderId, idempotencyKey, name, phone, address, JSON.stringify(quote.items), quote.subtotal, deliveryFee, total, now, quote.inventory.length);
-    const results = await env.DHONG.batch([buildInventoryReservation(env.DHONG, quote.inventory), insertOrder]);
+    const results = await env.DHONG.batch([
+      buildInventoryReservation(env.DHONG, quote.inventory),
+      insertOrder,
+      ...buildInventoryLedgerStatements(env.DHONG, orderId, quote.inventory, now)
+    ]);
     if (!results[1]?.meta?.changes) return json({ error: "STOCK_CHANGED_RETRY_ORDER" }, 409);
   } catch (e) {
     if (String(e).toLowerCase().includes("unique")) {
