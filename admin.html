@@ -416,6 +416,7 @@ td{padding:13px 12px}
     <input type="email" id="adminEmailInput" placeholder="📧 অ্যাডমিন ইমেইল" autocomplete="username" style="margin-bottom:8px">
     <input type="password" id="adminPassInput" placeholder="🔑 পাসওয়ার্ড" autocomplete="current-password">
     <button class="btn primary" id="loginBtn" style="width:100%;margin-top:12px;padding:12px">লগইন করুন</button>
+    <button type="button" id="forgotPasswordBtn" class="text-link" style="display:inline-block;margin-top:14px">পাসওয়ার্ড ভুলে গেছেন? Reset email পাঠান</button>
     <div id="loginError" style="color:#c53030;font-size:12px;margin-top:10px;word-break:break-all"></div>
   </div>
 </div>
@@ -861,6 +862,18 @@ function doLogin() {
   auth.signInWithEmailAndPassword($('adminEmailInput').value.trim(), $('adminPassInput').value)
     .catch(() => { $('loginError').textContent = '❌ ইমেইল বা পাসওয়ার্ড ভুল!'; });
 }
+$('forgotPasswordBtn').onclick = async () => {
+  const email = $('adminEmailInput').value.trim();
+  if (!email) { $('loginError').textContent = 'আগে আপনার Admin Email লিখুন।'; $('adminEmailInput').focus(); return; }
+  const btn = $('forgotPasswordBtn'); btn.disabled = true;
+  $('loginError').textContent = 'Reset email পাঠানো হচ্ছে…';
+  try {
+    await auth.sendPasswordResetEmail(email);
+    $('loginError').textContent = 'যদি এই Email দিয়ে Admin account থাকে, Firebase Reset Link পাঠিয়েছে। Inbox ও Spam/Junk folder দেখুন।';
+  } catch (e) {
+    $('loginError').textContent = e.code === 'auth/invalid-email' ? 'Email ঠিকভাবে লিখুন।' : 'Reset email পাঠানো যায়নি। Email ঠিক আছে কি না এবং Firebase Email/Password sign-in চালু আছে কি না পরীক্ষা করুন।';
+  } finally { btn.disabled = false; }
+};
 $('loginBtn').onclick = doLogin;
 ['adminEmailInput', 'adminPassInput'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
 $('logoutBtn').onclick = () => auth.signOut();
