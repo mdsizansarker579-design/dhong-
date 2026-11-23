@@ -30,8 +30,8 @@ function withCors(response, origin) {
   const h = new Headers(response.headers);
   h.set("access-control-allow-origin", origin);
   h.set("vary", "Origin");
-  h.set("access-control-allow-methods", "GET, POST, OPTIONS");
-  h.set("access-control-allow-headers", "content-type, idempotency-key");
+  h.set("access-control-allow-methods", "GET, POST, PATCH, OPTIONS");
+  h.set("access-control-allow-headers", "content-type, idempotency-key, authorization");
   return new Response(response.body, { status: response.status, headers: h });
 }
 async function readJson(request) {
@@ -93,6 +93,138 @@ async function quoteItems(db, rawItems) {
   }
   return { subtotal, items: canonical };
 }
+
+const ADMIN_STATUSES = new Set(["WhatsApp Pending", "Pending", "Processing", "Delivered", "Cancelled"]);
+let firebaseJwksCache = null;
+let firebaseJwksExpiry = 0;
+
+function decodeBase64Url(value) {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4);
+  return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+}
+function decodeJwtPart(value) {
+  return JSON.parse(new TextDecoder().decode(decodeBase64Url(value)));
+}
+async function firebaseJwks() {
+  if (firebaseJwksCache && Date.now() < firebaseJwksExpiry) return firebaseJwksCache;
+  const response = await fetch("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");
+  if (!response.ok) throw new Error("FIREBASE_KEYS_UNAVAILABLE");
+  const data = await response.json();
+  if (!Array.isArray(data.keys)) throw new Error("FIREBASE_KEYS_INVALID");
+  firebaseJwksCache = data.keys;
+  const maxAge = Number((response.headers.get("cache-control") || "").match(/max-age=(\\d+)/)?.[1] || 3600);
+  firebaseJwksExpiry = Date.now() + Math.min(Math.max(maxAge, 60), 86400) * 1000;
+  return firebaseJwksCache;
+}
+async function verifyFirebaseIdToken(request, env) {
+  const projectId = cleanText(env.FIREBASE_PROJECT_ID, 128);
+  if (!projectId) throw new Error("FIREBASE_PROJECT_ID_NOT_CONFIGURED");
+  const authorization = request.headers.get("Authorization") || "";
+  const match = authorization.match(/^Bearer\\s+([A-Za-z0-9._~-]+)$/i);
+  if (!match) throw new Error("ADMIN_AUTH_REQUIRED");
+  const parts = match[1].split(".");
+  if (parts.length !== 3) throw new Error("INVALID_ADMIN_TOKEN");
+  let header, claims;
+  try { header = decodeJwtPart(parts[0]); claims = decodeJwtPart(parts[1]); }
+  catch { throw new Error("INVALID_ADMIN_TOKEN"); }
+  if (header.alg !== "RS256" || typeof header.kid !== "string") throw new Error("INVALID_ADMIN_TOKEN");
+  const now = Math.floor(Date.now() / 1000);
+  if (claims.iss !== "https://securetoken.google.com/" + projectId ||
+      claims.aud !== projectId || typeof claims.sub !== "string" || !claims.sub ||
+      claims.sub.length > 128 || !Number.isFinite(claims.exp) || claims.exp <= now ||
+      !Number.isFinite(claims.iat) || claims.iat > now + 60 ||
+      !Number.isFinite(claims.auth_time) || claims.auth_time > now + 60) {
+    throw new Error("INVALID_ADMIN_TOKEN");
+  }
+  const jwk = (await firebaseJwks()).find(key => key.kid === header.kid && key.kty === "RSA");
+  if (!jwk) { firebaseJwksExpiry = 0; throw new Error("INVALID_ADMIN_TOKEN"); }
+  const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+  const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, decodeBase64Url(parts[2]),
+    new TextEncoder().encode(parts[0] + "." + parts[1]));
+  if (!valid) throw new Error("INVALID_ADMIN_TOKEN");
+  return { uid: claims.sub };
+}
+async function requireD1Admin(request, env) {
+  const identity = await verifyFirebaseIdToken(request, env);
+  const row = await env.DHONG.prepare(
+    "SELECT uid, role FROM dhong_admin_api_users WHERE uid = ? AND active = 1"
+  ).bind(identity.uid).first();
+  if (!row) throw new Error("ADMIN_FORBIDDEN");
+  return { uid: identity.uid, role: row.role };
+}
+function adminError(error) {
+  const status = {
+    FIREBASE_PROJECT_ID_NOT_CONFIGURED: 503,
+    FIREBASE_KEYS_UNAVAILABLE: 503,
+    FIREBASE_KEYS_INVALID: 503,
+    ADMIN_AUTH_REQUIRED: 401,
+    INVALID_ADMIN_TOKEN: 401,
+    ADMIN_FORBIDDEN: 403
+  }[error.message] || 500;
+  return json({ error: status === 500 ? "ADMIN_API_FAILED" : error.message }, status);
+}
+async function handleAdminApi(request, env, url) {
+  if (!env.DHONG) return json({ error: "DATABASE_NOT_CONFIGURED" }, 503);
+  let admin;
+  try { admin = await requireD1Admin(request, env); }
+  catch (error) { return adminError(error); }
+
+  if (url.pathname === "/api/admin/orders" && request.method === "GET") {
+    const limit = Math.min(100, Math.max(1, Number.parseInt(url.searchParams.get("limit") || "30", 10) || 30));
+    const page = Math.min(10000, Math.max(1, Number.parseInt(url.searchParams.get("page") || "1", 10) || 1));
+    const offset = (page - 1) * limit;
+    const status = cleanText(url.searchParams.get("status"), 40);
+    const search = cleanText(url.searchParams.get("q"), 80);
+    if (status && !ADMIN_STATUSES.has(status)) return json({ error: "INVALID_STATUS_FILTER" }, 400);
+    const clauses = [];
+    const params = [];
+    if (status) { clauses.push("status = ?"); params.push(status); }
+    if (search) {
+      clauses.push("(customer_name LIKE ? OR phone LIKE ? OR order_id LIKE ?)");
+      const term = "%" + search.replace(/[\\%_]/g, "\\async function handle(request, env) {") + "%";
+      params.push(term, term, term);
+    }
+    const where = clauses.length ? " WHERE " + clauses.join(" AND ") : "";
+    try {
+      const count = await env.DHONG.prepare("SELECT COUNT(*) AS total FROM dhong_orders_v2" + where).bind(...params).first();
+      const result = await env.DHONG.prepare(
+        "SELECT order_id, customer_name, phone, address, items_json, subtotal, discount, delivery_fee, total, status, created_at FROM dhong_orders_v2" +
+        where + " ORDER BY created_at DESC, order_id DESC LIMIT ? OFFSET ?"
+      ).bind(...params, limit, offset).all();
+      return json({ ok: true, page, limit, total: Number(count?.total || 0), orders: result.results || [] });
+    } catch {
+      return json({ error: "ADMIN_ORDERS_READ_FAILED" }, 500);
+    }
+  }
+
+  const match = url.pathname.match(/^\\/api\\/admin\\/orders\\/([A-Za-z0-9_-]{1,100})\\/status$/);
+  if (match && request.method === "PATCH") {
+    let body;
+    try { body = await readJson(request); }
+    catch (error) { return json({ error: error.message }, error.message === "BODY_TOO_LARGE" ? 413 : 400); }
+    const nextStatus = cleanText(body?.status, 40);
+    if (!ADMIN_STATUSES.has(nextStatus)) return json({ error: "INVALID_ORDER_STATUS" }, 400);
+    const orderId = match[1];
+    try {
+      const existing = await env.DHONG.prepare("SELECT order_id, status FROM dhong_orders_v2 WHERE order_id = ?").bind(orderId).first();
+      if (!existing) return json({ error: "ORDER_NOT_FOUND" }, 404);
+      const now = new Date().toISOString();
+      if (existing.status === nextStatus) return json({ ok: true, changed: false, order: { order_id: orderId, status: nextStatus } });
+      const result = await env.DHONG.prepare(
+        "UPDATE dhong_orders_v2 SET status = ? WHERE order_id = ? AND status = ?"
+      ).bind(nextStatus, orderId, existing.status).run();
+      if (!result.meta?.changes) return json({ error: "ORDER_STATUS_CONFLICT" }, 409);
+      await env.DHONG.prepare(
+        "INSERT INTO dhong_admin_order_audit (order_id, admin_uid, old_status, new_status, changed_at) VALUES (?, ?, ?, ?, ?)"
+      ).bind(orderId, admin.uid, existing.status, nextStatus, now).run();
+      return json({ ok: true, changed: true, order: { order_id: orderId, status: nextStatus, updated_at: now } });
+    } catch {
+      return json({ error: "ADMIN_ORDER_UPDATE_FAILED" }, 500);
+    }
+  }
+  return json({ error: "NOT_FOUND" }, 404);
+}
+
 async function handle(request, env) {
   const url = new URL(request.url);
   if (request.method === "OPTIONS") return new Response(null, { status: 204 });
