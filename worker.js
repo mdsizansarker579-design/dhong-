@@ -197,7 +197,7 @@ async function handleAdminApi(request, env, url) {
     }
   }
 
-  const match = url.pathname.match(/^\\/api\\/admin\\/orders\\/([A-Za-z0-9_-]{1,100})\\/status$/);
+  const match = url.pathname.match(/^\/api\/admin\/orders\/([A-Za-z0-9_-]{1,100})\/status$/);
   if (match && request.method === "PATCH") {
     let body;
     try { body = await readJson(request); }
