@@ -77,3 +77,26 @@ test("validates the exact color and size stock for variant products", async () =
   await assert.rejects(() => quoteItems(db, [{ id: "p2", qty: 3, color: "Black", size: "L" }]), /INSUFFICIENT_VARIANT_STOCK/);
   await assert.rejects(() => quoteItems(db, [{ id: "p2", qty: 1, color: "Red", size: "L" }]), /VARIANT_UNAVAILABLE/);
 });
+
+import { parseCatalogDocument, buildCatalogSql } from "../scripts/import-catalog.mjs";
+
+test("catalog importer validates and emits an idempotent D1 upsert", () => {
+  const products = parseCatalogDocument({
+    schema: "dhong_catalog_v1",
+    products: [{ product_id: "shirt-1", title: "Men's Shirt", price: 800, sale_price: 650,
+      stock: 5, active: 1, variants: [{ color: "Black", size: "L", stock: 2 }] }]
+  });
+  const sql = buildCatalogSql(products, "2026-11-23T00:00:00.000Z");
+  assert.match(sql, /BEGIN TRANSACTION/);
+  assert.match(sql, /ON CONFLICT\(product_id\) DO UPDATE/);
+  assert.match(sql, /Men''s Shirt/);
+  assert.match(sql, /\\"color\\":\\"Black\\"/);
+  assert.match(sql, /COMMIT/);
+});
+
+test("catalog importer rejects duplicate IDs and unsafe stock or prices", () => {
+  const base = { product_id: "p1", title: "Item", price: 100, sale_price: 0, stock: 2, active: 1, variants: [] };
+  assert.throws(() => parseCatalogDocument({ schema: "dhong_catalog_v1", products: [base, base] }), /Duplicate product_id/);
+  assert.throws(() => parseCatalogDocument({ schema: "dhong_catalog_v1", products: [{ ...base, stock: -1 }] }), /Invalid stock/);
+  assert.throws(() => parseCatalogDocument({ schema: "dhong_catalog_v1", products: [{ ...base, sale_price: 100 }] }), /Invalid sale_price/);
+});
