@@ -28,6 +28,7 @@ test("quotes from trusted catalog prices, not client prices", async () => {
   assert.equal(quote.subtotal, 800);
   assert.equal(quote.items[0].unit_price, 400);
   assert.equal(quote.items[0].line_total, 800);
+  assert.deepEqual(quote.inventory, [{ product_id: "p1", qty: 2, variants: [] }]);
 });
 
 test("rejects inactive and unknown products", async () => {
@@ -74,6 +75,7 @@ test("accepts the storefront quantity field and preserves selected variants", as
   });
   const quote = await quoteItems(db, [{ product_id: "p3", quantity: 2, color: "Brown", size: "Free Size" }]);
   assert.equal(quote.subtotal, 1800);
+  assert.deepEqual(quote.inventory, [{ product_id: "p3", qty: 2, variants: [{ index: 0, qty: 2 }] }]);
   assert.deepEqual(quote.items[0], {
     product_id: "p3", title: "Bag", qty: 2, unit_price: 900,
     color: "Brown", size: "Free Size", line_total: 1800
