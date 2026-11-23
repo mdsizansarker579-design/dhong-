@@ -43,41 +43,53 @@ async function readJson(request) {
 }
 async function quoteItems(db, rawItems) {
   if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > MAX_ITEMS) throw new Error("INVALID_ITEMS");
-  let subtotal = 0;
-  const canonical = [];
-  const requested = new Map();
+  const productQty = new Map();
+  const variantQty = new Map();
   for (const line of rawItems) {
     const id = cleanText(String(line?.product_id ?? line?.id ?? ""), 100);
     const qty = Number(line?.qty ?? line?.quantity);
     if (!id || !Number.isInteger(qty) || qty < 1 || qty > 5) throw new Error("INVALID_ITEM");
-    requested.set(id, (requested.get(id) || 0) + qty);
-    if (requested.get(id) > 5) throw new Error("INVALID_ITEM");
+    const color = cleanText(line?.color, 40);
+    const size = cleanText(line?.size, 40);
+    const variantKey = id + "\u0000" + color + "\u0000" + size;
+    productQty.set(id, (productQty.get(id) || 0) + qty);
+    variantQty.set(variantKey, (variantQty.get(variantKey) || 0) + qty);
+    if (productQty.get(id) > 5 || variantQty.get(variantKey) > 5) throw new Error("INVALID_ITEM");
   }
-  const stockById = new Map();
-  for (const [id, qty] of requested) {
+  const products = new Map();
+  for (const id of productQty.keys()) {
     const row = await db.prepare(
-      "SELECT stock, active FROM dhong_catalog WHERE product_id = ?"
+      "SELECT product_id, title, price, sale_price, stock, active, variants_json FROM dhong_catalog WHERE product_id = ?"
     ).bind(id).first();
     if (!row || Number(row.active) !== 1) throw new Error("PRODUCT_UNAVAILABLE");
-    if (!Number.isInteger(Number(row.stock)) || Number(row.stock) < qty) throw new Error("INSUFFICIENT_STOCK");
-    stockById.set(id, Number(row.stock));
+    if (!Number.isInteger(Number(row.stock)) || Number(row.stock) < productQty.get(id)) throw new Error("INSUFFICIENT_STOCK");
+    let variants = [];
+    try { variants = JSON.parse(row.variants_json || "[]"); } catch { throw new Error("INVALID_CATALOG_VARIANTS"); }
+    if (!Array.isArray(variants)) throw new Error("INVALID_CATALOG_VARIANTS");
+    products.set(id, { ...row, variants });
   }
+  let subtotal = 0;
+  const canonical = [];
   for (const line of rawItems) {
     const productId = cleanText(String(line?.product_id ?? line?.id ?? ""), 100);
     const qty = Number(line?.qty ?? line?.quantity);
-    if (!productId || !Number.isInteger(qty) || qty < 1 || qty > 5) throw new Error("INVALID_ITEM");
-    const product = await db.prepare(
-      "SELECT product_id, title, price, sale_price, stock, active FROM dhong_catalog WHERE product_id = ?"
-    ).bind(productId).first();
-    if (!product || Number(product.active) !== 1) throw new Error("PRODUCT_UNAVAILABLE");
-    if (!Number.isInteger(Number(product.stock)) || Number(product.stock) < qty) throw new Error("INSUFFICIENT_STOCK");
+    const color = cleanText(line?.color, 40);
+    const size = cleanText(line?.size, 40);
+    const product = products.get(productId);
+    if (!product) throw new Error("PRODUCT_UNAVAILABLE");
+    if (product.variants.length) {
+      const variant = product.variants.find(v => cleanText(v?.color, 40) === color && cleanText(v?.size, 40) === size);
+      const key = productId + "\u0000" + color + "\u0000" + size;
+      if (!variant) throw new Error("VARIANT_UNAVAILABLE");
+      if (!Number.isInteger(Number(variant.stock)) || Number(variant.stock) < variantQty.get(key)) throw new Error("INSUFFICIENT_VARIANT_STOCK");
+    }
     const unitPrice = Number(product.sale_price) > 0 && Number(product.sale_price) < Number(product.price)
       ? Number(product.sale_price) : Number(product.price);
     if (!Number.isSafeInteger(unitPrice) || unitPrice < 0) throw new Error("INVALID_CATALOG_PRICE");
     subtotal += unitPrice * qty;
     if (!Number.isSafeInteger(subtotal)) throw new Error("TOTAL_OVERFLOW");
-    canonical.push({ product_id: productId, title: cleanText(product.title || product.name, 180), qty, unit_price: unitPrice,
-      color: cleanText(line?.color, 40), size: cleanText(line?.size, 40), line_total: unitPrice * qty });
+    canonical.push({ product_id: productId, title: cleanText(product.title, 180), qty, unit_price: unitPrice,
+      color, size, line_total: unitPrice * qty });
   }
   return { subtotal, items: canonical };
 }
@@ -102,7 +114,7 @@ async function handle(request, env) {
   try { quote = await quoteItems(env.DHONG, body.items); }
   catch (e) {
     const map = { INVALID_ITEMS:400, INVALID_ITEM:400, PRODUCT_UNAVAILABLE:409, INSUFFICIENT_STOCK:409,
-      INVALID_CATALOG_PRICE:503, TOTAL_OVERFLOW:400 };
+      INVALID_CATALOG_PRICE:503, INVALID_CATALOG_VARIANTS:503, VARIANT_UNAVAILABLE:409, INSUFFICIENT_VARIANT_STOCK:409, TOTAL_OVERFLOW:400 };
     return json({ error: e.message }, map[e.message] || 400);
   }
   const deliveryFee = Number(env.DELIVERY_FEE_DEFAULT ?? 130);
