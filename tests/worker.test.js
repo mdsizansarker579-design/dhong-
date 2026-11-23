@@ -67,6 +67,19 @@ test("order endpoint requires idempotency key", async () => {
   assert.equal((await response.json()).error, "IDEMPOTENCY_KEY_REQUIRED");
 });
 
+test("accepts the storefront quantity field and preserves selected variants", async () => {
+  const db = catalogDb({
+    p3: { product_id: "p3", title: "Bag", price: 900, sale_price: 0, stock: 4, active: 1,
+      variants_json: JSON.stringify([{ color: "Brown", size: "Free Size", stock: 3 }]) }
+  });
+  const quote = await quoteItems(db, [{ product_id: "p3", quantity: 2, color: "Brown", size: "Free Size" }]);
+  assert.equal(quote.subtotal, 1800);
+  assert.deepEqual(quote.items[0], {
+    product_id: "p3", title: "Bag", qty: 2, unit_price: 900,
+    color: "Brown", size: "Free Size", line_total: 1800
+  });
+});
+
 test("validates the exact color and size stock for variant products", async () => {
   const db = catalogDb({
     p2: { product_id: "p2", title: "Panjabi", price: 1200, sale_price: 1000, stock: 8, active: 1,
