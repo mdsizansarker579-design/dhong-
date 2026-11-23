@@ -210,13 +210,14 @@ async function handleAdminApi(request, env, url) {
       if (!existing) return json({ error: "ORDER_NOT_FOUND" }, 404);
       const now = new Date().toISOString();
       if (existing.status === nextStatus) return json({ ok: true, changed: false, order: { order_id: orderId, status: nextStatus } });
-      const result = await env.DHONG.prepare(
-        "UPDATE dhong_orders_v2 SET status = ? WHERE order_id = ? AND status = ?"
-      ).bind(nextStatus, orderId, existing.status).run();
-      if (!result.meta?.changes) return json({ error: "ORDER_STATUS_CONFLICT" }, 409);
-      await env.DHONG.prepare(
-        "INSERT INTO dhong_admin_order_audit (order_id, admin_uid, old_status, new_status, changed_at) VALUES (?, ?, ?, ?, ?)"
-      ).bind(orderId, admin.uid, existing.status, nextStatus, now).run();
+      const results = await env.DHONG.batch([
+        env.DHONG.prepare("UPDATE dhong_orders_v2 SET status = ? WHERE order_id = ? AND status = ?")
+          .bind(nextStatus, orderId, existing.status),
+        env.DHONG.prepare(
+          "INSERT INTO dhong_admin_order_audit (order_id, admin_uid, old_status, new_status, changed_at) VALUES (?, ?, ?, ?, ?)"
+        ).bind(orderId, admin.uid, existing.status, nextStatus, now)
+      ]);
+      if (!results[0]?.meta?.changes) return json({ error: "ORDER_STATUS_CONFLICT" }, 409);
       return json({ ok: true, changed: true, order: { order_id: orderId, status: nextStatus, updated_at: now } });
     } catch {
       return json({ error: "ADMIN_ORDER_UPDATE_FAILED" }, 500);
