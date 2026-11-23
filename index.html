@@ -722,7 +722,7 @@ async function saveOrder(order, firstHash) {
   if (firstHash) up['dhong_firstorder/' + firstHash] = true;
   await db.ref().update(up);
 
-  // Send the saved order to DHONG API for D1 storage and server-side Meta Purchase.
+  // Mirror the saved Firebase order to DHONG API for D1 storage.
   // Firebase remains the primary order save; API failure must not block checkout.
   try {
     const cookieMap = Object.fromEntries(document.cookie.split(';').map(part => {
@@ -731,7 +731,11 @@ async function saveOrder(order, firstHash) {
     }));
     const apiResponse = await fetch('https://dhong-api.mdsizansarker579.workers.dev/api/orders', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // Stable across retries so the Worker can safely suppress duplicate syncs.
+        'Idempotency-Key': await sha('dhong-api-order:' + order.id + ':' + normPhone(order.phone))
+      },
       body: JSON.stringify({
         name: order.customer_name,
         phone: order.phone,
