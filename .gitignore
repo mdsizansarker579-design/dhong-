@@ -1,0 +1,17 @@
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencies and generated output
+node_modules/
+coverage/
+dist/
+build/
+*.log
+
+# Local catalog exports and generated SQL may contain live product data
+dhong-d1-catalog.json
+dhong-catalog-import.sql
