@@ -312,6 +312,9 @@ async function handleAdminApi(request, env, url) {
       if (!existing) return json({ error: "ORDER_NOT_FOUND" }, 404);
       const now = new Date().toISOString();
       if (existing.status === nextStatus) return json({ ok: true, changed: false, order: { order_id: orderId, status: nextStatus } });
+      if (existing.status === "Cancelled" || existing.status === "Delivered") {
+        return json({ error: "FINAL_ORDER_STATUS_CANNOT_CHANGE" }, 409);
+      }
       const statements = [
         env.DHONG.prepare("UPDATE dhong_orders_v2 SET status = ? WHERE order_id = ? AND status = ?")
           .bind(nextStatus, orderId, existing.status),
