@@ -97,7 +97,7 @@ async function quoteItems(db, rawItems) {
     const variantsToReserve = [];
     for (const [key, variantQtyForKey] of variantQty.entries()) {
       const [id, color, size] = key.split("\u0000");
-      if (id !== productId) continue;
+      if (id !== productId || !product.variants.length) continue;
       const index = product.variants.findIndex(v => cleanText(v?.color, 40) === color && cleanText(v?.size, 40) === size);
       if (index < 0) throw new Error("VARIANT_UNAVAILABLE");
       variantsToReserve.push({ index, qty: variantQtyForKey });
