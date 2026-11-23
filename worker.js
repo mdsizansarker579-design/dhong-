@@ -45,6 +45,23 @@ async function quoteItems(db, rawItems) {
   if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > MAX_ITEMS) throw new Error("INVALID_ITEMS");
   let subtotal = 0;
   const canonical = [];
+  const requested = new Map();
+  for (const line of rawItems) {
+    const id = cleanText(String(line?.product_id ?? line?.id ?? ""), 100);
+    const qty = Number(line?.qty ?? line?.quantity);
+    if (!id || !Number.isInteger(qty) || qty < 1 || qty > 5) throw new Error("INVALID_ITEM");
+    requested.set(id, (requested.get(id) || 0) + qty);
+    if (requested.get(id) > 5) throw new Error("INVALID_ITEM");
+  }
+  const stockById = new Map();
+  for (const [id, qty] of requested) {
+    const row = await db.prepare(
+      "SELECT stock, active FROM dhong_catalog WHERE product_id = ?"
+    ).bind(id).first();
+    if (!row || Number(row.active) !== 1) throw new Error("PRODUCT_UNAVAILABLE");
+    if (!Number.isInteger(Number(row.stock)) || Number(row.stock) < qty) throw new Error("INSUFFICIENT_STOCK");
+    stockById.set(id, Number(row.stock));
+  }
   for (const line of rawItems) {
     const productId = cleanText(String(line?.product_id ?? line?.id ?? ""), 100);
     const qty = Number(line?.qty ?? line?.quantity);
@@ -93,6 +110,7 @@ async function handle(request, env) {
   // Phase 1 does not trust or use client-supplied totals, discounts, stock or event IDs.
   // First-order discounts and atomic stock reservation are implemented in the next phase.
   const total = quote.subtotal + deliveryFee;
+  if (!Number.isSafeInteger(total)) return json({ error: "TOTAL_OVERFLOW" }, 400);
   const orderId = crypto.randomUUID();
   const now = new Date().toISOString();
   try {
@@ -118,4 +136,4 @@ export default {
     return withCors(response, origin);
   }
 };
-export { normalizePhone, quoteItems };
+export { normalizePhone, quoteItems, handle };
