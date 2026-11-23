@@ -405,6 +405,32 @@ td{padding:13px 12px}
 .category-placeholder{background:#24262d;color:#e8d4a5}
 
 </style>
+
+<style id="dhong-admin-mobile-polish">
+@media (max-width:600px){
+  .top{padding-left:10px;padding-right:10px}
+  .main{min-width:0}
+  .toolbar{display:grid;grid-template-columns:1fr;gap:8px}
+  .toolbar input,.toolbar select{width:100%;min-width:0}
+  .record-dialog{width:100%;max-height:94dvh;border-radius:18px 18px 0 0;padding:15px}
+  .record-grid{grid-template-columns:1fr}
+  .record-grid .wide{grid-column:auto}
+  .table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table-wrap table{min-width:650px}
+  .ed-head{align-items:flex-start;flex-wrap:wrap}
+  .save-bar{position:sticky;bottom:0;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+  #toasts{left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom))}
+  .toast{overflow-wrap:anywhere}
+}
+@media (max-width:380px){
+  .main{padding-left:8px;padding-right:8px}
+  .stat-grid,.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat-card{padding:10px}
+  .stat{font-size:17px}
+  .sidebar{width:min(90vw,300px)}
+}
+</style>
+
 </head>
 <body>
 
@@ -416,6 +442,7 @@ td{padding:13px 12px}
     <input type="email" id="adminEmailInput" placeholder="📧 অ্যাডমিন ইমেইল" autocomplete="username" style="margin-bottom:8px">
     <input type="password" id="adminPassInput" placeholder="🔑 পাসওয়ার্ড" autocomplete="current-password">
     <button class="btn primary" id="loginBtn" style="width:100%;margin-top:12px;padding:12px">লগইন করুন</button>
+    <button type="button" id="forgotPasswordBtn" class="text-link" style="display:inline-block;margin-top:14px">পাসওয়ার্ড ভুলে গেছেন? Reset email পাঠান</button>
     <div id="loginError" style="color:#c53030;font-size:12px;margin-top:10px;word-break:break-all"></div>
   </div>
 </div>
@@ -581,7 +608,7 @@ td{padding:13px 12px}
 
   <div class="card" id="prodListCard">
     <div class="toolbar"><button class="btn ghost" id="migrateBtn">☁️ পুরনো ছবি Cloudinary-তে সরান</button>
-      <button class="btn ghost" id="feedBtn">📤 Meta ক্যাটালগ ফিড (CSV)</button></div>
+      <button class="btn ghost" id="feedBtn">📤 Meta ক্যাটালগ ফিড (CSV)</button>\n      <button class="btn ghost" id="catalogExportBtn">🗃️ D1 ক্যাটালগ Export (JSON)</button></div>
     <div id="productList"></div>
   </div>
 </section>
@@ -861,6 +888,18 @@ function doLogin() {
   auth.signInWithEmailAndPassword($('adminEmailInput').value.trim(), $('adminPassInput').value)
     .catch(() => { $('loginError').textContent = '❌ ইমেইল বা পাসওয়ার্ড ভুল!'; });
 }
+$('forgotPasswordBtn').onclick = async () => {
+  const email = $('adminEmailInput').value.trim();
+  if (!email) { $('loginError').textContent = 'আগে আপনার Admin Email লিখুন।'; $('adminEmailInput').focus(); return; }
+  const btn = $('forgotPasswordBtn'); btn.disabled = true;
+  $('loginError').textContent = 'Reset email পাঠানো হচ্ছে…';
+  try {
+    await auth.sendPasswordResetEmail(email);
+    $('loginError').textContent = 'যদি এই Email দিয়ে Admin account থাকে, Firebase Reset Link পাঠিয়েছে। Inbox ও Spam/Junk folder দেখুন।';
+  } catch (e) {
+    $('loginError').textContent = e.code === 'auth/invalid-email' ? 'Email ঠিকভাবে লিখুন।' : 'Reset email পাঠানো যায়নি। Email ঠিক আছে কি না এবং Firebase Email/Password sign-in চালু আছে কি না পরীক্ষা করুন।';
+  } finally { btn.disabled = false; }
+};
 $('loginBtn').onclick = doLogin;
 ['adminEmailInput', 'adminPassInput'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
 $('logoutBtn').onclick = () => auth.signOut();
@@ -1417,6 +1456,28 @@ function buildFeedCsv(list, base, brand) {
   });
   return { csv: '\ufeff' + rows.map(r => r.map(cell).join(',')).join('\n'), skipped, count: rows.length - 1 };
 }
+$('catalogExportBtn').onclick = () => {
+  const rows = products.map(p => {
+    const price = Number(p.price) || 0, old = Number(p.oldPrice) || 0;
+    const hasSale = old > price;
+    const rawVariants = p.variants ? (Array.isArray(p.variants) ? p.variants : Object.values(p.variants)) : [];
+    const variants = rawVariants.filter(v => v && v.color).map(v => ({
+      color: String(v.color || 'Standard').trim().slice(0, 40),
+      size: String(v.size || 'Free Size').trim().slice(0, 40),
+      stock: Math.max(0, Math.floor(Number(v.stock) || 0))
+    }));
+    return {
+      product_id: String(p.id), title: String(p.name || '').trim().slice(0, 180),
+      price: hasSale ? old : price, sale_price: hasSale ? price : 0,
+      stock: Math.max(0, Math.floor(Number(p.stock) || 0)), active: 1, variants
+    };
+  }).filter(p => p.product_id && p.title && Number.isSafeInteger(p.price) && p.price >= 0);
+  if (!rows.length) return toast('Export করার মতো পণ্য পাওয়া যায়নি।', true);
+  const blob = new Blob([JSON.stringify({ schema: 'dhong_catalog_v1', exported_at: new Date().toISOString(), products: rows }, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob), link = document.createElement('a');
+  link.href = url; link.download = 'dhong-d1-catalog.json'; link.click(); URL.revokeObjectURL(url);
+  toast('✅ ' + rows.length + 'টি পণ্যের D1 Catalog JSON ডাউনলোড হয়েছে।');
+};
 $('feedBtn').onclick = () => {
   const base = location.origin + location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1) + 'index.html';
   const r = buildFeedCsv(products, base, settings.siteName || 'DHONG');

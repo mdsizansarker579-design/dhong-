@@ -373,6 +373,40 @@ footer button,.social-a{background:#1b1b1b;border-color:#4c4437}
 /* Cascading Bangladesh address selectors */
 .geo-search{width:100%;margin:0 0 6px;padding:10px 12px;border:1px solid #d8dee8;border-radius:9px;font:inherit;font-size:13px;background:#fff;color:#222}.geo-select{width:100%;padding:11px 12px;border:1px solid #d8dee8;border-radius:9px;background:#fff;font:inherit;font-size:14px;color:#222}
 </style>
+
+<style id="dhong-mobile-polish">
+@media (max-width:600px){
+  header{gap:7px;padding:9px 10px}
+  .logo{font-size:21px}
+  .search{padding:9px 11px 9px 34px;font-size:13px}
+  main{padding-left:10px;padding-right:10px}
+  .hero{margin:9px auto;border-radius:13px}
+  .slide{padding:18px 14px 40px;min-height:185px}
+  .trust{margin:9px 0;border-radius:12px}
+  .sec-title{margin:17px 0 10px}
+  .grid{gap:8px}
+  .product{border-radius:12px}
+  .art{height:clamp(118px,38vw,158px)}
+  .info{padding:9px}
+  .info h3{font-size:13px;min-height:35px}
+  .price{font-size:16px}
+  .buy{padding:10px 7px}
+  .modalbg{align-items:flex-end;padding:0}
+  .modal{width:100%;max-width:none;max-height:92dvh;border-radius:18px 18px 0 0;padding:16px 14px calc(18px + env(safe-area-inset-bottom))}
+  .pp-main{height:clamp(270px,78vw,380px)}
+  .pp-actions{position:sticky;bottom:0;background:#fff;padding:9px 0 calc(8px + env(safe-area-inset-bottom));z-index:4}
+  footer{padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+  .bottom-nav{padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+}
+@media (max-width:360px){
+  .logo{font-size:19px}
+  .icon-btn{font-size:19px;padding:5px}
+  .trust b{font-size:19px}
+  .info h3{font-size:12px}
+  .old-price{font-size:10px}
+}
+</style>
+
 </head>
 <body>
 
@@ -722,26 +756,33 @@ async function saveOrder(order, firstHash) {
   if (firstHash) up['dhong_firstorder/' + firstHash] = true;
   await db.ref().update(up);
 
-  // Send the saved order to DHONG API for D1 storage and server-side Meta Purchase.
+  // WhatsApp enquiries are not confirmed customer orders: they have no
+  // verified phone/address and must not be sent to the D1 order intake.
+  if (order.status === 'WhatsApp Pending' || !order.phone || !order.address) return;
+
+  // Mirror the saved Firebase order to DHONG API for D1 storage.
   // Firebase remains the primary order save; API failure must not block checkout.
   try {
-    const cookieMap = Object.fromEntries(document.cookie.split(';').map(part => {
-      const idx = part.indexOf('=');
-      return idx < 0 ? [part.trim(), ''] : [part.slice(0, idx).trim(), decodeURIComponent(part.slice(idx + 1).trim())];
+    const sourceItems = JSON.parse(order.items_json || '[]');
+    if (!Array.isArray(sourceItems) || sourceItems.length === 0) throw new Error('Invalid order items for API mirror');
+    const apiItems = sourceItems.map(item => ({
+      product_id: String(item.product_id || ''),
+      qty: Number(item.quantity ?? item.qty),
+      color: String(item.color || ''),
+      size: String(item.size || '')
     }));
     const apiResponse = await fetch('https://dhong-api.mdsizansarker579.workers.dev/api/orders', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // Stable across retries so the Worker can safely suppress duplicate syncs.
+        'Idempotency-Key': await sha('dhong-api-order:' + order.id + ':' + normPhone(order.phone))
+      },
       body: JSON.stringify({
         name: order.customer_name,
         phone: order.phone,
         address: order.address,
-        items: JSON.parse(order.items_json || '[]'),
-        total: Number(order.total) || 0,
-        event_id: 'DH-' + order.id,
-        event_source_url: location.href,
-        fbp: cookieMap._fbp || '',
-        fbc: cookieMap._fbc || ''
+        items: apiItems
       })
     });
     if (!apiResponse.ok) console.warn('DHONG API order sync failed:', apiResponse.status);
