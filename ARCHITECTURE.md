@@ -42,7 +42,7 @@ The migration must be incremental. Keep Firebase checkout as the production prim
 2. **Guest checkout stays simple:** no forced customer account creation.
 3. **Admin is separate and protected:** verify Firebase ID tokens server-side and check admin membership/roles server-side for every protected API operation. Never expose an admin API secret in browser code.
 4. **Idempotency:** order creation and courier booking must tolerate retries without creating duplicates.
-5. **Inventory safety:** use atomic reservations/decrements and a clear expiry/release process before enabling D1 stock as the source of truth.
+5. **Inventory safety:** checkout atomically decrements product and selected-variant stock in D1, records a reservation ledger row, and restores stock once when an order is cancelled. Add a scheduled expiry/release policy before using reservations as long-lived holds.
 6. **Auditability:** record who changed order status, product price/stock, discounts and settings, with timestamps.
 7. **Secrets:** keep API keys in Worker secrets or a dedicated secret manager. Never store provider secrets in public HTML, Git, or browser-readable Firebase paths.
 8. **Profit reporting:** only Delivered orders count as completed sales; subtract recorded product cost, delivery/courier cost, ad spend, refunds and other expenses before calling a figure actual profit.
@@ -81,7 +81,7 @@ Do not move or split the large HTML files in one rewrite. Extract one module at 
 ## Current blockers before production
 
 - Apply and verify the new Admin API migration in staging; onboard verified Admin UIDs and connect a separately reviewed D1 orders view to the Admin UI.
-- Atomic inventory reservation.
+- Scheduled expiry/release policy for stale pending inventory reservations.
 - Firebase-to-D1 order reconciliation and source-of-truth decision.
 - Staging D1 migration and catalog import.
 - Production Worker source/config comparison.
