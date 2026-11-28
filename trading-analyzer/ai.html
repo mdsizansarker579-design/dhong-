@@ -53,29 +53,32 @@ details[open] summary:after{content:"−"}
 .wrap>section:nth-of-type(4) .grid .stat:nth-child(2){border-color:#356b69}
 .wrap>section:nth-of-type(4) .grid .stat:nth-child(3){border-color:#356b69;background:linear-gradient(145deg,#0d292a,#0a1724)}
 @media(max-width:720px){
- .wrap{display:flex;flex-direction:column;padding:11px;gap:11px}
- .wrap>.warn{order:1}
+ .wrap{display:flex;flex-direction:column;padding:10px;gap:10px}
+ .wrap>section:nth-of-type(4){order:1}
  .wrap>section:nth-of-type(2){order:2}
- .wrap>section:nth-of-type(4){order:3}
- .wrap>section:nth-of-type(3){order:4}
- .wrap>details{order:5}
- .wrap>section:nth-of-type(5){order:6}
- .wrap>section:nth-of-type(6){order:7}
+ .wrap>section:nth-of-type(3){order:3}
+ .wrap>details:not(.warn){order:4}
+ .wrap>section:nth-of-type(5){order:5}
+ .wrap>section:nth-of-type(6){order:6}
+ .wrap>section:nth-of-type(7){order:7}
  .wrap>section:nth-of-type(1){order:8}
- .wrap>section:nth-of-type(7){order:9}
- .panel{width:100%;padding:15px;border-radius:17px}
- header{padding:21px 12px 18px}
- .grid{gap:8px}
- .stat{padding:11px;border-radius:12px}
+ .wrap>.warn{order:9}
+ .panel{width:100%;padding:14px;border-radius:16px}
+ header{padding:18px 12px 15px}
+ .grid{gap:7px}
+ .stat{padding:10px;border-radius:12px}
  .stat b{font-size:17px}
  .field{min-width:calc(50% - 6px)}
  button{flex:1}
+ .warn{font-size:11px;padding:10px 12px}
+ .warn summary{font-size:12px}
+ .warn p{margin:8px 0 2px}
 }
 @media(max-width:370px){.field{min-width:100%}.grid{gap:7px}.stat{padding:9px}.stat b{font-size:15px}}
 </style></head><body>
 <header><h1>🤖 AI Trading Analyzer</h1><div class="sub">Forex • Crypto • Stocks | Live data analysis • Auto signals • Paper trading</div></header>
 <main class="wrap">
-<div class="warn"><b>গুরুত্বপূর্ণ:</b> এটি বাস্তব AI ভবিষ্যদ্বাণী নয়; EMA, RSI ও MACD-ভিত্তিক নিয়মে স্বয়ংক্রিয় বিশ্লেষণ করে। Crypto-তে Binance public market data এবং Forex/Stock-এ Yahoo Finance public data ব্যবহারের চেষ্টা করে। Forex/Stock-এর ডেটা ব্রাউজারে CORS/প্রোভাইডার সীমাবদ্ধতায় ব্যর্থ হতে পারে—তখন কোনো সিগন্যাল তৈরি হবে না। পেজ খোলা থাকলেই প্রতি ৬০ সেকেন্ডে স্ক্যান চলে; পেজ বন্ধ থাকলে নয়। কোনো আসল অর্ডার বা টাকা ব্যবহার হয় না।</div>
+<details class="warn"><summary>গুরুত্বপূর্ণ তথ্য ও সীমাবদ্ধতা</summary><p>এটি বাস্তব AI ভবিষ্যদ্বাণী নয়; EMA, RSI ও MACD-ভিত্তিক নিয়মে স্বয়ংক্রিয় বিশ্লেষণ করে। Crypto-তে Binance public market data এবং Forex/Stock-এ public market data ব্যবহারের চেষ্টা করে। ডেটা ব্রাউজারের CORS/প্রোভাইডার সীমাবদ্ধতায় ব্যর্থ হতে পারে—তখন কোনো সিগন্যাল তৈরি হবে না। পেজ খোলা থাকলেই প্রতি ৬০ সেকেন্ডে স্ক্যান চলে; পেজ বন্ধ থাকলে নয়। কোনো আসল অর্ডার বা টাকা ব্যবহার হয় না।</p></details>
 <section class="panel" style="border:1px solid #22c55e"><h2>চালু মোড: Demo → পরে Real</h2><p class="muted"><b style="color:#4ade80">Demo Trading চালু:</b> Auto Scan ও Auto Paper Trade ON থাকলে সিস্টেম নিয়মভিত্তিক মার্কেট বিশ্লেষণ করে ভার্চুয়াল BUY/SELL ট্রেড খুলবে এবং Stop Loss / Take Profit অনুযায়ী বন্ধ করার চেষ্টা করবে। এখানে কোনো আসল টাকা ব্যবহার হয় না।</p><p class="muted"><b>Real Trading এখনো বন্ধ:</b> বাস্তব অর্ডার দেওয়ার আগে সমর্থিত ব্রোকার/এক্সচেঞ্জ, API সংযোগ, নিরাপদ সার্ভার এবং তোমার আলাদা অনুমোদন লাগবে। এই পেজ এখন বাস্তব অর্ডার পাঠায় না।</p></section>
 <section class="panel" style="border:2px solid #3b82f6"><h2>⭐ সহজ ফলাফল — প্রথমে এটি দেখো</h2><div class="stat"><small>এখন কী করবে?</small><b id="simpleSignal" class="signal wait">লোড হচ্ছে…</b><p id="simpleWhy" class="muted">মার্কেট ডেটা বিশ্লেষণ করা হচ্ছে।</p></div><div class="grid" style="margin-top:9px"><div class="stat"><small>এন্ট্রি (প্রবেশের দাম)</small><b id="simpleEntry">—</b></div><div class="stat"><small>স্টপ লস (ক্ষতি থামানোর দাম)</small><b id="simpleSL">—</b></div><div class="stat"><small>টেক প্রফিট (লাভের লক্ষ্য)</small><b id="simpleTP">—</b></div><div class="stat"><small>বর্তমান দাম</small><b id="simplePrice">—</b></div></div><p class="muted">BUY = কেনার সম্ভাব্য সংকেত · SELL = বিক্রির সম্ভাব্য সংকেত · WAIT = এখন অপেক্ষা। এগুলো নিশ্চিত পূর্বাভাস নয়।</p></section>
 <section class="panel"><h2>১. Market নির্বাচন</h2><div class="row">
