@@ -57,6 +57,15 @@ async function fetchData(){
   }
   throw Error('Binance-এর সব ডেটা সার্ভার থেকে সংযোগ পাওয়া যায়নি ('+(lastError?.name==='AbortError'?'সময় শেষ':lastError?.message||'Network error')+')');
  }
+ if(type==='stock'){
+  const url='https://biquote.io/api/'+encodeURIComponent(sym)+'/ohlc?interval='+encodeURIComponent(tf)+'&limit=120';
+  const r=await fetchTimed(url,12000);if(!r.ok)throw Error('Stock data HTTP '+r.status);
+  const j=await r.json();if(!Array.isArray(j.bars))throw Error(j.message||'Stock candle data পাওয়া যায়নি');
+  const data=j.bars.filter(x=>!x.isOpen&&Number.isFinite(+x.open)&&Number.isFinite(+x.high)&&Number.isFinite(+x.low)&&Number.isFinite(+x.close)&&Number.isFinite(Date.parse(x.openTime))).map(x=>({time:Date.parse(x.openTime),open:+x.open,high:+x.high,low:+x.low,close:+x.close}));
+  if(data.length<35)throw Error('Stock উৎসে পর্যাপ্ত বন্ধ candle নেই ('+data.length+'); বাজার বন্ধ বা এই timeframe-এর ডেটা অনুপলব্ধ হতে পারে');
+  $('status').textContent='Stock data source: biquote.io · closed candles';
+  return data;
+ }
  if(type==='forex'){
   const pair=sym.replace('=X','');
   const url='https://biquote.io/api/'+encodeURIComponent(pair)+'/ohlc?interval='+encodeURIComponent(tf)+'&limit=120';
