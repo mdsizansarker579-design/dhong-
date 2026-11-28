@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220"><title>All Markets Trading Analyzer</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#142136;--line:#2a3a53;--muted:#a8b6ca;--blue:#3b82f6;--green:#22c55e;--red:#ef4444;--amber:#f59e0b}*{box-sizing:border-box}body{margin:0;background:linear-gradient(155deg,#101d32,#080e18 70%);color:#eff6ff;font-family:system-ui,'Noto Sans Bengali',sans-serif}header{text-align:center;padding:22px 14px 16px;border-bottom:1px solid var(--line)}h1{font-size:22px;margin:0 0 6px}header p{margin:0;color:var(--muted);font-size:13px}.wrap{max-width:980px;margin:auto;padding:13px}.warning{background:#332817;border:1px solid #76551c;color:#ffe2a2;border-radius:12px;padding:12px;font-size:13px;line-height:1.6;margin:12px 0}.tabs,.row{display:flex;gap:8px;flex-wrap:wrap}.tabs{margin:12px 0}.tabs button,button{background:#263750;border:0;color:#fff;border-radius:9px;padding:10px 13px;font-weight:650;cursor:pointer}.tabs button.active,button.primary{background:#2563eb}.tabs button:disabled{opacity:.5}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}.panel h2{font-size:16px;margin:0 0 12px}.field{flex:1;min-width:130px}label{display:block;color:var(--muted);font-size:12px;margin:0 0 6px}input,select{width:100%;background:#0b1423;color:#fff;border:1px solid #3a4c66;border-radius:9px;padding:11px;font:inherit}.muted{color:var(--muted);font-size:12px;line-height:1.6}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat{background:#0c1728;border:1px solid var(--line);border-radius:10px;padding:11px}.stat small{color:var(--muted);font-size:11px}.stat b{display:block;font-size:19px;margin-top:4px;overflow-wrap:anywhere}.chart{height:430px;border-radius:10px;overflow:hidden;background:#0b1423}.chart iframe{width:100%;height:100%;border:0}.ta{min-height:210px}.hidden{display:none}.good{color:#4ade80}.bad{color:#f87171}.pill{display:inline-block;background:#263750;border-radius:99px;padding:4px 8px;font-size:11px;margin:2px}.trade{border-top:1px solid var(--line);padding:10px 0}.trade:first-child{border:0}.footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}@media(min-width:700px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.chart{height:520px}}
+</style></head><body>
+<header><h1>📈 All Markets Trading Analyzer</h1><p>Forex • Crypto • Stocks | Live charts + Paper Trading</p></header>
+<main class="wrap">
+<div class="warning"><b>গুরুত্বপূর্ণ:</b> লাইভ চার্ট ও টেকনিক্যাল সারাংশ TradingView থেকে লোড হয়। এটি কোনো নিশ্চিত Buy/Sell ভবিষ্যদ্বাণী নয়। মার্কেট ডেটা কিছু ক্ষেত্রে বিলম্বিত হতে পারে। এই অ্যাপ অর্ডার পাঠায় না; Paper Trading কাল্পনিক হিসাব।</div>
+<div class="tabs"><button class="active" data-tab="market">Live Market</button><button data-tab="paper">Paper Trading</button><button data-tab="risk">Risk Calculator</button></div>
+<section id="market" class="view">
+<div class="panel"><h2>মার্কেট বেছে নাও</h2><div class="row">
+<div class="field"><label>Market</label><select id="marketType"><option value="crypto">Crypto</option><option value="forex">Forex</option><option value="stock">Stock</option></select></div>
+<div class="field"><label>Symbol</label><select id="symbol"></select></div>
+<div class="field"><label>Chart timeframe</label><select id="interval"><option value="1">1 minute</option><option value="5">5 minutes</option><option value="15" selected>15 minutes</option><option value="60">1 hour</option><option value="240">4 hours</option><option value="D">1 day</option><option value="W">1 week</option></select></div>
+</div><p class="muted">চার্ট ও টেকনিক্যাল সারাংশ দেখতে নিচে স্ক্রল করো। Symbol বদলালে চার্টও বদলাবে।</p></div>
+<div class="panel"><h2>লাইভ / উপলব্ধ মার্কেট চার্ট</h2><div class="chart"><iframe id="chart" title="TradingView market chart" allowfullscreen></iframe></div><p class="muted">চার্টের দাম, সময় ও ডেটা ফিড TradingView-এর নির্বাচিত এক্সচেঞ্জ/প্রোভাইডারের ওপর নির্ভর করে।</p></div>
+<div class="panel"><h2>Technical Analysis Summary</h2><div id="ta" class="ta"></div><p class="muted">TradingView-এর Technical Analysis উইজেটে Strong Buy / Buy / Neutral / Sell / Strong Sell সারাংশ দেখানো হতে পারে। এটি সূচকভিত্তিক মতামত, নিশ্চয়তা নয়।</p></div>
+</section>
+<section id="paper" class="view hidden">
+<div class="panel"><h2>Paper Trading Wallet</h2><div class="grid" id="walletStats"></div><div class="row" style="margin-top:12px"><div class="field"><label>নতুন ভার্চুয়াল ব্যালেন্স (৳/USD)</label><input id="resetBalance" type="number" min="1" placeholder="10000"></div><div style="align-self:end"><button id="resetWallet">Wallet Reset</button></div></div></div>
+<div class="panel"><h2>নতুন Paper Trade</h2><div class="row">
+<div class="field"><label>Market / Symbol</label><input id="tradeSymbol" readonly></div>
+<div class="field"><label>Direction</label><select id="direction"><option value="long">BUY / Long</option><option value="short">SELL / Short</option></select></div>
+</div><div class="row" style="margin-top:9px">
+<div class="field"><label>Entry price (চার্ট থেকে লিখুন)</label><input id="entry" type="number" min="0" step="any" placeholder="Entry price"></div>
+<div class="field"><label>Position size (units)</label><input id="units" type="number" min="0" step="any" placeholder="যেমন 0.01"></div>
+</div><div class="row" style="margin-top:9px">
+<div class="field"><label>Stop Loss (ঐচ্ছিক)</label><input id="sl" type="number" min="0" step="any" placeholder="Stop Loss"></div>
+<div class="field"><label>Take Profit (ঐচ্ছিক)</label><input id="tp" type="number" min="0" step="any" placeholder="Take Profit"></div>
+</div><button class="primary" id="openTrade" style="margin-top:12px">Paper Trade Open</button><p class="muted">এটি শুধু অনুশীলন। Entry price চার্ট দেখে নিজে লিখতে হবে; কোনো আসল অর্ডার যাবে না।</p></div>
+<div class="panel"><h2>Open Positions</h2><div class="row"><div class="field"><label>Current price (চার্ট থেকে আপডেট করো)</label><input id="currentPrice" type="number" min="0" step="any" placeholder="Current price"></div><div style="align-self:end"><button id="updatePrices">P&L Update</button></div></div><div id="openPositions"></div></div>
+<div class="panel"><h2>Trade History</h2><div id="history"></div></div>
+</section>
+<section id="risk" class="view hidden">
+<div class="panel"><h2>Position Size & Risk Calculator</h2><div class="row">
+<div class="field"><label>Account balance</label><input id="balance" type="number" min="0" value="1000"></div>
+<div class="field"><label>Risk per trade (%)</label><input id="riskPct" type="number" min="0.1" max="10" step="0.1" value="1"></div>
+</div><div class="row" style="margin-top:9px">
+<div class="field"><label>Entry price</label><input id="riskEntry" type="number" min="0" step="any"></div>
+<div class="field"><label>Stop Loss price</label><input id="riskStop" type="number" min="0" step="any"></div>
+</div><button class="primary" id="calcRisk" style="margin-top:12px">Calculate</button><div id="riskResult" class="result" style="margin-top:12px"></div><p class="muted">এটি সরল position sizing হিসাব; Forex pip value, leverage, fees, slippage ও contract specification আলাদা হতে পারে।</p></div>
+</section>
+<div class="panel"><h2>ব্যবহারবিধি</h2><p class="muted">১) Live Market-এ মার্কেট ও Symbol বেছে নাও। ২) চার্ট ও Technical Analysis দেখো। ৩) Paper Trading-এ চার্ট থেকে Entry/Current price লিখে ভার্চুয়াল ট্রেড খোলো ও P&L পরীক্ষা করো। ৪) Risk Calculator দিয়ে সম্ভাব্য ঝুঁকি হিসাব করো। এই অ্যাপ কোনো ব্রোকারে লগইন করে না, API key বা টাকা নেয় না।</p></div>
+</main><div class="footer">ডেটা উইজেট ও Paper Trading ছাড়া কোনো ব্রোকার সংযোগ নেই • ট্রেডিং ঝুঁকিপূর্ণ</div>
+<script>
+const $=id=>document.getElementById(id);
+const symbols={
+ crypto:[['BINANCE:BTCUSDT','Bitcoin (BTC/USDT)'],['BINANCE:ETHUSDT','Ethereum (ETH/USDT)'],['BINANCE:SOLUSDT','Solana (SOL/USDT)'],['BINANCE:BNBUSDT','BNB (BNB/USDT)'],['BINANCE:XRPUSDT','XRP (XRP/USDT)']],
+ forex:[['FX:EURUSD','EUR/USD'],['FX:GBPUSD','GBP/USD'],['FX:USDJPY','USD/JPY'],['FX:USDCHF','USD/CHF'],['FX:AUDUSD','AUD/USD']],
+ stock:[['NASDAQ:AAPL','Apple (AAPL)'],['NASDAQ:MSFT','Microsoft (MSFT)'],['NASDAQ:NVDA','NVIDIA (NVDA)'],['NASDAQ:AMZN','Amazon (AMZN)'],['NYSE:TSLA','Tesla (TSLA)']]
+};
+function selected(){return $('symbol').value}
+function mount(){
+ const sym=selected(), interval=$('interval').value;
+ $('chart').src='https://www.tradingview.com/widgetembed/?symbol='+encodeURIComponent(sym)+'&interval='+encodeURIComponent(interval)+'&hidesidetoolbar=1&symboledit=1&saveimage=0&toolbarbg=0b1423&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&hideideas=1&locale=en';
+ $('ta').innerHTML='';
+ const s=document.createElement('script');s.src='https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';s.async=true;
+ s.innerHTML=JSON.stringify({interval:'15m',width:'100%',isTransparent:true,height:200,symbol:sym,showIntervalTabs:true,displayMode:'single',locale:'en',colorTheme:'dark'});
+ $('ta').appendChild(s);$('tradeSymbol').value=sym;
+}
+function fillSymbols(){let t=$('marketType').value;$('symbol').innerHTML=symbols[t].map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join('');mount()}
+$('marketType').onchange=fillSymbols;$('symbol').onchange=mount;$('interval').onchange=mount;
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));$(b.dataset.tab).classList.remove('hidden');if(b.dataset.tab==='paper')renderPaper()});
+const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},put=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+let wallet=get('ta_wallet',10000),open=get('ta_open',[]),history=get('ta_history',[]);
+const money=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:4});
+function renderPaper(){let used=open.reduce((a,t)=>a+t.entry*t.units,0);$('walletStats').innerHTML='<div class="stat"><small>Virtual Balance</small><b>'+money(wallet)+'</b></div><div class="stat"><small>Open positions</small><b>'+open.length+'</b></div><div class="stat"><small>Open exposure</small><b>'+money(used)+'</b></div><div class="stat"><small>Closed trades</small><b>'+history.length+'</b></div>';$('openPositions').innerHTML=open.length?open.map((t,i)=>'<div class="trade"><b>'+t.symbol+' · '+(t.dir==='long'?'BUY':'SELL')+'</b><div class="muted">Entry: '+money(t.entry)+' · Units: '+money(t.units)+' · SL: '+(t.sl||'—')+' · TP: '+(t.tp||'—')+'</div><button onclick="closeTrade('+i+')" style="margin-top:7px">Close at current price</button></div>').join(''):'<p class="muted">এখন কোনো open position নেই।</p>';$('history').innerHTML=history.length?history.slice().reverse().map(t=>'<div class="trade"><b>'+t.symbol+' · '+t.dir.toUpperCase()+'</b><div class="muted">Entry '+money(t.entry)+' → Exit '+money(t.exit)+' · P&L: <span class="'+(t.pnl>=0?'good':'bad')+'">'+money(t.pnl)+'</span></div></div>').join(''):'<p class="muted">এখনো কোনো trade history নেই।</p>'}
+$('resetWallet').onclick=()=>{let v=Number($('resetBalance').value);if(v>0){wallet=v;put('ta_wallet',wallet);renderPaper()}};
+$('openTrade').onclick=()=>{let entry=Number($('entry').value),units=Number($('units').value),sl=Number($('sl').value)||0,tp=Number($('tp').value)||0;if(!(entry>0&&units>0))return alert('Entry price এবং units সঠিকভাবে লিখুন।');open.push({symbol:selected(),dir:$('direction').value,entry,units,sl,tp,opened:new Date().toISOString()});put('ta_open',open);$('entry').value='';$('units').value='';$('sl').value='';$('tp').value='';renderPaper()};
+$('updatePrices').onclick=()=>{let price=Number($('currentPrice').value);if(!(price>0))return alert('চার্টের বর্তমান দাম লিখুন।');open.forEach(t=>t.mark=price);renderPaper();alert('P&L আপডেট হয়েছে। Close করতে position-এর বোতাম চাপুন।')};
+window.closeTrade=i=>{let t=open[i],exit=Number(t.mark)||Number(prompt('চার্টের বর্তমান Exit price লিখুন'));if(!(exit>0))return;let pnl=(t.dir==='long'?exit-t.entry:t.entry-exit)*t.units;history.push({...t,exit,pnl,closed:new Date().toISOString()});wallet+=pnl;open.splice(i,1);put('ta_open',open);put('ta_history',history);put('ta_wallet',wallet);renderPaper()};
+$('calcRisk').onclick=()=>{let b=Number($('balance').value),r=Number($('riskPct').value),e=Number($('riskEntry').value),s=Number($('riskStop').value);if(!(b>0&&r>0&&e>0&&s>0&&e!==s))return $('riskResult').textContent='সঠিক মান লিখুন।';let risk=b*r/100,dist=Math.abs(e-s),units=risk/dist;$('riskResult').innerHTML='<div class="stat"><small>Maximum planned loss</small><b>'+money(risk)+'</b></div><div class="stat" style="margin-top:8px"><small>Suggested units (simplified)</small><b>'+money(units)+'</b></div><p class="muted">Entry ও Stop Loss-এর দূরত্ব '+money(dist)+'। ফি, slippage, leverage এবং contract size ধরা হয়নি।</p>'};
+fillSymbols();renderPaper();
+</script></body></html>
