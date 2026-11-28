@@ -98,6 +98,14 @@ let positions=load('ait_positions',{});
 let legacyPosition=load('ait_position',null);
 if(legacyPosition&&!Object.keys(positions).length){const k=[legacyPosition.type||'crypto',legacyPosition.symbol||'BTCUSDT',legacyPosition.tf||'15m'].join('|');positions[k]=legacyPosition;}
 let position=null;
+let migratedReserve=0;
+for(const p of Object.values(positions)){
+ if(p&&!p.fundsReserved&&Number.isFinite(Number(p.entry))&&Number.isFinite(Number(p.sl))&&Number.isFinite(Number(p.units))){
+  const reserve=Math.abs(Number(p.entry)-Number(p.sl))*Number(p.units);
+  if(reserve>0&&reserve<=account.balance){p.riskCash=reserve;p.fundsReserved=true;account.balance-=reserve;migratedReserve+=reserve;}
+ }
+}
+if(migratedReserve>0){save('ait_positions',positions);save('ait_account',account);}
 function activePositionKey(){return [$('type').value,$('symbol').value,$('tf').value].join('|')}
 function syncActivePosition(){position=positions[activePositionKey()]||null}
 let signalHistory=load('ait_signals',[]),lastSignalKey='';
