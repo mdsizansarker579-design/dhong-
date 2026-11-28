@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220"><title>AI Trading Analyzer</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#142136;--line:#2a3a53;--muted:#a8b6ca;--blue:#3b82f6;--green:#22c55e;--red:#ef4444;--amber:#f59e0b}*{box-sizing:border-box}body{margin:0;background:linear-gradient(155deg,#101d32,#080e18 70%);color:#eff6ff;font-family:system-ui,'Noto Sans Bengali',sans-serif}header{text-align:center;padding:20px 12px;border-bottom:1px solid var(--line)}h1{font-size:22px;margin:0 0 6px}.sub,.muted{color:var(--muted);font-size:12px;line-height:1.6}.wrap{max-width:1000px;margin:auto;padding:12px}.warn{background:#332817;border:1px solid #76551c;color:#ffe2a2;padding:12px;border-radius:12px;font-size:12px;line-height:1.6;margin:10px 0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:11px 0}.panel h2{font-size:16px;margin:0 0 12px}.row{display:flex;gap:9px;flex-wrap:wrap}.field{flex:1;min-width:120px}label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}select,input{width:100%;background:#0b1423;color:white;border:1px solid #3a4c66;border-radius:9px;padding:11px;font:inherit}button{background:#263750;border:0;color:white;border-radius:9px;padding:10px 13px;font-weight:650}button.primary{background:#2563eb}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{background:#0c1728;border:1px solid var(--line);border-radius:10px;padding:11px;min-width:0}.stat small{color:var(--muted);font-size:11px}.stat b{display:block;font-size:18px;margin-top:4px;overflow-wrap:anywhere}.signal{font-size:24px;font-weight:800}.buy{color:#4ade80}.sell{color:#f87171}.wait{color:#fbbf24}.pill{display:inline-block;background:#263750;padding:4px 8px;border-radius:20px;font-size:11px;margin:2px}.trade{padding:10px 0;border-top:1px solid var(--line)}.trade:first-child{border:0}.muted{margin:8px 0}.foot{text-align:center;color:var(--muted);font-size:11px;padding:18px}@media(min-width:650px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style></head><body>
+<header><h1>🤖 AI Trading Analyzer</h1><div class="sub">Forex • Crypto • Stocks | Live data analysis • Auto signals • Paper trading</div></header>
+<main class="wrap">
+<div class="warn"><b>গুরুত্বপূর্ণ:</b> এটি বাস্তব AI ভবিষ্যদ্বাণী নয়; EMA, RSI ও MACD-ভিত্তিক নিয়মে স্বয়ংক্রিয় বিশ্লেষণ করে। Crypto-তে Binance public market data এবং Forex/Stock-এ Yahoo Finance public data ব্যবহারের চেষ্টা করে। ডেটা উৎস বন্ধ/ব্লক হলে সিগন্যাল বন্ধ থাকবে। কোনো আসল অর্ডার বা টাকা ব্যবহার হয় না।</div>
+<section class="panel"><h2>১. Market নির্বাচন</h2><div class="row">
+<div class="field"><label>Market</label><select id="type"><option value="crypto">Crypto</option><option value="forex">Forex</option><option value="stock">Stock</option></select></div>
+<div class="field"><label>Symbol</label><select id="symbol"></select></div>
+<div class="field"><label>Timeframe</label><select id="tf"><option value="5m">5 মিনিট</option><option value="15m" selected>15 মিনিট</option><option value="1h">1 ঘণ্টা</option><option value="4h">4 ঘণ্টা</option><option value="1d">1 দিন</option></select></div>
+</div><div class="row" style="margin-top:10px"><button class="primary" id="analyze">এখনই বিশ্লেষণ</button><button id="auto">Auto Scan: OFF</button></div><p class="muted" id="status">ডেটা লোড হয়নি। বিশ্লেষণ চাপুন।</p></section>
+<section class="panel"><h2>২. স্বয়ংক্রিয় Trading Signal</h2><div class="grid">
+<div class="stat"><small>Signal</small><b class="signal wait" id="signal">WAIT</b></div><div class="stat"><small>Latest price</small><b id="price">—</b></div><div class="stat"><small>RSI (14)</small><b id="rsi">—</b></div><div class="stat"><small>EMA 9 / 21</small><b id="ema">—</b></div>
+<div class="stat"><small>MACD</small><b id="macd">—</b></div><div class="stat"><small>Entry</small><b id="entry">—</b></div><div class="stat"><small>Stop Loss</small><b id="sl">—</b></div><div class="stat"><small>Take Profit</small><b id="tp">—</b></div>
+</div><p class="muted" id="reason">ডেটা এলে বিশ্লেষণের কারণ এখানে দেখাবে।</p><div id="chartlink" class="muted"></div></section>
+<section class="panel"><h2>৩. Auto Paper Trading</h2><div class="grid"><div class="stat"><small>Virtual balance</small><b id="balance">৳10,000</b></div><div class="stat"><small>Closed trades</small><b id="count">0</b></div><div class="stat"><small>Win rate</small><b id="winrate">—</b></div><div class="stat"><small>Realized P/L</small><b id="pnl">0</b></div></div>
+<div class="row" style="margin-top:10px"><div class="field"><label>Initial virtual balance</label><input id="startbal" type="number" value="10000" min="100"></div><div class="field"><label>Risk per trade (%)</label><input id="risk" type="number" value="1" min=".1" max="5" step=".1"></div></div><div class="row" style="margin-top:9px"><button id="reset">Wallet Reset</button><button id="autoTrade" class="primary">Auto Paper Trade: ON</button></div><p class="muted" id="position">কোনো Open Position নেই।</p><p class="muted">সিস্টেমে BUY/SELL সিগন্যাল এলে ভার্চুয়াল ট্রেড খুলবে। Stop Loss বা Take Profit স্পর্শ করলে ডেটা আপডেটে ট্রেড বন্ধ হবে। একই সময়ে একটি পজিশন রাখা হবে।</p></section>
+<section class="panel"><h2>৪. Trade History</h2><div id="history" class="muted">এখনো কোনো ট্রেড নেই।</div></section>
+<section class="panel"><h2>কীভাবে সিগন্যাল তৈরি হয়?</h2><p class="muted">BUY: EMA 9 > EMA 21, RSI 50–70 এবং MACD positive হলে। SELL: EMA 9 < EMA 21, RSI 30–50 এবং MACD negative হলে। অন্য অবস্থায় WAIT। Stop Loss ATR-ভিত্তিক এবং Take Profit আনুমানিক 1:2 risk/reward। এটি শিক্ষামূলক নিয়ম; বাজারের আচরণ বদলাতে পারে।</p></section>
+</main><div class="foot">No broker connection • No real-money trading • Data availability depends on public providers</div>
+<script>
+const $=id=>document.getElementById(id);
+const lists={crypto:[['BTCUSDT','Bitcoin'],['ETHUSDT','Ethereum'],['SOLUSDT','Solana'],['BNBUSDT','BNB'],['XRPUSDT','XRP'],['DOGEUSDT','Dogecoin']],forex:[['EURUSD=X','EUR/USD'],['GBPUSD=X','GBP/USD'],['USDJPY=X','USD/JPY'],['AUDUSD=X','AUD/USD'],['USDCAD=X','USD/CAD']],stock:[['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','NVIDIA'],['AMZN','Amazon'],['TSLA','Tesla'],['GOOGL','Alphabet']]};
+let candles=[],last=null,scanTimer=null,autoTrade=true,autoScan=false;
+const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+let account=load('ait_account',{balance:10000,start:10000,trades:[]}),position=load('ait_position',null);
+const fmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:6});
+function fill(){ $('symbol').innerHTML=lists[$('type').value].map(x=>'<option value="'+x[0]+'">'+x[1]+' ('+x[0]+')</option>').join(''); }
+$('type').onchange=fill;
+function interval(){let x=$('tf').value;return x==='5m'?'5m':x==='15m'?'15m':x==='1h'?'1h':x==='4h'?'4h':'1d'}
+async function fetchData(){
+ const type=$('type').value,sym=$('symbol').value,tf=interval();$('status').textContent='লাইভ ডেটা আনা হচ্ছে…';
+ if(type==='crypto'){
+  let url='https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit=120';
+  let r=await fetch(url);if(!r.ok)throw Error('Binance data HTTP '+r.status);
+  let a=await r.json();return a.map(x=>({time:x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4]}));
+ }
+ const map={'5m':'5m','15m':'15m','1h':'1h','4h':'1h','1d':'1d'};
+ let range=tf==='1d'?'6mo':tf==='4h'?'3mo':tf==='1h'?'1mo':'5d';
+ let url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range='+range+'&interval='+map[tf];
+ let r=await fetch(url);if(!r.ok)throw Error('Market data HTTP '+r.status);
+ let j=await r.json(),res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)throw Error('ডেটা পাওয়া যায়নি');
+ let q=res.indicators.quote[0];return res.timestamp.map((t,i)=>({time:t*1000,open:q.open[i],high:q.high[i],low:q.low[i],close:q.close[i]})).filter(x=>Number.isFinite(x.close)&&Number.isFinite(x.high)&&Number.isFinite(x.low));
+}
+function ema(a,p){let k=2/(p+1),v=a[0];for(let i=1;i<a.length;i++)v=a[i]*k+v*(1-k);return v}
+function rsi(a){let gains=0,loss=0;for(let i=a.length-14;i<a.length;i++){let d=a[i]-a[i-1];if(d>0)gains+=d;else loss-=d}if(!loss)return 100;return 100-100/(1+(gains/14)/(loss/14))}
+function analyze(a){
+ if(a.length<35)throw Error('পর্যাপ্ত candle data নেই');let c=a.map(x=>x.close),e9=ema(c.slice(-50),9),e21=ema(c.slice(-80),21),rv=rsi(c);
+ let fast=c.map((_,i)=>ema(c.slice(0,i+1),12)),slow=c.map((_,i)=>ema(c.slice(0,i+1),26)),m=fast.at(-1)-slow.at(-1),prev=fast.at(-2)-slow.at(-2);
+ let trs=[];for(let i=1;i<a.length;i++)trs.push(Math.max(a[i].high-a[i].low,Math.abs(a[i].high-a[i-1].close),Math.abs(a[i].low-a[i-1].close)));
+ let atr=trs.slice(-14).reduce((x,y)=>x+y,0)/Math.min(14,trs.length),price=c.at(-1);
+ let sig='WAIT',why='EMA, RSI ও MACD একমত নয়; অপেক্ষা করো।';
+ if(e9>e21&&rv>=50&&rv<=70&&m>0&&m>=prev){sig='BUY';why='EMA 9 উপরে EMA 21, RSI bullish zone এবং MACD positive/increasing।'}
+ if(e9<e21&&rv>=30&&rv<=50&&m<0&&m<=prev){sig='SELL';why='EMA 9 নিচে EMA 21, RSI bearish zone এবং MACD negative/decreasing।'}
+ return {sig,why,price,rv,e9,e21,m,atr,sl:sig==='BUY'?price-1.5*atr:sig==='SELL'?price+1.5*atr:null,tp:sig==='BUY'?price+3*atr:sig==='SELL'?price-3*atr:null,time:a.at(-1).time};
+}
+function render(d){
+ $('signal').textContent=d.sig;$('signal').className='signal '+(d.sig==='BUY'?'buy':d.sig==='SELL'?'sell':'wait');
+ $('price').textContent=fmt(d.price);$('rsi').textContent=d.rv.toFixed(2);$('ema').textContent=fmt(d.e9)+' / '+fmt(d.e21);$('macd').textContent=fmt(d.m);
+ $('entry').textContent=d.sig==='WAIT'?'—':fmt(d.price);$('sl').textContent=d.sl?fmt(d.sl):'—';$('tp').textContent=d.tp?fmt(d.tp):'—';$('reason').textContent=d.why;
+ const tv=$('type').value==='crypto'?'BINANCE:'+ $('symbol').value:$('type').value==='forex'?'FX:'+ $('symbol').value.replace('=X',''):$('symbol').value;
+ $('chartlink').innerHTML='<a target="_blank" rel="noopener" style="color:#93c5fd" href="https://www.tradingview.com/chart/?symbol='+encodeURIComponent(tv)+'">TradingView chart খুলুন ↗</a>';
+}
+function stats(){let t=account.trades,p=t.reduce((s,x)=>s+x.pnl,0),wins=t.filter(x=>x.pnl>0).length;$('balance').textContent=fmt(account.balance);$('count').textContent=t.length;$('winrate').textContent=t.length?(wins/t.length*100).toFixed(1)+'%':'—';$('pnl').textContent=fmt(p);$('history').innerHTML=t.length?t.slice(-15).reverse().map(x=>'<div class="trade"><b>'+x.symbol+' · '+x.side+'</b><div>Entry '+fmt(x.entry)+' → Exit '+fmt(x.exit)+' · P/L <span class="'+(x.pnl>=0?'buy':'sell')+'">'+fmt(x.pnl)+'</span></div><small>'+new Date(x.time).toLocaleString()+'</small></div>').join(''):'এখনো কোনো ট্রেড নেই।';$('position').textContent=position?'Open: '+position.symbol+' '+position.side+' | Entry '+fmt(position.entry)+' | SL '+fmt(position.sl)+' | TP '+fmt(position.tp):'কোনো Open Position নেই।';save('ait_account',account);save('ait_position',position)}
+function closePos(price,why){if(!position)return;let pnl=(position.side==='BUY'?price-position.entry:position.entry-price)*position.units;account.balance+=pnl;account.trades.push({...position,exit:price,pnl,why,time:Date.now()});position=null;stats()}
+function paper(d){
+ if(position){if(position.side==='BUY'&&(d.price<=position.sl||d.price>=position.tp))closePos(d.price,d.price<=position.sl?'Stop Loss':'Take Profit');else if(position.side==='SELL'&&(d.price>=position.sl||d.price<=position.tp))closePos(d.price,d.price>=position.sl?'Stop Loss':'Take Profit')}
+ if(!position&&autoTrade&&d.sig!=='WAIT'){
+  let riskPct=Math.min(5,Math.max(.1,Number($('risk').value)||1)),riskCash=account.balance*riskPct/100,dist=Math.abs(d.price-d.sl),units=dist>0?riskCash/dist:0;
+  if(units>0){position={symbol:$('symbol').value,side:d.sig,entry:d.price,sl:d.sl,tp:d.tp,units,opened:Date.now()};stats()}
+ }
+}
+async function run(){try{let a=await fetchData();candles=a;last=analyze(a);render(last);paper(last);$('status').textContent='ডেটা আপডেট: '+new Date().toLocaleTimeString()+' · '+a.length+' candles';}catch(e){$('status').textContent='ডেটা/সংযোগ সমস্যা: '+e.message+'। এই মার্কেটের জন্য ডেটা উৎস এই মুহূর্তে পাওয়া যাচ্ছে না; সিগন্যাল তৈরি করা হয়নি।';$('signal').textContent='NO DATA';$('signal').className='signal wait'}}
+$('analyze').onclick=run;
+$('tf').onchange=run;$('symbol').onchange=run;
+$('auto').onclick=()=>{autoScan=!autoScan;$('auto').textContent='Auto Scan: '+(autoScan?'ON':'OFF');if(scanTimer)clearInterval(scanTimer);if(autoScan){run();scanTimer=setInterval(run,60000)}};
+$('autoTrade').onclick=()=>{autoTrade=!autoTrade;$('autoTrade').textContent='Auto Paper Trade: '+(autoTrade?'ON':'OFF')};
+$('reset').onclick=()=>{let b=Number($('startbal').value);if(b>0){account={balance:b,start:b,trades:[]};position=null;stats()}};
+fill();stats();run();
+</script></body></html>
