@@ -21,7 +21,7 @@
 <div class="row" style="margin-top:10px"><div class="field"><label>Initial virtual balance</label><input id="startbal" type="number" value="10000" min="100"></div><div class="field"><label>Risk per trade (%)</label><input id="risk" type="number" value="1" min=".1" max="5" step=".1"></div></div><div class="row" style="margin-top:9px"><button id="reset">Wallet Reset</button><button id="autoTrade" class="primary">Auto Paper Trade: ON</button></div><p class="muted" id="position">কোনো Open Position নেই।</p><p class="muted">সিস্টেমে BUY/SELL সিগন্যাল এলে ভার্চুয়াল ট্রেড খুলবে। Stop Loss বা Take Profit স্পর্শ করলে পরের ডেটা আপডেটে ট্রেড বন্ধ হবে। একই সময়ে একটি পজিশন রাখা হবে; অন্য মার্কেট/সিম্বলে গেলে আগের পজিশনটি সেখানকার দামে মূল্যায়ন হবে না।</p></section>
 <section class="panel"><h2>৪. Signal History — AI কখন BUY/SELL বলেছে</h2><p class="muted">প্রতিটি নতুন BUY/SELL সিগন্যাল এখানে সময়, মার্কেট, দাম, Entry, Stop Loss ও Take Profit-সহ জমা থাকবে। একই সিগন্যাল প্রতি মিনিটে বারবার যোগ হবে না।</p><div id="signalHistory" class="muted">এখনো কোনো BUY/SELL সিগন্যাল রেকর্ড হয়নি।</div></section>
 <section class="panel"><h2>৫. Closed Trade History — সম্পন্ন ভার্চুয়াল ট্রেড</h2><div id="history" class="muted">এখনো কোনো ট্রেড নেই।</div></section>
-<section class="panel"><h2>কীভাবে সিগন্যাল তৈরি হয়?</h2><p class="muted">BUY: EMA 9 > EMA 21, RSI 50–70 এবং MACD positive হলে। SELL: EMA 9 < EMA 21, RSI 30–50 এবং MACD negative হলে। অন্য অবস্থায় WAIT। Stop Loss ATR-ভিত্তিক এবং Take Profit আনুমানিক 1:2 risk/reward। এটি শিক্ষামূলক নিয়ম; বাজারের আচরণ বদলাতে পারে।</p></section>
+<section class="panel"><h2>কীভাবে সিগন্যাল তৈরি হয়?</h2><p class="muted">BUY/SELL: EMA 9 ও EMA 21-এর ট্রেন্ড বাধ্যতামূলক; দামের EMA9-এর অবস্থান, RSI, MACD-এর দিক ও গতি মিলিয়ে ৬ পয়েন্টের স্কোর হয়। একই দিকে অন্তত ৪ পয়েন্ট হলে সংকেত, নইলে WAIT। Stop Loss ATR-ভিত্তিক এবং Take Profit আনুমানিক 1:2 risk/reward। এটি শিক্ষামূলক নিয়ম; বাজারের আচরণ বদলাতে পারে।</p></section>
 </main><div class="foot">No broker connection • No real-money trading • Data availability depends on public providers</div>
 <script>
 window.addEventListener("error",function(e){var s=document.getElementById("status");if(s)s.textContent="সিস্টেম চালু হতে সমস্যা: "+(e.message||"JavaScript error")+"। পেজটি রিফ্রেশ করো।";});
@@ -89,13 +89,23 @@ async function fetchData(){
 function ema(a,p){let k=2/(p+1),v=a[0];for(let i=1;i<a.length;i++)v=a[i]*k+v*(1-k);return v}
 function rsi(a){let gains=0,loss=0;for(let i=a.length-14;i<a.length;i++){let d=a[i]-a[i-1];if(d>0)gains+=d;else loss-=d}if(!loss)return 100;return 100-100/(1+(gains/14)/(loss/14))}
 function analyze(a){
- if(a.length<35)throw Error('পর্যাপ্ত candle data নেই');let c=a.map(x=>x.close),e9=ema(c.slice(-50),9),e21=ema(c.slice(-80),21),rv=rsi(c);
+ if(a.length<35)throw Error('পর্যাপ্ত candle data নেই');
+ let c=a.map(x=>x.close),e9=ema(c.slice(-50),9),e21=ema(c.slice(-80),21),rv=rsi(c);
  let fast=c.map((_,i)=>ema(c.slice(0,i+1),12)),slow=c.map((_,i)=>ema(c.slice(0,i+1),26)),m=fast.at(-1)-slow.at(-1),prev=fast.at(-2)-slow.at(-2);
  let trs=[];for(let i=1;i<a.length;i++)trs.push(Math.max(a[i].high-a[i].low,Math.abs(a[i].high-a[i-1].close),Math.abs(a[i].low-a[i-1].close)));
  let atr=trs.slice(-14).reduce((x,y)=>x+y,0)/Math.min(14,trs.length),price=c.at(-1);
- let sig='WAIT',why='EMA, RSI ও MACD একমত নয়; অপেক্ষা করো।';
- if(e9>e21&&rv>=50&&rv<=70&&m>0&&m>=prev){sig='BUY';why='EMA 9 উপরে EMA 21, RSI bullish zone এবং MACD positive/increasing।'}
- if(e9<e21&&rv>=30&&rv<=50&&m<0&&m<=prev){sig='SELL';why='EMA 9 নিচে EMA 21, RSI bearish zone এবং MACD negative/decreasing।'}
+ if(!Number.isFinite(atr)||atr<=0||!Number.isFinite(rv)||!Number.isFinite(m))throw Error('সূচক গণনার জন্য ডেটা যথেষ্ট নয়');
+ // Weighted confirmation: trend is mandatory; other indicators contribute points.
+ let bull=0,bear=0;
+ if(e9>e21)bull+=2;else if(e9<e21)bear+=2;
+ if(price>e9)bull++;else if(price<e9)bear++;
+ if(rv>=50&&rv<=72)bull++;else if(rv>=28&&rv<=50)bear++;
+ if(m>0)bull++;else if(m<0)bear++;
+ if(m>prev)bull++;else if(m<prev)bear++;
+ let sig='WAIT',why='BUY/SELL-এর পক্ষে যথেষ্ট মিল পাওয়া যায়নি; অপেক্ষা করো।';
+ if(e9>e21&&bull>=4&&rv<75){sig='BUY';why='BUY স্কোর '+bull+'/6: EMA ট্রেন্ড ঊর্ধ্বমুখী এবং RSI, MACD ও দামের অন্তত কিছু নিশ্চিতকরণ মিলেছে।'}
+ else if(e9<e21&&bear>=4&&rv>25){sig='SELL';why='SELL স্কোর '+bear+'/6: EMA ট্রেন্ড নিম্নমুখী এবং RSI, MACD ও দামের অন্তত কিছু নিশ্চিতকরণ মিলেছে।'}
+ else why='এখন WAIT — BUY স্কোর '+bull+'/6, SELL স্কোর '+bear+'/6। ট্রেন্ড ও নিশ্চিতকরণ যথেষ্ট শক্তিশালী নয়।';
  return {sig,why,price,rv,e9,e21,m,atr,sl:sig==='BUY'?price-1.5*atr:sig==='SELL'?price+1.5*atr:null,tp:sig==='BUY'?price+3*atr:sig==='SELL'?price-3*atr:null,time:a.at(-1).time};
 }
 function render(d){
