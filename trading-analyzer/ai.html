@@ -26,10 +26,13 @@ const $=id=>document.getElementById(id);
 const lists={crypto:[['BTCUSDT','Bitcoin'],['ETHUSDT','Ethereum'],['SOLUSDT','Solana'],['BNBUSDT','BNB'],['XRPUSDT','XRP'],['DOGEUSDT','Dogecoin']],forex:[['EURUSD=X','EUR/USD'],['GBPUSD=X','GBP/USD'],['USDJPY=X','USD/JPY'],['AUDUSD=X','AUD/USD'],['USDCAD=X','USD/CAD']],stock:[['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','NVIDIA'],['AMZN','Amazon'],['TSLA','Tesla'],['GOOGL','Alphabet']]};
 let candles=[],last=null,scanTimer=null,autoTrade=true,autoScan=true;
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const settings=load('ait_settings',{type:'crypto',symbol:'BTCUSDT',tf:'15m',autoScan:true,autoTrade:true});
+autoScan=settings.autoScan!==false;autoTrade=settings.autoTrade!==false;
 let account=load('ait_account',{balance:10000,start:10000,trades:[]}),position=load('ait_position',null);
 const fmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2});
-function fill(){ $('symbol').innerHTML=lists[$('type').value].map(x=>'<option value="'+x[0]+'">'+x[1]+' ('+x[0]+')</option>').join(''); }
-$('type').onchange=fill;
+function persistSettings(){save('ait_settings',{type:$('type').value,symbol:$('symbol').value,tf:$('tf').value,autoScan,autoTrade})}
+function fill(){ $('symbol').innerHTML=lists[$('type').value].map(x=>'<option value="'+x[0]+'">'+x[1]+' ('+x[0]+')</option>').join('');if(settings.symbol&&lists[$('type').value].some(x=>x[0]===settings.symbol))$('symbol').value=settings.symbol; }
+$('type').onchange=()=>{fill();persistSettings();run()};
 function interval(){let x=$('tf').value;return x==='5m'?'5m':x==='15m'?'15m':x==='1h'?'1h':x==='4h'?'4h':'1d'}
 async function fetchData(){
  const type=$('type').value,sym=$('symbol').value,tf=interval();$('status').textContent='লাইভ ডেটা আনা হচ্ছে…';
@@ -76,9 +79,9 @@ function paper(d){
 }
 async function run(){try{let a=await fetchData();candles=a;last=analyze(a);render(last);paper(last);$('status').textContent='ডেটা আপডেট: '+new Date().toLocaleTimeString()+' · '+a.length+' candles';}catch(e){$('status').textContent='ডেটা/সংযোগ সমস্যা: '+e.message+'। এই মার্কেটের জন্য ডেটা উৎস এই মুহূর্তে পাওয়া যাচ্ছে না; সিগন্যাল তৈরি করা হয়নি।';$('simpleSignal').textContent='ডেটা পাওয়া যায়নি';$('simpleWhy').textContent='ইন্টারনেট বা ডেটা উৎস পরীক্ষা করে আবার চেষ্টা করো।';$('simpleEntry').textContent='—';$('simpleSL').textContent='—';$('simpleTP').textContent='—';$('simplePrice').textContent='—';$('signal').textContent='NO DATA';$('signal').className='signal wait'}}
 $('analyze').onclick=run;
-$('tf').onchange=run;$('symbol').onchange=run;
-$('auto').onclick=()=>{autoScan=!autoScan;$('auto').textContent='Auto Scan: '+(autoScan?'ON':'OFF');if(scanTimer)clearInterval(scanTimer);if(autoScan){run();scanTimer=setInterval(run,60000)}};
-$('autoTrade').onclick=()=>{autoTrade=!autoTrade;$('autoTrade').textContent='Auto Paper Trade: '+(autoTrade?'ON':'OFF')};
+$('tf').onchange=()=>{persistSettings();run()};$('symbol').onchange=()=>{persistSettings();run()};
+$('auto').onclick=()=>{autoScan=!autoScan;$('auto').textContent='Auto Scan: '+(autoScan?'ON':'OFF');persistSettings();if(scanTimer)clearInterval(scanTimer);if(autoScan){run();scanTimer=setInterval(run,60000)}};
+$('autoTrade').onclick=()=>{autoTrade=!autoTrade;$('autoTrade').textContent='Auto Paper Trade: '+(autoTrade?'ON':'OFF');persistSettings()};
 $('reset').onclick=()=>{let b=Number($('startbal').value);if(b>0){account={balance:b,start:b,trades:[]};position=null;stats()}};
-fill();stats();run();$('auto').textContent='Auto Scan: ON';scanTimer=setInterval(run,60000);
+$('type').value=lists[settings.type]?settings.type:'crypto';$('tf').value=['5m','15m','1h','4h','1d'].includes(settings.tf)?settings.tf:'15m';fill();$('auto').textContent='Auto Scan: '+(autoScan?'ON':'OFF');$('autoTrade').textContent='Auto Paper Trade: '+(autoTrade?'ON':'OFF');stats();run();if(autoScan)scanTimer=setInterval(run,60000);
 </script></body></html>
