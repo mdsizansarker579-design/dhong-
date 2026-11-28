@@ -1,0 +1,7 @@
+name = "jarvis-assistant-api"
+main = "src/index.js"
+compatibility_date = "2026-11-28"
+
+[vars]
+# Set this to your deployed frontend origin after Cloudflare Pages is live.
+# ALLOWED_ORIGIN = "https://your-project.pages.dev"
