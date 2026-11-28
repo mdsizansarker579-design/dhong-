@@ -1,7 +1,77 @@
 <!doctype html>
 <html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220"><title>AI Trading Analyzer</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1220;--panel:#142136;--line:#2a3a53;--muted:#a8b6ca;--blue:#3b82f6;--green:#22c55e;--red:#ef4444;--amber:#f59e0b}*{box-sizing:border-box}body{margin:0;background:linear-gradient(155deg,#101d32,#080e18 70%);color:#eff6ff;font-family:system-ui,'Noto Sans Bengali',sans-serif}header{text-align:center;padding:20px 12px;border-bottom:1px solid var(--line)}h1{font-size:22px;margin:0 0 6px}.sub,.muted{color:var(--muted);font-size:12px;line-height:1.6}.wrap{max-width:1000px;margin:auto;padding:12px}.warn{background:#332817;border:1px solid #76551c;color:#ffe2a2;padding:12px;border-radius:12px;font-size:12px;line-height:1.6;margin:10px 0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:11px 0}.panel h2{font-size:16px;margin:0 0 12px}.row{display:flex;gap:9px;flex-wrap:wrap}.field{flex:1;min-width:120px}label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}select,input{width:100%;background:#0b1423;color:white;border:1px solid #3a4c66;border-radius:9px;padding:11px;font:inherit}button{background:#263750;border:0;color:white;border-radius:9px;padding:10px 13px;font-weight:650}button.primary{background:#2563eb}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{background:#0c1728;border:1px solid var(--line);border-radius:10px;padding:11px;min-width:0}.stat small{color:var(--muted);font-size:11px}.stat b{display:block;font-size:18px;margin-top:4px;overflow-wrap:anywhere}.signal{font-size:24px;font-weight:800}.buy{color:#4ade80}.sell{color:#f87171}.wait{color:#fbbf24}.pill{display:inline-block;background:#263750;padding:4px 8px;border-radius:20px;font-size:11px;margin:2px}.trade{padding:10px 0;border-top:1px solid var(--line)}.trade:first-child{border:0}.muted{margin:8px 0}.foot{text-align:center;color:var(--muted);font-size:11px;padding:18px}@media(min-width:650px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+:root{color-scheme:dark;--bg:#070b16;--panel:#101a2d;--panel2:#0b1425;--line:#263653;--muted:#9eacc3;--blue:#60a5fa;--cyan:#67e8f9;--green:#34d399;--red:#fb7185;--amber:#fbbf24;--purple:#a78bfa}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(ellipse at 12% 0%,#182b50 0%,transparent 42%),radial-gradient(ellipse at 95% 12%,#25194a 0%,transparent 35%),#070b16;color:#edf4ff;font-family:system-ui,'Noto Sans Bengali',sans-serif}
+header{position:relative;text-align:center;padding:25px 14px 22px;border-bottom:1px solid #293957;background:linear-gradient(115deg,rgba(15,28,51,.94),rgba(18,20,48,.88));box-shadow:0 12px 40px #02061766}
+header:before{content:"";display:block;width:54px;height:4px;border-radius:9px;margin:0 auto 13px;background:linear-gradient(90deg,var(--cyan),var(--purple))}
+h1{font-size:clamp(22px,4vw,30px);letter-spacing:.2px;margin:0 0 7px;font-weight:850}
+.sub,.muted{color:var(--muted);font-size:12px;line-height:1.65}
+.wrap{max-width:1120px;margin:auto;padding:16px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:13px;align-items:start}
+.wrap>.warn{grid-column:1/-1;grid-row:1}
+.wrap>section:nth-of-type(1){grid-column:1/-1;grid-row:2}
+.wrap>section:nth-of-type(2){grid-column:1/-1;grid-row:3}
+.wrap>section:nth-of-type(3){grid-column:1/span 5;grid-row:4}
+.wrap>details{grid-column:6/-1;grid-row:4}
+.wrap>section:nth-of-type(4){grid-column:1/-1;grid-row:5}
+.wrap>section:nth-of-type(5){grid-column:1/span 6;grid-row:6}
+.wrap>section:nth-of-type(6){grid-column:7/-1;grid-row:6}
+.wrap>section:nth-of-type(7){grid-column:1/-1;grid-row:7}
+.warn{background:linear-gradient(110deg,#302512,#211b19);border:1px solid #8b6428;color:#ffe7b0;padding:12px 15px;border-radius:14px;font-size:12px;line-height:1.65;margin:0}
+.panel{position:relative;min-width:0;background:linear-gradient(145deg,rgba(19,32,54,.97),rgba(11,20,36,.98));border:1px solid var(--line);border-radius:19px;padding:17px;margin:0;box-shadow:0 12px 32px #02061755,inset 0 1px 0 #ffffff08;overflow:hidden}
+.panel:after{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,#60a5fa88,#a78bfa88,transparent);pointer-events:none}
+.panel h2{font-size:16px;letter-spacing:.1px;margin:0 0 14px;font-weight:800}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.field{flex:1;min-width:120px}
+label{display:block;color:#aebbd0;font-size:12px;margin-bottom:6px}
+select,input{width:100%;background:#091326;color:#f8fbff;border:1px solid #354967;border-radius:11px;padding:12px;font:inherit;min-height:45px;outline:none}
+select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #3b82f633}
+button{background:#263750;border:1px solid #3a506f;color:white;border-radius:11px;padding:11px 15px;font-weight:750;min-height:42px;cursor:pointer;transition:.18s}
+button:active{transform:scale(.98)}
+button.primary{background:linear-gradient(110deg,#2563eb,#4f46e5);border-color:#6685f4;box-shadow:0 6px 18px #2563eb33}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.stat{position:relative;background:linear-gradient(145deg,#0d1a30,#0a1324);border:1px solid #2a3c5a;border-radius:14px;padding:13px;min-width:0;overflow:hidden}
+.stat small{display:block;color:#a6b5cb;font-size:11px;line-height:1.5}
+.stat b{display:block;font-size:clamp(16px,2vw,20px);font-weight:800;margin-top:5px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.signal{font-size:clamp(23px,4vw,30px)!important;font-weight:900!important;letter-spacing:.2px}
+.buy{color:var(--green)!important}.sell{color:var(--red)!important}.wait{color:var(--amber)!important}
+.pill{display:inline-block;background:#253957;border:1px solid #3a5274;padding:4px 9px;border-radius:20px;font-size:10px;margin:2px;color:#dbeafe}
+.trade{padding:11px 0;border-top:1px solid #263653;line-height:1.7;font-size:12px;overflow-wrap:anywhere}
+.trade:first-child{border:0}
+.muted{margin:9px 0}
+.foot{text-align:center;color:#8191aa;font-size:11px;padding:20px 14px 28px}
+summary{font-weight:800;cursor:pointer;color:#dceaff;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"＋";float:right;color:var(--cyan);font-size:17px}
+details[open] summary:after{content:"−"}
+#simpleSignal{padding:5px 0 2px}
+#simpleWhy{margin-bottom:0}
+#position{background:#0a1528;border:1px solid #2c4263;border-radius:12px;padding:12px;color:#dce9fb;line-height:1.8}
+#floating{font-size:21px}
+.wrap>section:nth-of-type(4) .grid .stat:nth-child(2){border-color:#356b69}
+.wrap>section:nth-of-type(4) .grid .stat:nth-child(3){border-color:#356b69;background:linear-gradient(145deg,#0d292a,#0a1724)}
+@media(max-width:720px){
+ .wrap{display:flex;flex-direction:column;padding:11px;gap:11px}
+ .wrap>.warn{order:1}
+ .wrap>section:nth-of-type(2){order:2}
+ .wrap>section:nth-of-type(4){order:3}
+ .wrap>section:nth-of-type(3){order:4}
+ .wrap>details{order:5}
+ .wrap>section:nth-of-type(5){order:6}
+ .wrap>section:nth-of-type(6){order:7}
+ .wrap>section:nth-of-type(1){order:8}
+ .wrap>section:nth-of-type(7){order:9}
+ .panel{width:100%;padding:15px;border-radius:17px}
+ header{padding:21px 12px 18px}
+ .grid{gap:8px}
+ .stat{padding:11px;border-radius:12px}
+ .stat b{font-size:17px}
+ .field{min-width:calc(50% - 6px)}
+ button{flex:1}
+}
+@media(max-width:370px){.field{min-width:100%}.grid{gap:7px}.stat{padding:9px}.stat b{font-size:15px}}
 </style></head><body>
 <header><h1>🤖 AI Trading Analyzer</h1><div class="sub">Forex • Crypto • Stocks | Live data analysis • Auto signals • Paper trading</div></header>
 <main class="wrap">
