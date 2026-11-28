@@ -6,15 +6,16 @@
 <header><h1>🤖 AI Trading Analyzer</h1><div class="sub">Forex • Crypto • Stocks | Live data analysis • Auto signals • Paper trading</div></header>
 <main class="wrap">
 <div class="warn"><b>গুরুত্বপূর্ণ:</b> এটি বাস্তব AI ভবিষ্যদ্বাণী নয়; EMA, RSI ও MACD-ভিত্তিক নিয়মে স্বয়ংক্রিয় বিশ্লেষণ করে। Crypto-তে Binance public market data এবং Forex/Stock-এ Yahoo Finance public data ব্যবহারের চেষ্টা করে। ডেটা উৎস বন্ধ/ব্লক হলে সিগন্যাল বন্ধ থাকবে। কোনো আসল অর্ডার বা টাকা ব্যবহার হয় না।</div>
+<section class="panel" style="border:2px solid #3b82f6"><h2>⭐ সহজ ফলাফল — প্রথমে এটি দেখো</h2><div class="stat"><small>এখন কী করবে?</small><b id="simpleSignal" class="signal wait">লোড হচ্ছে…</b><p id="simpleWhy" class="muted">মার্কেট ডেটা বিশ্লেষণ করা হচ্ছে।</p></div><div class="grid" style="margin-top:9px"><div class="stat"><small>এন্ট্রি (প্রবেশের দাম)</small><b id="simpleEntry">—</b></div><div class="stat"><small>স্টপ লস (ক্ষতি থামানোর দাম)</small><b id="simpleSL">—</b></div><div class="stat"><small>টেক প্রফিট (লাভের লক্ষ্য)</small><b id="simpleTP">—</b></div><div class="stat"><small>বর্তমান দাম</small><b id="simplePrice">—</b></div></div><p class="muted">BUY = কেনার সম্ভাব্য সংকেত · SELL = বিক্রির সম্ভাব্য সংকেত · WAIT = এখন অপেক্ষা। এগুলো নিশ্চিত পূর্বাভাস নয়।</p></section>
 <section class="panel"><h2>১. Market নির্বাচন</h2><div class="row">
 <div class="field"><label>Market</label><select id="type"><option value="crypto">Crypto</option><option value="forex">Forex</option><option value="stock">Stock</option></select></div>
 <div class="field"><label>Symbol</label><select id="symbol"></select></div>
 <div class="field"><label>Timeframe</label><select id="tf"><option value="5m">5 মিনিট</option><option value="15m" selected>15 মিনিট</option><option value="1h">1 ঘণ্টা</option><option value="4h">4 ঘণ্টা</option><option value="1d">1 দিন</option></select></div>
 </div><div class="row" style="margin-top:10px"><button class="primary" id="analyze">এখনই বিশ্লেষণ</button><button id="auto">Auto Scan: OFF</button></div><p class="muted" id="status">ডেটা লোড হয়নি। বিশ্লেষণ চাপুন।</p></section>
-<section class="panel"><h2>২. স্বয়ংক্রিয় Trading Signal</h2><div class="grid">
+<details class="panel"><summary style="font-weight:700;cursor:pointer">বিস্তারিত টেকনিক্যাল হিসাব (চাইলে খুলবে)</summary><h2 style="margin-top:14px">২. স্বয়ংক্রিয় Trading Signal</h2><div class="grid">
 <div class="stat"><small>Signal</small><b class="signal wait" id="signal">WAIT</b></div><div class="stat"><small>Latest price</small><b id="price">—</b></div><div class="stat"><small>RSI (14)</small><b id="rsi">—</b></div><div class="stat"><small>EMA 9 / 21</small><b id="ema">—</b></div>
 <div class="stat"><small>MACD</small><b id="macd">—</b></div><div class="stat"><small>Entry</small><b id="entry">—</b></div><div class="stat"><small>Stop Loss</small><b id="sl">—</b></div><div class="stat"><small>Take Profit</small><b id="tp">—</b></div>
-</div><p class="muted" id="reason">ডেটা এলে বিশ্লেষণের কারণ এখানে দেখাবে।</p><div id="chartlink" class="muted"></div></section>
+</div><p class="muted" id="reason">ডেটা এলে বিশ্লেষণের কারণ এখানে দেখাবে।</p><div id="chartlink" class="muted"></div></details>
 <section class="panel"><h2>৩. Auto Paper Trading</h2><div class="grid"><div class="stat"><small>Virtual balance</small><b id="balance">৳10,000</b></div><div class="stat"><small>Closed trades</small><b id="count">0</b></div><div class="stat"><small>Win rate</small><b id="winrate">—</b></div><div class="stat"><small>Realized P/L</small><b id="pnl">0</b></div></div>
 <div class="row" style="margin-top:10px"><div class="field"><label>Initial virtual balance</label><input id="startbal" type="number" value="10000" min="100"></div><div class="field"><label>Risk per trade (%)</label><input id="risk" type="number" value="1" min=".1" max="5" step=".1"></div></div><div class="row" style="margin-top:9px"><button id="reset">Wallet Reset</button><button id="autoTrade" class="primary">Auto Paper Trade: ON</button></div><p class="muted" id="position">কোনো Open Position নেই।</p><p class="muted">সিস্টেমে BUY/SELL সিগন্যাল এলে ভার্চুয়াল ট্রেড খুলবে। Stop Loss বা Take Profit স্পর্শ করলে ডেটা আপডেটে ট্রেড বন্ধ হবে। একই সময়ে একটি পজিশন রাখা হবে।</p></section>
 <section class="panel"><h2>৪. Trade History</h2><div id="history" class="muted">এখনো কোনো ট্রেড নেই।</div></section>
@@ -23,10 +24,10 @@
 <script>
 const $=id=>document.getElementById(id);
 const lists={crypto:[['BTCUSDT','Bitcoin'],['ETHUSDT','Ethereum'],['SOLUSDT','Solana'],['BNBUSDT','BNB'],['XRPUSDT','XRP'],['DOGEUSDT','Dogecoin']],forex:[['EURUSD=X','EUR/USD'],['GBPUSD=X','GBP/USD'],['USDJPY=X','USD/JPY'],['AUDUSD=X','AUD/USD'],['USDCAD=X','USD/CAD']],stock:[['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','NVIDIA'],['AMZN','Amazon'],['TSLA','Tesla'],['GOOGL','Alphabet']]};
-let candles=[],last=null,scanTimer=null,autoTrade=true,autoScan=false;
+let candles=[],last=null,scanTimer=null,autoTrade=true,autoScan=true;
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let account=load('ait_account',{balance:10000,start:10000,trades:[]}),position=load('ait_position',null);
-const fmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:6});
+const fmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2});
 function fill(){ $('symbol').innerHTML=lists[$('type').value].map(x=>'<option value="'+x[0]+'">'+x[1]+' ('+x[0]+')</option>').join(''); }
 $('type').onchange=fill;
 function interval(){let x=$('tf').value;return x==='5m'?'5m':x==='15m'?'15m':x==='1h'?'1h':x==='4h'?'4h':'1d'}
@@ -57,6 +58,7 @@ function analyze(a){
  return {sig,why,price,rv,e9,e21,m,atr,sl:sig==='BUY'?price-1.5*atr:sig==='SELL'?price+1.5*atr:null,tp:sig==='BUY'?price+3*atr:sig==='SELL'?price-3*atr:null,time:a.at(-1).time};
 }
 function render(d){
+ $('simpleSignal').textContent=d.sig==='BUY'?'কেনার সংকেত (BUY)':d.sig==='SELL'?'বিক্রির সংকেত (SELL)':'এখন অপেক্ষা করো (WAIT)';$('simpleSignal').className='signal '+(d.sig==='BUY'?'buy':d.sig==='SELL'?'sell':'wait');$('simpleWhy').textContent=d.why;$('simpleEntry').textContent=d.sig==='WAIT'?'এখন নয়':fmt(d.price);$('simpleSL').textContent=d.sl?fmt(d.sl):'এখন নির্ধারিত নয়';$('simpleTP').textContent=d.tp?fmt(d.tp):'এখন নির্ধারিত নয়';$('simplePrice').textContent=fmt(d.price);
  $('signal').textContent=d.sig;$('signal').className='signal '+(d.sig==='BUY'?'buy':d.sig==='SELL'?'sell':'wait');
  $('price').textContent=fmt(d.price);$('rsi').textContent=d.rv.toFixed(2);$('ema').textContent=fmt(d.e9)+' / '+fmt(d.e21);$('macd').textContent=fmt(d.m);
  $('entry').textContent=d.sig==='WAIT'?'—':fmt(d.price);$('sl').textContent=d.sl?fmt(d.sl):'—';$('tp').textContent=d.tp?fmt(d.tp):'—';$('reason').textContent=d.why;
@@ -72,11 +74,11 @@ function paper(d){
   if(units>0){position={symbol:$('symbol').value,side:d.sig,entry:d.price,sl:d.sl,tp:d.tp,units,opened:Date.now()};stats()}
  }
 }
-async function run(){try{let a=await fetchData();candles=a;last=analyze(a);render(last);paper(last);$('status').textContent='ডেটা আপডেট: '+new Date().toLocaleTimeString()+' · '+a.length+' candles';}catch(e){$('status').textContent='ডেটা/সংযোগ সমস্যা: '+e.message+'। এই মার্কেটের জন্য ডেটা উৎস এই মুহূর্তে পাওয়া যাচ্ছে না; সিগন্যাল তৈরি করা হয়নি।';$('signal').textContent='NO DATA';$('signal').className='signal wait'}}
+async function run(){try{let a=await fetchData();candles=a;last=analyze(a);render(last);paper(last);$('status').textContent='ডেটা আপডেট: '+new Date().toLocaleTimeString()+' · '+a.length+' candles';}catch(e){$('status').textContent='ডেটা/সংযোগ সমস্যা: '+e.message+'। এই মার্কেটের জন্য ডেটা উৎস এই মুহূর্তে পাওয়া যাচ্ছে না; সিগন্যাল তৈরি করা হয়নি।';$('simpleSignal').textContent='ডেটা পাওয়া যায়নি';$('simpleWhy').textContent='ইন্টারনেট বা ডেটা উৎস পরীক্ষা করে আবার চেষ্টা করো।';$('simpleEntry').textContent='—';$('simpleSL').textContent='—';$('simpleTP').textContent='—';$('simplePrice').textContent='—';$('signal').textContent='NO DATA';$('signal').className='signal wait'}}
 $('analyze').onclick=run;
 $('tf').onchange=run;$('symbol').onchange=run;
 $('auto').onclick=()=>{autoScan=!autoScan;$('auto').textContent='Auto Scan: '+(autoScan?'ON':'OFF');if(scanTimer)clearInterval(scanTimer);if(autoScan){run();scanTimer=setInterval(run,60000)}};
 $('autoTrade').onclick=()=>{autoTrade=!autoTrade;$('autoTrade').textContent='Auto Paper Trade: '+(autoTrade?'ON':'OFF')};
 $('reset').onclick=()=>{let b=Number($('startbal').value);if(b>0){account={balance:b,start:b,trades:[]};position=null;stats()}};
-fill();stats();run();
+fill();stats();run();$('auto').textContent='Auto Scan: ON';scanTimer=setInterval(run,60000);
 </script></body></html>
