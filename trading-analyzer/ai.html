@@ -19,7 +19,8 @@
 </div><p class="muted" id="reason">ডেটা এলে বিশ্লেষণের কারণ এখানে দেখাবে।</p><div id="chartlink" class="muted"></div></details>
 <section class="panel"><h2>৩. Auto Paper Trading</h2><div class="grid"><div class="stat"><small>Virtual balance</small><b id="balance">৳10,000</b></div><div class="stat"><small>Closed trades</small><b id="count">0</b></div><div class="stat"><small>Win rate</small><b id="winrate">—</b></div><div class="stat"><small>Realized P/L</small><b id="pnl">0</b></div></div>
 <div class="row" style="margin-top:10px"><div class="field"><label>Initial virtual balance</label><input id="startbal" type="number" value="10000" min="100"></div><div class="field"><label>Risk per trade (%)</label><input id="risk" type="number" value="1" min=".1" max="5" step=".1"></div></div><div class="row" style="margin-top:9px"><button id="reset">Wallet Reset</button><button id="autoTrade" class="primary">Auto Paper Trade: ON</button></div><p class="muted" id="position">কোনো Open Position নেই।</p><p class="muted">সিস্টেমে BUY/SELL সিগন্যাল এলে ভার্চুয়াল ট্রেড খুলবে। Stop Loss বা Take Profit স্পর্শ করলে পরের ডেটা আপডেটে ট্রেড বন্ধ হবে। একই সময়ে একটি পজিশন রাখা হবে; অন্য মার্কেট/সিম্বলে গেলে আগের পজিশনটি সেখানকার দামে মূল্যায়ন হবে না।</p></section>
-<section class="panel"><h2>৪. Trade History</h2><div id="history" class="muted">এখনো কোনো ট্রেড নেই।</div></section>
+<section class="panel"><h2>৪. Signal History — AI কখন BUY/SELL বলেছে</h2><p class="muted">প্রতিটি নতুন BUY/SELL সিগন্যাল এখানে সময়, মার্কেট, দাম, Entry, Stop Loss ও Take Profit-সহ জমা থাকবে। একই সিগন্যাল প্রতি মিনিটে বারবার যোগ হবে না।</p><div id="signalHistory" class="muted">এখনো কোনো BUY/SELL সিগন্যাল রেকর্ড হয়নি।</div></section>
+<section class="panel"><h2>৫. Closed Trade History — সম্পন্ন ভার্চুয়াল ট্রেড</h2><div id="history" class="muted">এখনো কোনো ট্রেড নেই।</div></section>
 <section class="panel"><h2>কীভাবে সিগন্যাল তৈরি হয়?</h2><p class="muted">BUY: EMA 9 > EMA 21, RSI 50–70 এবং MACD positive হলে। SELL: EMA 9 < EMA 21, RSI 30–50 এবং MACD negative হলে। অন্য অবস্থায় WAIT। Stop Loss ATR-ভিত্তিক এবং Take Profit আনুমানিক 1:2 risk/reward। এটি শিক্ষামূলক নিয়ম; বাজারের আচরণ বদলাতে পারে।</p></section>
 </main><div class="foot">No broker connection • No real-money trading • Data availability depends on public providers</div>
 <script>
@@ -32,6 +33,7 @@ const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{retur
 const settings=load('ait_settings',{type:'crypto',symbol:'BTCUSDT',tf:'15m',autoScan:true,autoTrade:true});
 autoScan=settings.autoScan!==false;autoTrade=settings.autoTrade!==false;
 let account=load('ait_account',{balance:10000,start:10000,trades:[]}),position=load('ait_position',null);
+let signalHistory=load('ait_signals',[]),lastSignalKey='';
 const fmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2});
 function persistSettings(){save('ait_settings',{type:$('type').value,symbol:$('symbol').value,tf:$('tf').value,autoScan,autoTrade})}
 function fill(){ $('symbol').innerHTML=lists[$('type').value].map(x=>'<option value="'+x[0]+'">'+x[1]+' ('+x[0]+')</option>').join('');if(settings.symbol&&lists[$('type').value].some(x=>x[0]===settings.symbol))$('symbol').value=settings.symbol; }
@@ -104,7 +106,17 @@ function render(d){
  const tv=$('type').value==='crypto'?'BINANCE:'+ $('symbol').value:$('type').value==='forex'?'FX:'+ $('symbol').value.replace('=X',''):$('symbol').value;
  $('chartlink').innerHTML='<a target="_blank" rel="noopener" style="color:#93c5fd" href="https://www.tradingview.com/chart/?symbol='+encodeURIComponent(tv)+'">TradingView chart খুলুন ↗</a>';
 }
-function stats(){let t=account.trades,p=t.reduce((s,x)=>s+x.pnl,0),wins=t.filter(x=>x.pnl>0).length;$('balance').textContent=fmt(account.balance);$('count').textContent=t.length;$('winrate').textContent=t.length?(wins/t.length*100).toFixed(1)+'%':'—';$('pnl').textContent=fmt(p);$('history').innerHTML=t.length?t.slice(-15).reverse().map(x=>'<div class="trade"><b>'+x.symbol+' · '+x.side+'</b><div>Entry '+fmt(x.entry)+' → Exit '+fmt(x.exit)+' · P/L <span class="'+(x.pnl>=0?'buy':'sell')+'">'+fmt(x.pnl)+'</span></div><small>'+new Date(x.time).toLocaleString()+'</small></div>').join(''):'এখনো কোনো ট্রেড নেই।';$('position').textContent=position?'Open: '+position.symbol+' '+position.side+' ('+(position.type||'পুরোনো ট্রেড')+', '+(position.tf||'—')+') | Entry '+fmt(position.entry)+' | SL '+fmt(position.sl)+' | TP '+fmt(position.tp):'কোনো Open Position নেই।';save('ait_account',account);save('ait_position',position)}
+function recordSignal(d){
+ const market=$('type').value,symbol=$('symbol').value,tf=$('tf').value;
+ const key=[market,symbol,tf,d.sig].join('|');
+ if(d.sig==='WAIT'){lastSignalKey=key;return}
+ if(lastSignalKey===key)return;
+ lastSignalKey=key;
+ signalHistory.push({type:market,symbol,tf,side:d.sig,price:d.price,sl:d.sl,tp:d.tp,time:Date.now()});
+ signalHistory=signalHistory.slice(-100);save('ait_signals',signalHistory);renderSignalHistory();
+}
+function renderSignalHistory(){const el=$('signalHistory');if(!el)return;el.innerHTML=signalHistory.length?signalHistory.slice().reverse().slice(0,30).map(x=>'<div class="trade"><b class="'+(x.side==='BUY'?'buy':'sell')+'">'+x.side+'</b> · '+x.symbol+' <span class="pill">'+x.type+' · '+x.tf+'</span><div>Signal price / Entry: '+fmt(x.price)+' · SL: '+fmt(x.sl)+' · TP: '+fmt(x.tp)+'</div><small>'+new Date(x.time).toLocaleString()+'</small></div>').join(''):'এখনো কোনো BUY/SELL সিগন্যাল রেকর্ড হয়নি।';}
+function stats(){let t=account.trades,p=t.reduce((s,x)=>s+x.pnl,0),wins=t.filter(x=>x.pnl>0).length;$('balance').textContent=fmt(account.balance);$('count').textContent=t.length;$('winrate').textContent=t.length?(wins/t.length*100).toFixed(1)+'%':'—';$('pnl').textContent=fmt(p);$('history').innerHTML=t.length?t.slice(-15).reverse().map(x=>'<div class="trade"><b>'+x.symbol+' · '+x.side+'</b><div>Entry '+fmt(x.entry)+' → Exit '+fmt(x.exit)+' · P/L <span class="'+(x.pnl>=0?'buy':'sell')+'">'+fmt(x.pnl)+'</span></div><small>'+new Date(x.time).toLocaleString()+'</small></div>').join(''):'এখনো কোনো ট্রেড নেই।';$('position').textContent=position?'Open: '+position.symbol+' '+position.side+' ('+(position.type||'পুরোনো ট্রেড')+', '+(position.tf||'—')+') | Entry '+fmt(position.entry)+' | SL '+fmt(position.sl)+' | TP '+fmt(position.tp):'কোনো Open Position নেই।';save('ait_account',account);save('ait_position',position);renderSignalHistory()}
 function closePos(price,why){if(!position)return;let pnl=(position.side==='BUY'?price-position.entry:position.entry-price)*position.units;account.balance+=pnl;account.trades.push({...position,exit:price,pnl,why,time:Date.now()});position=null;stats()}
 function paper(d){
  const market=$('type').value,symbol=$('symbol').value,tf=$('tf').value;
@@ -122,11 +134,11 @@ function paper(d){
   if(units>0){position={type:market,symbol,tf,side:d.sig,entry:d.price,sl:d.sl,tp:d.tp,units,opened:Date.now()};stats()}
 }
 }
-async function run(){try{let a=await fetchData();candles=a;last=analyze(a);render(last);paper(last);$('status').textContent='ডেটা আপডেট: '+new Date().toLocaleTimeString()+' · '+a.length+' candles';}catch(e){$('status').textContent='ডেটা/সংযোগ সমস্যা: '+e.message+'। এই মার্কেটের জন্য ডেটা উৎস এই মুহূর্তে পাওয়া যাচ্ছে না; সিগন্যাল তৈরি করা হয়নি।';$('simpleSignal').textContent='ডেটা পাওয়া যায়নি';$('simpleWhy').textContent='ইন্টারনেট বা ডেটা উৎস পরীক্ষা করে আবার চেষ্টা করো।';$('simpleEntry').textContent='—';$('simpleSL').textContent='—';$('simpleTP').textContent='—';$('simplePrice').textContent='—';$('signal').textContent='NO DATA';$('signal').className='signal wait'}}
+async function run(){try{let a=await fetchData();candles=a;last=analyze(a);render(last);recordSignal(last);paper(last);$('status').textContent='ডেটা আপডেট: '+new Date().toLocaleTimeString()+' · '+a.length+' candles';}catch(e){$('status').textContent='ডেটা/সংযোগ সমস্যা: '+e.message+'। এই মার্কেটের জন্য ডেটা উৎস এই মুহূর্তে পাওয়া যাচ্ছে না; সিগন্যাল তৈরি করা হয়নি।';$('simpleSignal').textContent='ডেটা পাওয়া যায়নি';$('simpleWhy').textContent='ইন্টারনেট বা ডেটা উৎস পরীক্ষা করে আবার চেষ্টা করো।';$('simpleEntry').textContent='—';$('simpleSL').textContent='—';$('simpleTP').textContent='—';$('simplePrice').textContent='—';$('signal').textContent='NO DATA';$('signal').className='signal wait'}}
 $('analyze').onclick=run;
 $('tf').onchange=()=>{persistSettings();run()};$('symbol').onchange=()=>{persistSettings();run()};
 $('auto').onclick=()=>{autoScan=!autoScan;$('auto').textContent='Auto Scan: '+(autoScan?'ON':'OFF');persistSettings();if(scanTimer)clearInterval(scanTimer);if(autoScan){run();scanTimer=setInterval(run,60000)}};
 $('autoTrade').onclick=()=>{autoTrade=!autoTrade;$('autoTrade').textContent='Auto Paper Trade: '+(autoTrade?'ON':'OFF');persistSettings()};
 $('reset').onclick=()=>{let b=Number($('startbal').value);if(b>0){account={balance:b,start:b,trades:[]};position=null;stats()}};
-$('type').value=lists[settings.type]?settings.type:'crypto';$('tf').value=['5m','15m','1h','4h','1d'].includes(settings.tf)?settings.tf:'15m';fill();$('auto').textContent='Auto Scan: '+(autoScan?'ON':'OFF');$('autoTrade').textContent='Auto Paper Trade: '+(autoTrade?'ON':'OFF');stats();run();if(autoScan)scanTimer=setInterval(run,60000);
+$('type').value=lists[settings.type]?settings.type:'crypto';$('tf').value=['5m','15m','1h','4h','1d'].includes(settings.tf)?settings.tf:'15m';fill();$('auto').textContent='Auto Scan: '+(autoScan?'ON':'OFF');$('autoTrade').textContent='Auto Paper Trade: '+(autoTrade?'ON':'OFF');stats();renderSignalHistory();run();if(autoScan)scanTimer=setInterval(run,60000);
 </script></body></html>
