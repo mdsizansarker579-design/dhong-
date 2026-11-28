@@ -37,19 +37,33 @@ function persistSettings(){save('ait_settings',{type:$('type').value,symbol:$('s
 function fill(){ $('symbol').innerHTML=lists[$('type').value].map(x=>'<option value="'+x[0]+'">'+x[1]+' ('+x[0]+')</option>').join('');if(settings.symbol&&lists[$('type').value].some(x=>x[0]===settings.symbol))$('symbol').value=settings.symbol; }
 $('type').onchange=()=>{fill();persistSettings();run()};
 function interval(){let x=$('tf').value;return x==='5m'?'5m':x==='15m'?'15m':x==='1h'?'1h':x==='4h'?'4h':'1d'}
+async function fetchTimed(url,ms=9000){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),ms);
+ try{return await fetch(url,{signal:controller.signal,cache:'no-store'})}
+ finally{clearTimeout(timer)}
+}
 async function fetchData(){
  const type=$('type').value,sym=$('symbol').value,tf=interval();$('status').textContent='লাইভ ডেটা আনা হচ্ছে…';
  if(type==='crypto'){
-  let url='https://api.binance.com/api/v3/klines?symbol='+sym+'&interval='+tf+'&limit=120';
-  let r=await fetch(url);if(!r.ok)throw Error('Binance data HTTP '+r.status);
-  let a=await r.json();return a.map(x=>({time:x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4]}));
+  const query='/api/v3/klines?symbol='+encodeURIComponent(sym)+'&interval='+tf+'&limit=120';
+  const hosts=['https://api.binance.com','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com'];
+  let lastError;
+  for(const host of hosts){
+   try{
+    const r=await fetchTimed(host+query,7000);if(!r.ok)throw Error('HTTP '+r.status);
+    const a=await r.json();if(!Array.isArray(a)||!a.length)throw Error('খালি ডেটা');
+    return a.map(x=>({time:x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4]}));
+   }catch(e){lastError=e}
+  }
+  throw Error('Binance-এর সব ডেটা সার্ভার থেকে সংযোগ পাওয়া যায়নি ('+(lastError?.name==='AbortError'?'সময় শেষ':lastError?.message||'Network error')+')');
  }
  const map={'5m':'5m','15m':'15m','1h':'1h','4h':'1h','1d':'1d'};
- let range=tf==='1d'?'6mo':tf==='4h'?'3mo':tf==='1h'?'1mo':'5d';
- let url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range='+range+'&interval='+map[tf];
- let r=await fetch(url);if(!r.ok)throw Error('Market data HTTP '+r.status);
- let j=await r.json(),res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)throw Error('ডেটা পাওয়া যায়নি');
- let q=res.indicators.quote[0];return res.timestamp.map((t,i)=>({time:t*1000,open:q.open[i],high:q.high[i],low:q.low[i],close:q.close[i]})).filter(x=>Number.isFinite(x.close)&&Number.isFinite(x.high)&&Number.isFinite(x.low));
+ const range=tf==='1d'?'6mo':tf==='4h'?'3mo':tf==='1h'?'1mo':'5d';
+ const url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range='+range+'&interval='+map[tf];
+ const r=await fetchTimed(url,9000);if(!r.ok)throw Error('Market data HTTP '+r.status);
+ const j=await r.json(),res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)throw Error('ডেটা পাওয়া যায়নি');
+ const q=res.indicators.quote[0];const data=res.timestamp.map((t,i)=>({time:t*1000,open:q.open[i],high:q.high[i],low:q.low[i],close:q.close[i]})).filter(x=>Number.isFinite(x.close)&&Number.isFinite(x.high)&&Number.isFinite(x.low));
+ if(!data.length)throw Error('এই সিম্বলের ডেটা খালি');return data;
 }
 function ema(a,p){let k=2/(p+1),v=a[0];for(let i=1;i<a.length;i++)v=a[i]*k+v*(1-k);return v}
 function rsi(a){let gains=0,loss=0;for(let i=a.length-14;i<a.length;i++){let d=a[i]-a[i-1];if(d>0)gains+=d;else loss-=d}if(!loss)return 100;return 100-100/(1+(gains/14)/(loss/14))}
