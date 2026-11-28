@@ -101,7 +101,7 @@ let position=null;
 function activePositionKey(){return [$('type').value,$('symbol').value,$('tf').value].join('|')}
 function syncActivePosition(){position=positions[activePositionKey()]||null}
 let signalHistory=load('ait_signals',[]),lastSignalKey='';
-const fmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2});
+const fmt=n=>Number(n).toLocaleString('en-US',{minimumFractionDigits:$('type')?.value==='forex'?5:2,maximumFractionDigits:$('type')?.value==='forex'?5:($('type')?.value==='crypto'?4:2)});
 function persistSettings(){save('ait_settings',{type:$('type').value,symbol:$('symbol').value,tf:$('tf').value,autoScan,autoTrade})}
 function fill(){ $('symbol').innerHTML=lists[$('type').value].map(x=>'<option value="'+x[0]+'">'+x[1]+' ('+x[0]+')</option>').join('');if(settings.symbol&&lists[$('type').value].some(x=>x[0]===settings.symbol))$('symbol').value=settings.symbol; }
 $('type').onchange=()=>{fill();persistSettings();syncActivePosition();stats();run()};
