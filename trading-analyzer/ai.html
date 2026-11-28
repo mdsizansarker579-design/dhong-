@@ -57,6 +57,16 @@ async function fetchData(){
   }
   throw Error('Binance-এর সব ডেটা সার্ভার থেকে সংযোগ পাওয়া যায়নি ('+(lastError?.name==='AbortError'?'সময় শেষ':lastError?.message||'Network error')+')');
  }
+ if(type==='forex'){
+  const pair=sym.replace('=X','');
+  const url='https://biquote.io/api/'+encodeURIComponent(pair)+'/ohlc?interval='+encodeURIComponent(tf)+'&limit=120';
+  const r=await fetchTimed(url,12000);if(!r.ok)throw Error('Forex data HTTP '+r.status);
+  const j=await r.json();if(!Array.isArray(j.bars))throw Error(j.message||'Forex candle data পাওয়া যায়নি');
+  const data=j.bars.filter(x=>!x.isOpen&&Number.isFinite(+x.open)&&Number.isFinite(+x.high)&&Number.isFinite(+x.low)&&Number.isFinite(+x.close)).map(x=>({time:Date.parse(x.openTime),open:+x.open,high:+x.high,low:+x.low,close:+x.close}));
+  if(data.length<35)throw Error('Forex উৎসে পর্যাপ্ত বন্ধ candle নেই ('+data.length+')');
+  $('status').textContent='Forex data source: biquote.io · closed candles';
+  return data;
+ }
  const map={'5m':'5m','15m':'15m','1h':'1h','4h':'1h','1d':'1d'};
  const range=tf==='1d'?'6mo':tf==='4h'?'3mo':tf==='1h'?'1mo':'5d';
  const url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range='+range+'&interval='+map[tf];
