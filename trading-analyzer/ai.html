@@ -54,14 +54,14 @@ details[open] summary:after{content:"−"}
 .wrap>section:nth-of-type(4) .grid .stat:nth-child(3){border-color:#356b69;background:linear-gradient(145deg,#0d292a,#0a1724)}
 @media(max-width:720px){
  .wrap{display:flex;flex-direction:column;padding:10px;gap:10px}
- .wrap>section:nth-of-type(4){order:1}
- .wrap>section:nth-of-type(2){order:2}
+ .wrap>section:nth-of-type(2){order:1}
+ .wrap>section:nth-of-type(4){order:2}
  .wrap>section:nth-of-type(3){order:3}
  .wrap>details:not(.warn){order:4}
  .wrap>section:nth-of-type(5){order:5}
  .wrap>section:nth-of-type(6){order:6}
- .wrap>section:nth-of-type(7){order:7}
- .wrap>section:nth-of-type(1){order:8}
+ .wrap>section:nth-of-type(1){order:7}
+ .wrap>section:nth-of-type(7){order:8}
  .wrap>.warn{order:9}
  .panel{width:100%;padding:14px;border-radius:16px}
  header{padding:18px 12px 15px}
@@ -73,6 +73,8 @@ details[open] summary:after{content:"−"}
  .warn{font-size:11px;padding:10px 12px}
  .warn summary{font-size:12px}
  .warn p{margin:8px 0 2px}
+ #signalHistory{max-height:230px;overflow-y:auto;overscroll-behavior:contain;padding-right:5px}
+ #history{max-height:230px;overflow-y:auto;overscroll-behavior:contain;padding-right:5px}
 }
 @media(max-width:370px){.field{min-width:100%}.grid{gap:7px}.stat{padding:9px}.stat b{font-size:15px}}
 </style></head><body>
@@ -198,7 +200,7 @@ function recordSignal(d){
  signalHistory.push({type:market,symbol,tf,side:d.sig,price:d.price,sl:d.sl,tp:d.tp,time:Date.now()});
  signalHistory=signalHistory.slice(-100);save('ait_signals',signalHistory);renderSignalHistory();
 }
-function renderSignalHistory(){const el=$('signalHistory');if(!el)return;el.innerHTML=signalHistory.length?signalHistory.slice().reverse().slice(0,30).map(x=>'<div class="trade"><b class="'+(x.side==='BUY'?'buy':'sell')+'">'+x.side+'</b> · '+x.symbol+' <span class="pill">'+x.type+' · '+x.tf+'</span><div>Signal price / Entry: '+fmt(x.price)+' · SL: '+fmt(x.sl)+' · TP: '+fmt(x.tp)+'</div><small>'+new Date(x.time).toLocaleString()+'</small></div>').join(''):'এখনো কোনো BUY/SELL সিগন্যাল রেকর্ড হয়নি।';}
+function renderSignalHistory(){const el=$('signalHistory');if(!el)return;el.innerHTML=signalHistory.length?signalHistory.slice().reverse().slice(0,6).map(x=>'<div class="trade"><b class="'+(x.side==='BUY'?'buy':'sell')+'">'+x.side+'</b> · '+x.symbol+' <span class="pill">'+x.type+' · '+x.tf+'</span><div>Signal price / Entry: '+fmt(x.price)+' · SL: '+fmt(x.sl)+' · TP: '+fmt(x.tp)+'</div><small>'+new Date(x.time).toLocaleString()+'</small></div>').join(''):'এখনো কোনো BUY/SELL সিগন্যাল রেকর্ড হয়নি।';}
 function stats(current){let t=account.trades,p=t.reduce((s,x)=>s+x.pnl,0),wins=t.filter(x=>x.pnl>0).length,floatPnl=0,matching=!!(position&&current&&position.type===$('type').value&&position.symbol===$('symbol').value&&position.tf===$('tf').value);if(matching)floatPnl=(position.side==='BUY'?current.price-position.entry:position.entry-current.price)*position.units;$('balance').textContent=fmt(account.balance);$('floating').textContent=matching?((floatPnl>=0?'+':'')+fmt(floatPnl)):(position?'অন্য মার্কেটে':'0');$('floating').className=matching?(floatPnl>=0?'buy':'sell'):'';$('equity').textContent=fmt(account.balance+(matching?floatPnl:0));$('count').textContent=t.length;$('winrate').textContent=t.length?(wins/t.length*100).toFixed(1)+'%':'—';$('pnl').textContent=fmt(p);$('history').innerHTML=t.length?t.slice(-15).reverse().map(x=>'<div class="trade"><b>'+x.symbol+' · '+x.side+'</b><div>Entry '+fmt(x.entry)+' → Exit '+fmt(x.exit)+' · P/L <span class="'+(x.pnl>=0?'buy':'sell')+'">'+fmt(x.pnl)+'</span></div><small>'+new Date(x.time).toLocaleString()+'</small></div>').join(''):'এখনো কোনো ট্রেড নেই।';$('position').textContent=position?'Open: '+position.symbol+' '+position.side+' ('+(position.type||'পুরোনো ট্রেড')+', '+(position.tf||'—')+') | Entry '+fmt(position.entry)+' | SL '+fmt(position.sl)+' | TP '+fmt(position.tp)+(matching?' | চলতি P/L '+(floatPnl>=0?'+':'')+fmt(floatPnl):' | এই মার্কেটের দামে P/L আপডেট হচ্ছে না'):'কোনো Open Position নেই।';save('ait_account',account);save('ait_position',position);renderSignalHistory()}
 function closePos(price,why){if(!position)return;let pnl=(position.side==='BUY'?price-position.entry:position.entry-price)*position.units;account.balance+=pnl;account.trades.push({...position,exit:price,pnl,why,time:Date.now()});position=null;stats()}
 function paper(d){
