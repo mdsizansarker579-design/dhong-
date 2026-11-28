@@ -102,6 +102,7 @@ function paper(d){
   let riskPct=Math.min(5,Math.max(.1,Number($('risk').value)||1)),riskCash=account.balance*riskPct/100,dist=Math.abs(d.price-d.sl),units=dist>0?riskCash/dist:0;
   if(units>0){position={type:market,symbol,tf,side:d.sig,entry:d.price,sl:d.sl,tp:d.tp,units,opened:Date.now()};stats()}
 }
+}
 async function run(){try{let a=await fetchData();candles=a;last=analyze(a);render(last);paper(last);$('status').textContent='ডেটা আপডেট: '+new Date().toLocaleTimeString()+' · '+a.length+' candles';}catch(e){$('status').textContent='ডেটা/সংযোগ সমস্যা: '+e.message+'। এই মার্কেটের জন্য ডেটা উৎস এই মুহূর্তে পাওয়া যাচ্ছে না; সিগন্যাল তৈরি করা হয়নি।';$('simpleSignal').textContent='ডেটা পাওয়া যায়নি';$('simpleWhy').textContent='ইন্টারনেট বা ডেটা উৎস পরীক্ষা করে আবার চেষ্টা করো।';$('simpleEntry').textContent='—';$('simpleSL').textContent='—';$('simpleTP').textContent='—';$('simplePrice').textContent='—';$('signal').textContent='NO DATA';$('signal').className='signal wait'}}
 $('analyze').onclick=run;
 $('tf').onchange=()=>{persistSettings();run()};$('symbol').onchange=()=>{persistSettings();run()};
