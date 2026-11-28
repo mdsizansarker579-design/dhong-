@@ -1,0 +1,12 @@
+{
+  "name": "jarvis-ai-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cross-platform personal AI assistant starter",
+  "workspaces": ["server", "web"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w web\"",
+    "install:all": "npm install"
+  },
+  "devDependencies": { "concurrently": "^9.1.2" }
+}
