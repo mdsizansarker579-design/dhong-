@@ -1,103 +1,89 @@
 <!doctype html>
 <html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220"><title>AI Trading Analyzer</title>
 <style>
-:root{color-scheme:dark;--bg:#070b16;--panel:#101a2d;--panel2:#0b1425;--line:#263653;--muted:#9eacc3;--blue:#60a5fa;--cyan:#67e8f9;--green:#34d399;--red:#fb7185;--amber:#fbbf24;--purple:#a78bfa}
+:root{color-scheme:dark;--bg:#030817;--panel:#08152d;--line:#173b78;--blue:#168cff;--cyan:#14e5ff;--green:#00ed58;--red:#ff3158;--purple:#8b35ff;--gold:#ffb000;--muted:#a9c3ed}
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:radial-gradient(ellipse at 12% 0%,#182b50 0%,transparent 42%),radial-gradient(ellipse at 95% 12%,#25194a 0%,transparent 35%),#070b16;color:#edf4ff;font-family:system-ui,'Noto Sans Bengali',sans-serif}
-header{position:relative;text-align:center;padding:25px 14px 22px;border-bottom:1px solid #293957;background:linear-gradient(115deg,rgba(15,28,51,.94),rgba(18,20,48,.88));box-shadow:0 12px 40px #02061766}
-header:before{content:"";display:block;width:54px;height:4px;border-radius:9px;margin:0 auto 13px;background:linear-gradient(90deg,var(--cyan),var(--purple))}
-h1{font-size:clamp(22px,4vw,30px);letter-spacing:.2px;margin:0 0 7px;font-weight:850}
-.sub,.muted{color:var(--muted);font-size:12px;line-height:1.65}
-.wrap{max-width:1120px;margin:auto;padding:16px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:13px;align-items:start}
-.wrap>.warn{grid-column:1/-1;grid-row:1}
-.wrap>section:nth-of-type(1){grid-column:1/-1;grid-row:2}
-.wrap>section:nth-of-type(2){grid-column:1/-1;grid-row:3}
-.wrap>section:nth-of-type(3){grid-column:1/span 5;grid-row:4}
-.wrap>details{grid-column:6/-1;grid-row:4}
-.wrap>section:nth-of-type(4){grid-column:1/-1;grid-row:5}
-.wrap>section:nth-of-type(5){grid-column:1/span 6;grid-row:6}
-.wrap>section:nth-of-type(6){grid-column:7/-1;grid-row:6}
-.wrap>section:nth-of-type(7){grid-column:1/-1;grid-row:7}
-.warn{background:linear-gradient(110deg,#302512,#211b19);border:1px solid #8b6428;color:#ffe7b0;padding:12px 15px;border-radius:14px;font-size:12px;line-height:1.65;margin:0}
-.panel{position:relative;min-width:0;background:linear-gradient(145deg,rgba(19,32,54,.97),rgba(11,20,36,.98));border:1px solid var(--line);border-radius:19px;padding:17px;margin:0;box-shadow:0 12px 32px #02061755,inset 0 1px 0 #ffffff08;overflow:hidden}
-.panel:after{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,#60a5fa88,#a78bfa88,transparent);pointer-events:none}
-.panel h2{font-size:16px;letter-spacing:.1px;margin:0 0 14px;font-weight:800}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.field{flex:1;min-width:120px}
-label{display:block;color:#aebbd0;font-size:12px;margin-bottom:6px}
-select,input{width:100%;background:#091326;color:#f8fbff;border:1px solid #354967;border-radius:11px;padding:12px;font:inherit;min-height:45px;outline:none}
-select:focus,input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #3b82f633}
-button{background:#263750;border:1px solid #3a506f;color:white;border-radius:11px;padding:11px 15px;font-weight:750;min-height:42px;cursor:pointer;transition:.18s}
+html{scroll-behavior:smooth;scroll-padding-top:14px}
+body{margin:0;background:radial-gradient(ellipse at 5% 0%,#102d71 0%,transparent 34%),radial-gradient(ellipse at 95% 10%,#28105d 0%,transparent 30%),#030817;color:#f3f7ff;font-family:system-ui,'Noto Sans Bengali',sans-serif;padding-bottom:82px}
+header{max-width:1100px;margin:auto;padding:16px 18px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}.bot{font-size:38px;filter:drop-shadow(0 0 12px #168cff)}
+h1{font-size:clamp(20px,4vw,30px);margin:0;font-weight:900;letter-spacing:-.5px}h1 span{color:var(--cyan)}.sub{font-size:11px;color:#a9c3ed;margin-top:3px}
+.live{border:2px solid #00e65a;border-radius:30px;padding:8px 14px;color:#00ff65;font-weight:850;white-space:nowrap;box-shadow:0 0 17px #00e65a55;background:#002519}
+.wrap{max-width:1100px;margin:auto;padding:7px 16px 22px;display:flex;flex-direction:column;gap:13px}
+.panel{min-width:0;position:relative;background:linear-gradient(135deg,rgba(9,25,56,.98),rgba(4,12,31,.98));border:1px solid #16478d;border-radius:21px;padding:15px;box-shadow:0 8px 24px #0008,inset 0 0 22px #0d3c811c;overflow:hidden}
+.panel h2{font-size:16px;margin:0 0 12px;font-weight:850;display:flex;align-items:center;gap:8px}
+.hero{border:2px solid #00ed58;box-shadow:0 0 19px #00ed5866,inset 0 0 30px #00ed581b;background:linear-gradient(110deg,#002d1b,#001a25 58%,#03132b);padding:17px 19px}
+.heroGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:center}
+.heroSignal{font-size:clamp(42px,10vw,72px);font-weight:1000;line-height:1.02;letter-spacing:-2px;margin:3px 0}
+.heroSignal.buy{color:#00f34e;text-shadow:0 0 22px #00ef5b88}.heroSignal.sell{color:#ff426c;text-shadow:0 0 22px #ff315888}.heroSignal.wait{color:#ffc247}
+.heroLabel{font-weight:850;color:#d9eaff;font-size:17px}.heroWhy{font-size:12px;color:#a9c3ed;line-height:1.6;margin:8px 0 0}
+.marketPrice{border-left:2px solid #00e9a0;padding:5px 0 5px 18px}.marketPrice small{color:#c2d8f7;font-weight:750;font-size:14px}.marketPrice b{display:block;font-size:clamp(25px,6vw,43px);font-weight:950;white-space:nowrap;letter-spacing:-1px;margin:4px 0}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{min-width:0;border-radius:17px;padding:13px 10px;background:linear-gradient(145deg,#08275d,#04132f);border:1.5px solid #1269ff;text-align:center;overflow:hidden;box-shadow:inset 0 0 18px #147bff18}
+.stat:nth-child(2){background:linear-gradient(145deg,#2a075b,#100b32);border-color:#8b35ff}.stat:nth-child(3){background:linear-gradient(145deg,#064126,#071d24);border-color:#00d85a}.stat:nth-child(4){background:linear-gradient(145deg,#553000,#271604);border-color:#ffad00}
+.stat small{display:block;font-size:12px;color:#d2e3ff;line-height:1.45}.stat b{display:block;font-size:clamp(17px,3vw,25px);font-weight:950;margin-top:5px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.controlbar{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #3843a1;border-radius:17px;background:linear-gradient(100deg,#101d45,#080d26);padding:12px 15px}
+.switches{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+button{background:#142b56;border:1px solid #315caa;color:white;border-radius:12px;padding:10px 13px;font-weight:800;min-height:40px;cursor:pointer}
+button.primary{background:linear-gradient(100deg,#006bff,#6b25e8);border-color:#7e9dff}
 button:active{transform:scale(.98)}
-button.primary{background:linear-gradient(110deg,#2563eb,#4f46e5);border-color:#6685f4;box-shadow:0 6px 18px #2563eb33}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.stat{position:relative;background:linear-gradient(145deg,#0d1a30,#0a1324);border:1px solid #2a3c5a;border-radius:14px;padding:13px;min-width:0;overflow:hidden}
-.stat small{display:block;color:#a6b5cb;font-size:11px;line-height:1.5}
-.stat b{display:block;font-size:clamp(16px,2vw,20px);font-weight:800;margin-top:5px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.signal{font-size:clamp(23px,4vw,30px)!important;font-weight:900!important;letter-spacing:.2px}
-.buy{color:var(--green)!important}.sell{color:var(--red)!important}.wait{color:var(--amber)!important}
-.pill{display:inline-block;background:#253957;border:1px solid #3a5274;padding:4px 9px;border-radius:20px;font-size:10px;margin:2px;color:#dbeafe}
-.trade{padding:11px 0;border-top:1px solid #263653;line-height:1.7;font-size:12px;overflow-wrap:anywhere}
-.trade:first-child{border:0}
-.muted{margin:9px 0}
-.foot{text-align:center;color:#8191aa;font-size:11px;padding:20px 14px 28px}
-summary{font-weight:800;cursor:pointer;color:#dceaff;list-style:none}
-summary::-webkit-details-marker{display:none}
-summary:after{content:"＋";float:right;color:var(--cyan);font-size:17px}
+.mode{border:2px solid #00ed58;color:#dfffea;border-radius:30px;padding:9px 14px;white-space:nowrap;font-size:12px;font-weight:850;box-shadow:0 0 12px #00ed5855}
+.row{display:flex;gap:10px;flex-wrap:wrap}.field{flex:1;min-width:130px}
+label{display:block;color:#afc8ed;font-size:12px;margin-bottom:5px}
+select,input{width:100%;background:#06132b;color:white;border:1px solid #28518d;border-radius:11px;padding:11px;font:inherit;min-height:43px}
+.marketrow{display:grid;grid-template-columns:1.5fr repeat(3,auto);gap:9px;align-items:center}
+.indicator{border:1px solid #176fff;border-radius:15px;padding:8px 13px;text-align:center;color:#42eaff;font-weight:900;background:#061b43;min-width:75px}
+.indicator:nth-child(3){border-color:#8b35ff;color:#d68bff;background:#210d45}.indicator:nth-child(4){border-color:#00b875;color:#69ffad;background:#062c28}
+.position{border:2px solid #0aaaff;box-shadow:0 0 14px #008cff55;background:linear-gradient(110deg,#061d53,#06112a);padding:15px}
+.positionGrid{display:grid;grid-template-columns:1.1fr 1.25fr .75fr .75fr 1fr;gap:8px;align-items:center}
+.posCell{min-width:0;padding:5px 8px;border-right:1px solid #4566a9;text-align:center}.posCell:last-child{border:0}
+.posCell small{display:block;color:#b9ceef;font-size:11px}.posCell b{display:block;font-size:clamp(15px,2.8vw,22px);font-weight:950;overflow-wrap:anywhere;margin-top:4px}
+.buy{color:var(--green)!important}.sell{color:var(--red)!important}.wait{color:#ffc247!important}
+.pill{display:inline-block;background:#18365e;border:1px solid #41669a;padding:3px 8px;border-radius:20px;font-size:10px;color:#dbeafe}
+.historyPanel{border-color:#792fff;box-shadow:0 0 13px #8b35ff33}.closedPanel{border-color:#00d5a2;box-shadow:0 0 13px #00d5a233}
+.trade{display:grid;grid-template-columns:55px 1fr;gap:8px;padding:8px 5px;border-top:1px solid #18335f;font-size:12px;line-height:1.6;overflow-wrap:anywhere}.trade:first-child{border:0}
+#signalHistory,#history{max-height:165px;overflow-y:auto;overscroll-behavior:contain}
+.warn{background:#211b17;border:1px solid #8b6428;color:#ffe7b0;border-radius:13px;padding:10px 13px;font-size:11px}
+summary{cursor:pointer;font-weight:800;list-style:none}summary::-webkit-details-marker{display:none}summary:after{content:"＋";float:right}
 details[open] summary:after{content:"−"}
-#simpleSignal{padding:5px 0 2px}
-#simpleWhy{margin-bottom:0}
-#position{background:#0a1528;border:1px solid #2c4263;border-radius:12px;padding:12px;color:#dce9fb;line-height:1.8}
-#floating{font-size:21px}
-.wrap>section:nth-of-type(4) .grid .stat:nth-child(2){border-color:#356b69}
-.wrap>section:nth-of-type(4) .grid .stat:nth-child(3){border-color:#356b69;background:linear-gradient(145deg,#0d292a,#0a1724)}
-@media(max-width:720px){
- .wrap{display:flex;flex-direction:column;padding:10px;gap:10px}
- .wrap>section:nth-of-type(2){order:1}
- .wrap>section:nth-of-type(4){order:2}
- .wrap>section:nth-of-type(3){order:3}
- .wrap>details:not(.warn){order:4}
- .wrap>section:nth-of-type(5){order:5}
- .wrap>section:nth-of-type(6){order:6}
- .wrap>section:nth-of-type(1){order:7}
- .wrap>section:nth-of-type(7){order:8}
- .wrap>.warn{order:9}
- .panel{width:100%;padding:14px;border-radius:16px}
- header{padding:18px 12px 15px}
- .grid{gap:7px}
- .stat{padding:10px;border-radius:12px}
- .stat b{font-size:17px}
- .field{min-width:calc(50% - 6px)}
- button{flex:1}
- .warn{font-size:11px;padding:10px 12px}
- .warn summary{font-size:12px}
- .warn p{margin:8px 0 2px}
- #signalHistory{max-height:230px;overflow-y:auto;overscroll-behavior:contain;padding-right:5px}
- #history{max-height:230px;overflow-y:auto;overscroll-behavior:contain;padding-right:5px}
+.muted{color:var(--muted);font-size:12px;line-height:1.65}
+#position{margin:0}#status{font-size:10px;color:#b4c9e9;max-width:50%;overflow-wrap:anywhere}
+.bottomNav{position:fixed;z-index:20;bottom:0;left:0;right:0;display:flex;justify-content:space-around;gap:4px;padding:8px 4px max(8px,env(safe-area-inset-bottom));background:linear-gradient(90deg,#071a48f5,#160b43f5);border:1px solid #5144ff;border-radius:18px 18px 0 0;box-shadow:0 -5px 24px #513cff55;backdrop-filter:blur(12px)}
+.bottomNav a{color:#b7aaff;text-decoration:none;text-align:center;font-size:10px;font-weight:800;flex:1;padding:3px}.bottomNav a span{display:block;font-size:21px;line-height:1.3}.bottomNav a:first-child{color:#43eaff}
+.foot{text-align:center;color:#8191aa;font-size:10px;padding:10px}
+@media(max-width:620px){
+ header{padding:12px 12px 9px}.bot{font-size:31px}.sub{font-size:9px}.live{font-size:11px;padding:7px 10px}
+ .wrap{padding:5px 10px 16px;gap:10px}.panel{padding:12px;border-radius:17px}
+ .hero{padding:14px 13px}.heroGrid{grid-template-columns:1fr 1fr;gap:8px}.heroLabel{font-size:14px}.marketPrice{padding-left:11px}.marketPrice small{font-size:11px}.heroWhy{font-size:10px}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.stat{padding:10px 7px;border-radius:14px}.stat small{font-size:10px}.stat b{font-size:18px}
+ .controlbar{padding:10px;align-items:flex-start}.switches{gap:7px;flex:1}.controlbar button{font-size:10px;padding:8px}.mode{font-size:10px;padding:8px}
+ .marketrow{grid-template-columns:1fr repeat(3,minmax(55px,.5fr));gap:5px}.indicator{padding:8px 4px;font-size:11px;min-width:0}
+ .position{padding:11px}.positionGrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:0}.posCell{padding:4px 3px}.posCell small{font-size:9px}.posCell b{font-size:13px}
+ .trade{grid-template-columns:42px 1fr;font-size:11px;padding:7px 2px}
+ .field{min-width:calc(50% - 5px)}button{flex:1}
+ #signalHistory,#history{max-height:130px}
 }
-@media(max-width:370px){.field{min-width:100%}.grid{gap:7px}.stat{padding:9px}.stat b{font-size:15px}}
+@media(max-width:370px){.heroSignal{font-size:38px}.marketPrice b{font-size:23px}.marketrow{grid-template-columns:1fr 1fr 1fr}.marketrow .field{grid-column:1/-1}.posCell small{font-size:8px}.posCell b{font-size:11px}.stat b{font-size:16px}}
 </style></head><body>
-<header><h1>🤖 AI Trading Analyzer</h1><div class="sub">Forex • Crypto • Stocks | Live data analysis • Auto signals • Paper trading</div></header>
+<header id="home"><div class="brand"><div class="bot">🤖</div><div><h1>AI Trading <span>Analyzer</span></h1><div class="sub">Smart Analysis • Auto Trading • Better Profit</div></div></div><div class="live">🟢 Live</div></header>
 <main class="wrap">
-<details class="warn"><summary>গুরুত্বপূর্ণ তথ্য ও সীমাবদ্ধতা</summary><p>এটি বাস্তব AI ভবিষ্যদ্বাণী নয়; EMA, RSI ও MACD-ভিত্তিক নিয়মে স্বয়ংক্রিয় বিশ্লেষণ করে। Crypto-তে Binance public market data এবং Forex/Stock-এ public market data ব্যবহারের চেষ্টা করে। ডেটা ব্রাউজারের CORS/প্রোভাইডার সীমাবদ্ধতায় ব্যর্থ হতে পারে—তখন কোনো সিগন্যাল তৈরি হবে না। পেজ খোলা থাকলেই প্রতি ৬০ সেকেন্ডে স্ক্যান চলে; পেজ বন্ধ থাকলে নয়। কোনো আসল অর্ডার বা টাকা ব্যবহার হয় না।</p></details>
-<section class="panel" style="border:1px solid #22c55e"><h2>চালু মোড: Demo → পরে Real</h2><p class="muted"><b style="color:#4ade80">Demo Trading চালু:</b> Auto Scan ও Auto Paper Trade ON থাকলে সিস্টেম নিয়মভিত্তিক মার্কেট বিশ্লেষণ করে ভার্চুয়াল BUY/SELL ট্রেড খুলবে এবং Stop Loss / Take Profit অনুযায়ী বন্ধ করার চেষ্টা করবে। এখানে কোনো আসল টাকা ব্যবহার হয় না।</p><p class="muted"><b>Real Trading এখনো বন্ধ:</b> বাস্তব অর্ডার দেওয়ার আগে সমর্থিত ব্রোকার/এক্সচেঞ্জ, API সংযোগ, নিরাপদ সার্ভার এবং তোমার আলাদা অনুমোদন লাগবে। এই পেজ এখন বাস্তব অর্ডার পাঠায় না।</p></section>
-<section class="panel" style="border:2px solid #3b82f6"><h2>⭐ সহজ ফলাফল — প্রথমে এটি দেখো</h2><div class="stat"><small>এখন কী করবে?</small><b id="simpleSignal" class="signal wait">লোড হচ্ছে…</b><p id="simpleWhy" class="muted">মার্কেট ডেটা বিশ্লেষণ করা হচ্ছে।</p></div><div class="grid" style="margin-top:9px"><div class="stat"><small>এন্ট্রি (প্রবেশের দাম)</small><b id="simpleEntry">—</b></div><div class="stat"><small>স্টপ লস (ক্ষতি থামানোর দাম)</small><b id="simpleSL">—</b></div><div class="stat"><small>টেক প্রফিট (লাভের লক্ষ্য)</small><b id="simpleTP">—</b></div><div class="stat"><small>বর্তমান দাম</small><b id="simplePrice">—</b></div></div><p class="muted">BUY = কেনার সম্ভাব্য সংকেত · SELL = বিক্রির সম্ভাব্য সংকেত · WAIT = এখন অপেক্ষা। এগুলো নিশ্চিত পূর্বাভাস নয়।</p></section>
-<section class="panel"><h2>১. Market নির্বাচন</h2><div class="row">
-<div class="field"><label>Market</label><select id="type"><option value="crypto">Crypto</option><option value="forex">Forex</option><option value="stock">Stock</option></select></div>
-<div class="field"><label>Symbol</label><select id="symbol"><option value="BTCUSDT">Bitcoin (BTCUSDT)</option><option value="ETHUSDT">Ethereum (ETHUSDT)</option><option value="SOLUSDT">Solana (SOLUSDT)</option><option value="BNBUSDT">BNB (BNBUSDT)</option><option value="XRPUSDT">XRP (XRPUSDT)</option><option value="DOGEUSDT">Dogecoin (DOGEUSDT)</option></select></div>
-<div class="field"><label>Timeframe</label><select id="tf"><option value="5m">5 মিনিট</option><option value="15m" selected>15 মিনিট</option><option value="1h">1 ঘণ্টা</option><option value="4h">4 ঘণ্টা</option><option value="1d">1 দিন</option></select></div>
-</div><div class="row" style="margin-top:10px"><button class="primary" id="analyze">এখনই বিশ্লেষণ</button><button id="auto">Auto Scan: ON</button></div><p class="muted" id="status">সিস্টেম চালু হচ্ছে…</p></section>
-<details class="panel"><summary style="font-weight:700;cursor:pointer">বিস্তারিত টেকনিক্যাল হিসাব (চাইলে খুলবে)</summary><h2 style="margin-top:14px">২. স্বয়ংক্রিয় Trading Signal</h2><div class="grid">
-<div class="stat"><small>Signal</small><b class="signal wait" id="signal">WAIT</b></div><div class="stat"><small>Latest price</small><b id="price">—</b></div><div class="stat"><small>RSI (14)</small><b id="rsi">—</b></div><div class="stat"><small>EMA 9 / 21</small><b id="ema">—</b></div>
-<div class="stat"><small>MACD</small><b id="macd">—</b></div><div class="stat"><small>Entry</small><b id="entry">—</b></div><div class="stat"><small>Stop Loss</small><b id="sl">—</b></div><div class="stat"><small>Take Profit</small><b id="tp">—</b></div>
-</div><p class="muted" id="reason">ডেটা এলে বিশ্লেষণের কারণ এখানে দেখাবে।</p><div id="chartlink" class="muted"></div></details>
-<section class="panel"><h2>৩. Auto Paper Trading</h2><div class="grid"><div class="stat"><small>Virtual balance (বন্ধ ট্রেডের ব্যালেন্স)</small><b id="balance">৳10,000</b></div><div class="stat"><small>Equity (বর্তমান মোট মূল্য)</small><b id="equity">৳10,000</b></div><div class="stat"><small>Floating P/L (চলতি ট্রেডের লাভ/ক্ষতি)</small><b id="floating">0</b></div><div class="stat"><small>Closed trades</small><b id="count">0</b></div><div class="stat"><small>Win rate</small><b id="winrate">—</b></div><div class="stat"><small>Realized P/L</small><b id="pnl">0</b></div></div>
-<div class="row" style="margin-top:10px"><div class="field"><label>Initial virtual balance</label><input id="startbal" type="number" value="10000" min="100"></div><div class="field"><label>Risk per trade (%)</label><input id="risk" type="number" value="1" min=".1" max="5" step=".1"></div></div><div class="row" style="margin-top:9px"><button id="reset">Wallet Reset</button><button id="autoTrade" class="primary">Auto Paper Trade: ON</button></div><p class="muted" id="position">কোনো Open Position নেই।</p><p class="muted">চলতি ট্রেডের Floating P/L ও Equity প্রতি ডেটা আপডেটে বদলাবে; ট্রেড বন্ধ হলে লাভ/ক্ষতি Virtual balance-এ যোগ/বিয়োগ হবে। Stop Loss বা Take Profit স্পর্শ করলে পরের ডেটা আপডেটে ট্রেড বন্ধ হবে। একই সময়ে একটি পজিশন রাখা হবে; অন্য মার্কেট/সিম্বলে গেলে আগের পজিশনটি সেখানকার দামে মূল্যায়ন হবে না।</p></section>
-<section class="panel"><h2>৪. Signal History — AI কখন BUY/SELL বলেছে</h2><p class="muted">প্রতিটি নতুন BUY/SELL সিগন্যাল এখানে সময়, মার্কেট, দাম, Entry, Stop Loss ও Take Profit-সহ জমা থাকবে। একই সিগন্যাল প্রতি মিনিটে বারবার যোগ হবে না।</p><div id="signalHistory" class="muted">এখনো কোনো BUY/SELL সিগন্যাল রেকর্ড হয়নি।</div></section>
-<section class="panel"><h2>৫. Closed Trade History — সম্পন্ন ভার্চুয়াল ট্রেড</h2><div id="history" class="muted">এখনো কোনো ট্রেড নেই।</div></section>
-<section class="panel"><h2>কীভাবে সিগন্যাল তৈরি হয়?</h2><p class="muted">BUY/SELL: EMA 9 ও EMA 21-এর ট্রেন্ড বাধ্যতামূলক; দামের EMA9-এর অবস্থান, RSI, MACD-এর দিক ও গতি মিলিয়ে ৬ পয়েন্টের স্কোর হয়। একই দিকে অন্তত ৪ পয়েন্ট হলে সংকেত, নইলে WAIT। Stop Loss ATR-ভিত্তিক এবং Take Profit আনুমানিক 1:2 risk/reward। এটি শিক্ষামূলক নিয়ম; বাজারের আচরণ বদলাতে পারে।</p></section>
-</main><div class="foot">No broker connection • No real-money trading • Data availability depends on public providers</div>
+<details class="warn"><summary>গুরুত্বপূর্ণ তথ্য ও সীমাবদ্ধতা</summary><p>এটি EMA, RSI ও MACD-ভিত্তিক নিয়মে স্বয়ংক্রিয় বিশ্লেষণ করে; নিশ্চিত ভবিষ্যদ্বাণী নয়। Crypto-তে Binance এবং Forex/Stock-এ public data source ব্যবহৃত হয়। ডেটা না এলে সিগন্যাল তৈরি হবে না। পেজ খোলা থাকলেই প্রতি ৬০ সেকেন্ডে স্ক্যান চলে। এটি শুধু ভার্চুয়াল Paper Trading, কোনো আসল অর্ডার বা টাকা ব্যবহার হয় না।</p></details>
+<section class="panel hero" id="analysis"><div class="heroGrid"><div><div class="heroLabel">AI Signal</div><div id="simpleSignal" class="heroSignal wait">লোড হচ্ছে…</div><div class="heroLabel" id="simpleTrend">Trend: বিশ্লেষণ চলছে</div><p id="simpleWhy" class="heroWhy">মার্কেট ডেটা বিশ্লেষণ করা হচ্ছে।</p></div><div class="marketPrice"><small>Market Price</small><b id="simplePrice">—</b><small id="heroChange">Live market data</small></div></div></section>
+<section class="grid" aria-label="Trading performance">
+<div class="stat"><small>▣ Demo Balance</small><b id="balance">10,000</b></div>
+<div class="stat"><small>↗ Equity</small><b id="equity">10,000</b></div>
+<div class="stat"><small>🏆 Win Rate</small><b id="winrate">—</b></div>
+<div class="stat"><small>💰 Total P/L</small><b id="pnl">0</b></div>
+</section>
+<section class="controlbar"><div class="switches"><button id="auto" class="primary">Auto Scan: ON</button><button id="autoTrade">Auto Paper Trade: ON</button></div><div class="mode">🟢 Demo Mode</div><div id="status">Starting…</div></section>
+<section class="panel"><div class="marketrow"><div class="field"><label>Market / Symbol</label><div class="row"><select id="type"><option value="crypto">Crypto</option><option value="forex">Forex</option><option value="stock">Stocks</option></select><select id="symbol"><option value="BTCUSDT">BTCUSDT</option><option value="ETHUSDT">ETHUSDT</option></select><select id="tf"><option value="5m">5m</option><option value="15m" selected>15m</option><option value="1h">1h</option><option value="4h">4h</option><option value="1d">1d</option></select></div></div><div class="indicator">EMA<br><span id="emaBadge">—</span></div><div class="indicator">RSI<br><span id="rsiBadge">—</span></div><div class="indicator">MACD<br><span id="macdBadge">—</span></div></div><div class="row" style="margin-top:9px"><button class="primary" id="analyze">Analyze Now</button><span class="muted" id="marketStatus">Live market scan</span></div></section>
+<section class="panel position"><h2>⚡ Open Position</h2><div class="positionGrid" id="position"><div class="posCell"><small>Position</small><b>কোনো Open Position নেই</b></div><div class="posCell"><small>Current Price</small><b id="positionPrice">—</b></div><div class="posCell"><small>SL</small><b id="positionSL">—</b></div><div class="posCell"><small>TP</small><b id="positionTP">—</b></div><div class="posCell"><small>Floating P/L</small><b id="floating">0</b></div></div></section>
+<section class="panel historyPanel"><h2>🔔 Recent Signals <span class="pill">Latest 6</span></h2><div id="signalHistory">এখনো কোনো BUY/SELL সিগন্যাল রেকর্ড হয়নি।</div></section>
+<section class="panel closedPanel" id="historySection"><h2>☑ Closed Trade History</h2><div id="history">এখনো কোনো ট্রেড নেই।</div></section>
+<details class="panel" id="settings"><summary>⚙️ Settings & Risk Management</summary><div class="row" style="margin-top:13px"><div class="field"><label>Initial virtual balance</label><input id="startbal" type="number" value="10000" min="100"></div><div class="field"><label>Risk per trade (%)</label><input id="risk" type="number" value="1" min=".1" max="5" step=".1"></div></div><div class="row" style="margin-top:9px"><button id="reset">Wallet Reset</button></div><div class="muted" id="count">0</div><p class="muted">Closed Trades</p><p class="muted" id="positionNote">Floating P/L ও Equity প্রতি ডেটা আপডেটে বদলাবে।</p></details>
+<details class="panel"><summary>📊 Technical Analysis Details</summary><div class="grid" style="margin-top:12px"><div class="stat"><small>Signal</small><b id="signal" class="wait">WAIT</b></div><div class="stat"><small>Latest price</small><b id="price">—</b></div><div class="stat"><small>RSI (14)</small><b id="rsi">—</b></div><div class="stat"><small>EMA 9 / 21</small><b id="ema">—</b></div><div class="stat"><small>MACD</small><b id="macd">—</b></div><div class="stat"><small>Entry</small><b id="entry">—</b></div><div class="stat"><small>Stop Loss</small><b id="sl">—</b></div><div class="stat"><small>Take Profit</small><b id="tp">—</b></div></div><p id="reason" class="muted">সূচকের হিসাব এখানে দেখাবে।</p><div id="chartlink" class="muted"></div><div class="muted"><span id="simpleEntry">—</span> · <span id="simpleSL">—</span> · <span id="simpleTP">—</span></div></details>
+</main>
+<nav class="bottomNav"><a href="#home"><span>⌂</span>Home</a><a href="#analysis"><span>▥</span>Analysis</a><a href="#historySection"><span>▤</span>History</a><a href="#historySection"><span>♧</span>Alerts</a><a href="#settings"><span>♙</span>Profile</a></nav><div class="foot">No broker connection • No real-money trading • Data availability depends on public providers</div>
 <script>
 window.addEventListener("error",function(e){var s=document.getElementById("status");if(s)s.textContent="সিস্টেম চালু হতে সমস্যা: "+(e.message||"JavaScript error")+"। পেজটি রিফ্রেশ করো।";});
 
@@ -183,8 +169,9 @@ function analyze(a){
  else why='এখন WAIT — BUY স্কোর '+bull+'/6, SELL স্কোর '+bear+'/6। ট্রেন্ড ও নিশ্চিতকরণ যথেষ্ট শক্তিশালী নয়।';
  return {sig,why,price,rv,e9,e21,m,atr,sl:sig==='BUY'?price-1.5*atr:sig==='SELL'?price+1.5*atr:null,tp:sig==='BUY'?price+3*atr:sig==='SELL'?price-3*atr:null,time:a.at(-1).time};
 }
+function e9Badge(d){return d.e9>d.e21?'Bullish':'Bearish'}
 function render(d){
- $('simpleSignal').textContent=d.sig==='BUY'?'কেনার সংকেত (BUY)':d.sig==='SELL'?'বিক্রির সংকেত (SELL)':'এখন অপেক্ষা করো (WAIT)';$('simpleSignal').className='signal '+(d.sig==='BUY'?'buy':d.sig==='SELL'?'sell':'wait');$('simpleWhy').textContent=d.why;$('simpleEntry').textContent=d.sig==='WAIT'?'এখন নয়':fmt(d.price);$('simpleSL').textContent=d.sl?fmt(d.sl):'এখন নির্ধারিত নয়';$('simpleTP').textContent=d.tp?fmt(d.tp):'এখন নির্ধারিত নয়';$('simplePrice').textContent=fmt(d.price);
+ $('simpleSignal').textContent=d.sig;$('simpleSignal').className='heroSignal '+(d.sig==='BUY'?'buy':d.sig==='SELL'?'sell':'wait');$('simpleTrend').textContent='Trend: '+(d.sig==='BUY'?'Bullish ↗':d.sig==='SELL'?'Bearish ↘':'Neutral • Wait');$('simpleWhy').textContent=d.why;$('simpleEntry').textContent=d.sig==='WAIT'?'—':fmt(d.price);$('simpleSL').textContent=d.sl?fmt(d.sl):'—';$('simpleTP').textContent=d.tp?fmt(d.tp):'—';$('simplePrice').textContent=fmt(d.price);$('emaBadge').textContent=e9Badge(d);$('rsiBadge').textContent=d.rv.toFixed(0);$('macdBadge').textContent=d.m>0?'Bullish':'Bearish';$('marketStatus').textContent='Live · '+$('symbol').value;
  $('signal').textContent=d.sig;$('signal').className='signal '+(d.sig==='BUY'?'buy':d.sig==='SELL'?'sell':'wait');
  $('price').textContent=fmt(d.price);$('rsi').textContent=d.rv.toFixed(2);$('ema').textContent=fmt(d.e9)+' / '+fmt(d.e21);$('macd').textContent=fmt(d.m);
  $('entry').textContent=d.sig==='WAIT'?'—':fmt(d.price);$('sl').textContent=d.sl?fmt(d.sl):'—';$('tp').textContent=d.tp?fmt(d.tp):'—';$('reason').textContent=d.why;
@@ -201,7 +188,7 @@ function recordSignal(d){
  signalHistory=signalHistory.slice(-100);save('ait_signals',signalHistory);renderSignalHistory();
 }
 function renderSignalHistory(){const el=$('signalHistory');if(!el)return;el.innerHTML=signalHistory.length?signalHistory.slice().reverse().slice(0,6).map(x=>'<div class="trade"><b class="'+(x.side==='BUY'?'buy':'sell')+'">'+x.side+'</b> · '+x.symbol+' <span class="pill">'+x.type+' · '+x.tf+'</span><div>Signal price / Entry: '+fmt(x.price)+' · SL: '+fmt(x.sl)+' · TP: '+fmt(x.tp)+'</div><small>'+new Date(x.time).toLocaleString()+'</small></div>').join(''):'এখনো কোনো BUY/SELL সিগন্যাল রেকর্ড হয়নি।';}
-function stats(current){let t=account.trades,p=t.reduce((s,x)=>s+x.pnl,0),wins=t.filter(x=>x.pnl>0).length,floatPnl=0,matching=!!(position&&current&&position.type===$('type').value&&position.symbol===$('symbol').value&&position.tf===$('tf').value);if(matching)floatPnl=(position.side==='BUY'?current.price-position.entry:position.entry-current.price)*position.units;$('balance').textContent=fmt(account.balance);$('floating').textContent=matching?((floatPnl>=0?'+':'')+fmt(floatPnl)):(position?'অন্য মার্কেটে':'0');$('floating').className=matching?(floatPnl>=0?'buy':'sell'):'';$('equity').textContent=fmt(account.balance+(matching?floatPnl:0));$('count').textContent=t.length;$('winrate').textContent=t.length?(wins/t.length*100).toFixed(1)+'%':'—';$('pnl').textContent=fmt(p);$('history').innerHTML=t.length?t.slice(-15).reverse().map(x=>'<div class="trade"><b>'+x.symbol+' · '+x.side+'</b><div>Entry '+fmt(x.entry)+' → Exit '+fmt(x.exit)+' · P/L <span class="'+(x.pnl>=0?'buy':'sell')+'">'+fmt(x.pnl)+'</span></div><small>'+new Date(x.time).toLocaleString()+'</small></div>').join(''):'এখনো কোনো ট্রেড নেই।';$('position').textContent=position?'Open: '+position.symbol+' '+position.side+' ('+(position.type||'পুরোনো ট্রেড')+', '+(position.tf||'—')+') | Entry '+fmt(position.entry)+' | SL '+fmt(position.sl)+' | TP '+fmt(position.tp)+(matching?' | চলতি P/L '+(floatPnl>=0?'+':'')+fmt(floatPnl):' | এই মার্কেটের দামে P/L আপডেট হচ্ছে না'):'কোনো Open Position নেই।';save('ait_account',account);save('ait_position',position);renderSignalHistory()}
+function stats(current){let t=account.trades,p=t.reduce((s,x)=>s+x.pnl,0),wins=t.filter(x=>x.pnl>0).length,floatPnl=0,matching=!!(position&&current&&position.type===$('type').value&&position.symbol===$('symbol').value&&position.tf===$('tf').value);if(matching)floatPnl=(position.side==='BUY'?current.price-position.entry:position.entry-current.price)*position.units;$('balance').textContent=fmt(account.balance);$('equity').textContent=fmt(account.balance+(matching?floatPnl:0));$('count').textContent=t.length;$('winrate').textContent=t.length?(wins/t.length*100).toFixed(1)+'%':'—';$('pnl').textContent=(p>=0?'+':'')+fmt(p);$('history').innerHTML=t.length?t.slice(-15).reverse().map(x=>'<div class="trade"><b>'+x.symbol+' · '+x.side+'</b><div>Entry '+fmt(x.entry)+' → Exit '+fmt(x.exit)+' · P/L <span class="'+(x.pnl>=0?'buy':'sell')+'">'+fmt(x.pnl)+'</span></div><small>'+new Date(x.time).toLocaleString()+'</small></div>').join(''):'এখনো কোনো ট্রেড নেই।';$('position').innerHTML=position?'<div class="posCell"><small>'+position.symbol+'</small><b class="'+(position.side==='BUY'?'buy':'sell')+'">'+position.side+'<br><small>Entry '+fmt(position.entry)+'</small></b></div><div class="posCell"><small>Current Price</small><b>'+(matching?fmt(current.price):'—')+'</b></div><div class="posCell"><small>SL</small><b class="sell">'+fmt(position.sl)+'</b></div><div class="posCell"><small>TP</small><b class="buy">'+fmt(position.tp)+'</b></div><div class="posCell"><small>Floating P/L</small><b id="floating" class="'+(matching?(floatPnl>=0?'buy':'sell'):'')+'">'+(matching?((floatPnl>=0?'+':'')+fmt(floatPnl)):'—')+'</b></div>':'<div class="posCell"><small>Position</small><b>কোনো Open Position নেই</b></div><div class="posCell"><small>Current Price</small><b>'+(current?fmt(current.price):'—')+'</b></div><div class="posCell"><small>SL</small><b>—</b></div><div class="posCell"><small>TP</small><b>—</b></div><div class="posCell"><small>Floating P/L</small><b id="floating">0</b></div>';save('ait_account',account);save('ait_position',position);renderSignalHistory()}
 function closePos(price,why){if(!position)return;let pnl=(position.side==='BUY'?price-position.entry:position.entry-price)*position.units;account.balance+=pnl;account.trades.push({...position,exit:price,pnl,why,time:Date.now()});position=null;stats()}
 function paper(d){
  const market=$('type').value,symbol=$('symbol').value,tf=$('tf').value;
