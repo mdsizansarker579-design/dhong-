@@ -198,21 +198,23 @@ function stats(current){syncActivePosition();let t=account.trades,p=t.reduce((s,
 function closePos(price,why){if(!position)return;let pnl=(position.side==='BUY'?price-position.entry:position.entry-price)*position.units;account.balance+=pnl;account.trades.push({...position,exit:price,pnl,why,time:Date.now()});delete positions[activePositionKey()];position=null;save('ait_positions',positions);stats()}
 function paper(d){
  const market=$('type').value,symbol=$('symbol').value,tf=$('tf').value;
- // Never manage an existing trade using a different market's price.
  if(position){
-  const same=position.type===market&&position.symbol===symbol&&position.tf===tf;
-  if(!same)return;
   let hit=false;
   if(position.side==='BUY'&&(d.price<=position.sl||d.price>=position.tp)){closePos(d.price,d.price<=position.sl?'Stop Loss':'Take Profit');hit=true}
   else if(position.side==='SELL'&&(d.price>=position.sl||d.price<=position.tp)){closePos(d.price,d.price>=position.sl?'Stop Loss':'Take Profit');hit=true}
-  if(hit)return; // Do not close and reopen on the same scan.
+  if(hit)return 'ট্রেড বন্ধ হয়েছে: Stop Loss / Take Profit';
+  return 'এই মার্কেটে একটি Paper Trade ইতিমধ্যে খোলা আছে';
  }
- if(!position&&autoTrade&&d.sig!=='WAIT'&&d.sl&&d.tp){
-  let riskPct=Math.min(5,Math.max(.1,Number($('risk').value)||1)),riskCash=account.balance*riskPct/100,dist=Math.abs(d.price-d.sl),units=dist>0?riskCash/dist:0;
-  if(units>0){position={type:market,symbol,tf,side:d.sig,entry:d.price,sl:d.sl,tp:d.tp,units,opened:Date.now()};positions[activePositionKey()]=position;save('ait_positions',positions);stats(d)}
+ if(!autoTrade)return 'Auto Paper Trade OFF — বাটন ON করো';
+ if(d.sig==='WAIT')return 'WAIT সংকেত — নতুন ট্রেড খোলা হয়নি';
+ if(!Number.isFinite(d.price)||!Number.isFinite(d.sl)||!Number.isFinite(d.tp))return 'Entry / SL / TP সঠিক নয় — ট্রেড খোলা হয়নি';
+ let riskPct=Math.min(5,Math.max(.1,Number($('risk').value)||1)),riskCash=account.balance*riskPct/100,dist=Math.abs(d.price-d.sl),units=dist>0?riskCash/dist:0;
+ if(!(units>0&&Number.isFinite(units)))return 'Risk হিসাব করা যায়নি — ট্রেড খোলা হয়নি';
+ position={type:market,symbol,tf,side:d.sig,entry:d.price,sl:d.sl,tp:d.tp,units,opened:Date.now()};
+ positions[activePositionKey()]=position;save('ait_positions',positions);stats(d);
+ return 'Paper Trade OPEN: '+d.sig+' · '+symbol;
 }
-}
-async function run(){try{syncActivePosition();let a=await fetchData();candles=a;last=analyze(a);render(last);recordSignal(last);paper(last);stats(last);$('status').textContent='ডেটা আপডেট: '+new Date().toLocaleTimeString()+' · '+a.length+' candles';}catch(e){$('status').textContent='ডেটা/সংযোগ সমস্যা: '+e.message+'। এই মার্কেটের জন্য ডেটা উৎস এই মুহূর্তে পাওয়া যাচ্ছে না; সিগন্যাল তৈরি করা হয়নি।';$('simpleSignal').textContent='ডেটা পাওয়া যায়নি';$('simpleWhy').textContent='ইন্টারনেট বা ডেটা উৎস পরীক্ষা করে আবার চেষ্টা করো।';$('simpleEntry').textContent='—';$('simpleSL').textContent='—';$('simpleTP').textContent='—';$('simplePrice').textContent='—';$('signal').textContent='NO DATA';$('signal').className='signal wait';$('simpleSignal').className='heroSignal wait'}}
+async function run(){try{syncActivePosition();let a=await fetchData();candles=a;last=analyze(a);render(last);recordSignal(last);let tradeMessage=paper(last);stats(last);$('status').textContent='ডেটা আপডেট: '+new Date().toLocaleTimeString()+' · '+a.length+' candles · '+tradeMessage;}catch(e){$('status').textContent='ডেটা/সংযোগ সমস্যা: '+e.message+'। এই মার্কেটের জন্য ডেটা উৎস এই মুহূর্তে পাওয়া যাচ্ছে না; সিগন্যাল তৈরি করা হয়নি।';$('simpleSignal').textContent='ডেটা পাওয়া যায়নি';$('simpleWhy').textContent='ইন্টারনেট বা ডেটা উৎস পরীক্ষা করে আবার চেষ্টা করো।';$('simpleEntry').textContent='—';$('simpleSL').textContent='—';$('simpleTP').textContent='—';$('simplePrice').textContent='—';$('signal').textContent='NO DATA';$('signal').className='signal wait';$('simpleSignal').className='heroSignal wait'}}
 $('analyze').onclick=run;
 $('tf').onchange=()=>{persistSettings();syncActivePosition();stats();run()};$('symbol').onchange=()=>{persistSettings();syncActivePosition();stats();run()};
 $('auto').onclick=()=>{autoScan=!autoScan;$('auto').textContent='Auto Scan: '+(autoScan?'ON':'OFF');persistSettings();if(scanTimer)clearInterval(scanTimer);if(autoScan){run();scanTimer=setInterval(run,60000)}};
