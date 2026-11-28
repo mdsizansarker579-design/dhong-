@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const API = 'http://localhost:8787';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
 export default function App() {
   const [command, setCommand] = useState('');
@@ -10,16 +10,19 @@ export default function App() {
   const bottomRef = useRef(null);
 
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:8787/ws');
-    ws.onopen = () => setConnected(true);
-    ws.onclose = () => setConnected(false);
-    ws.onmessage = (message) => {
-      const event = JSON.parse(message.data);
-      if (event.type === 'task') {
-        setEvents((old) => [...old, { kind: 'live', text: `${event.status}: ${event.plan?.goal || event.result?.message || ''}` }]);
+    let active = true;
+    async function checkHealth() {
+      try {
+        const response = await fetch(`${API_BASE}/api/health`);
+        if (!response.ok) throw new Error('API offline');
+        if (active) setConnected(true);
+      } catch {
+        if (active) setConnected(false);
       }
-    };
-    return () => ws.close();
+    }
+    checkHealth();
+    const timer = window.setInterval(checkHealth, 30000);
+    return () => { active = false; window.clearInterval(timer); };
   }, []);
 
   useEffect(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), [events]);
@@ -32,7 +35,7 @@ export default function App() {
     setEvents((old) => [...old, { kind: 'user', text: current }]);
     setBusy(true);
     try {
-      const response = await fetch(`${API}/api/command`, {
+      const response = await fetch(`${API_BASE}/api/command`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: current })
@@ -62,7 +65,7 @@ export default function App() {
       <div className="panel-head"><strong>কমান্ড সেন্টার</strong><span>DEMO AGENT · v0.1.0</span></div>
       <div className="feed">
         {events.length === 0 && <div className="empty">উদাহরণ: “JARVIS, সার্ভারের স্ট্যাটাস দেখাও” অথবা “এখন কয়টা বাজে?”</div>}
-        {events.map((item, i) => <div key={i} className={`bubble ${item.kind}`}><small>{item.kind === 'user' ? 'YOU' : item.kind === 'live' ? 'LIVE EVENT' : 'JARVIS'}</small><div>{item.text}</div></div>)}
+        {events.map((item, i) => <div key={i} className={`bubble ${item.kind}`}><small>{item.kind === 'user' ? 'YOU' : 'JARVIS'}</small><div>{item.text}</div></div>)}
         <div ref={bottomRef} />
       </div>
       <form onSubmit={submit} className="composer">
