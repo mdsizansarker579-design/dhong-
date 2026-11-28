@@ -1,19 +1,18 @@
-# JARVIS migration: GitHub + Cloudflare
+# JARVIS Cloudflare Pages deployment
 
-The existing starter is preserved. The Cloudflare migration is isolated on branch `jarvis-cloudflare-migration`.
+The JARVIS web app includes Cloudflare Pages Functions, so the frontend and API deploy together from one GitHub branch.
 
-## Frontend
-Deploy the `jarvis/web` directory as a Cloudflare Pages project.
-- Framework preset: Vite
-- Build command: `npm run build`
-- Build output directory: `dist`
-- Root directory: `jarvis/web`
+## Cloudflare dashboard setup
+1. Open Workers & Pages > Create application > Pages > Connect to Git.
+2. Select repository `mdsizansarker579-design/dhong-`.
+3. Select branch `jarvis-cloudflare-migration`.
+4. Set project root directory to `jarvis/web`.
+5. Set build command to `npm run build`.
+6. Set build output directory to `dist`.
+7. Save and deploy.
 
-## API
-Deploy `jarvis/worker/src/index.js` as a Cloudflare Worker. The Worker exposes /api/health and /api/command. After Pages is deployed, set Worker variable `ALLOWED_ORIGIN` to the Pages URL.
+Pages automatically discovers API functions in `jarvis/web/functions`.
+After deployment, test `/api/health` on the Pages domain.
 
-## Frontend API URL
-If the Pages site and Worker are on different origins, set the Vite build environment variable `VITE_API_BASE_URL` to the Worker URL and rebuild Pages. For same-origin routing, configure a Pages Function/proxy before relying on a relative /api path.
-
-## Safety and secrets
-No API key is committed. Put provider credentials in Cloudflare Worker Secrets only. The current Worker remains a demo planner until an AI provider is deliberately connected.
+## Current limitation
+The API is still a safe demo planner, not the full AI Brain. It does not execute shell commands or control a phone/computer. Provider credentials must later be added as Cloudflare secrets, never committed to GitHub or placed in frontend code.
